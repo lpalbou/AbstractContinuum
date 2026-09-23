@@ -1,0 +1,34 @@
+# AbstractContinuum
+
+> Continuous iterative development and deployment console for
+> AbstractFramework: a thin React client over a Run Gateway's
+> development-lane APIs — live execution pipeline (executor-agnostic;
+> Codex CLI today), backlog browsing/editing, report/email triage, and
+> managed prod/UAT process control. High-trust surface: a signed-in user
+> can redeploy services (see SECURITY.md).
+
+## Docs
+
+- [README](README.md): overview, pages, quick start
+- [Getting started](docs/getting-started.md): first run + first execution
+- [Architecture](docs/architecture.md): system shape, exec pipeline state machine, module layout, executor seam
+- [API](docs/api.md): consumed gateway API families + served session endpoints
+- [Configuration](docs/configuration.md): server env vars, proxy knobs, gateway feature gates, browser settings
+- [Security](docs/security.md): trust model, session/CSRF mechanics, execution safety (UAT vs inplace)
+- [FAQ](docs/faq.md): observer vs continuum, executor agnosticism, write-only env vars
+- [Troubleshooting](docs/troubleshooting.md): sign-in, executions, inbox, processes, dev setup
+- [Changelog](CHANGELOG.md): release history
+
+## Source map
+
+- src/lib/gateway_client.ts: typed gateway client (dev-lane families only)
+- src/ui/executions_page.tsx: live "executing now" landing page
+- src/ui/backlog/: backlog + exec pipeline modules (model.ts is pure + unit-pinned)
+- src/ui/report_inbox.tsx, src/ui/email_inbox.tsx, src/ui/processes_page.tsx: the other pages
+- bin/cli.js: static serving + app-origin gateway session proxy
+- docs/backlog/overview.md: package-local work backlog
+
+## Provenance
+
+- history.md: born 2026-07-12 from the abstractobserver split (observer
+  observes/discusses; continuum develops/deploys)

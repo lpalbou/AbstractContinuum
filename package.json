@@ -1,0 +1,58 @@
+{
+  "name": "@abstractframework/continuum",
+  "version": "0.1.0",
+  "description": "Continuous iterative development and deployment console for AbstractFramework - backlog browsing and codex execution, report/email inbox triage, and managed process control against a Run Gateway",
+  "type": "module",
+  "author": "Laurent-Philippe Albou",
+  "license": "MIT",
+  "keywords": [
+    "abstractframework",
+    "ci-cd",
+    "backlog",
+    "codex",
+    "deployment",
+    "ui"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "abstractcontinuum": "./bin/cli.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "vite --port 3003 --strictPort",
+    "build": "node scripts/clean_stale_js.mjs && tsc && vite build",
+    "preview": "vite preview",
+    "start": "node ./bin/cli.js",
+    "test": "node scripts/clean_stale_js.mjs && vitest run",
+    "gen:hub-types": "openapi-typescript vendor/hub/openapi.json -o src/lib/hub_api_types.ts"
+  },
+  "dependencies": {
+    "@abstractframework/app-server": "file:../abstractuic/app-server",
+    "mermaid": "^11.16.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "ws": "^8.21.1"
+  },
+  "scripts_doc": "gen:hub-types regenerates src/lib/hub_api_types.ts from the vendored hub OpenAPI artifact (agora-0121 parity spine); refresh vendor/hub/openapi.json + vector_05_message_ratings.json from the hub repo first, then let hub_contract.ts + hub_conformance.test.ts report drift.",
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^29.1.1",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.3.3",
+    "vite": "^6.4.1",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

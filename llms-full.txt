@@ -1,0 +1,951 @@
+# AbstractContinuum — full documentation corpus
+
+> Aggregated from the core docs for LLM/tool consumption. Canonical
+> sources live in the repository; regenerate this file when docs change.
+
+
+---
+
+<!-- source: README.md -->
+
+# AbstractContinuum
+
+Continuous iterative development and deployment console for AbstractFramework.
+
+Connect it to a Run Gateway and it becomes the framework's development
+cockpit (board-first, kanban/scrum-inspired — see
+[docs/design/redesign_2026_07.md](docs/design/redesign_2026_07.md)):
+
+- **Board** (landing page) — the work flow as a kanban: Triage → Ready →
+  In Progress → In Review → Done, with a Failed history lane. Cards carry
+  type / priority (P0–P3) / labels (sprints ride the `sprint-N` label
+  convention) / package chips and a Definition-of-Ready dot; the card
+  drawer holds the spec (view/edit + metadata), the item's runs, and the
+  QA review (acceptance-criteria checklist → promote / iterate / UAT).
+- **Executions** — the live ops view: queued / running / awaiting-QA
+  requests with live log tails (cursor-follow), one-click QA actions, and
+  a recently-finished strip.
+- **Backlog** — the full catalog power view (all kinds incl. recurrent /
+  deprecated / trash, search, batch execute, merge, AI assist + advisor).
+- **Agents** — the workforce: the configured execution agent (executor is
+  a pluggable seam — Codex CLI today), the advisor agent, and a track
+  record from execution history.
+- **Inbox** — triage bug reports, feature requests, and email; run triage
+  and apply decisions.
+- **Services** — control managed prod/UAT processes (start / stop /
+  restart / redeploy) and write-only environment variables. This surface is
+  high trust: see [SECURITY.md](SECURITY.md) before exposing it.
+- **Settings** — gateway session sign-in (the shared abstractuic card) and
+  AI preferences.
+
+Executing a Ready item is gated by an advisory **Definition of Ready**
+checklist (type, real summary, acceptance criteria, test commands — parsed
+from the spec, override always available and labeled); promoting from
+review shows the acceptance criteria as a **Definition of Done** checklist.
+
+The observer app (`abstractobserver`) watches and discusses the running
+system; this app develops and deploys it. See `history.md` for how the two
+were split (2026-07-12), and [docs/README.md](docs/README.md) for the full
+documentation set.
+
+The pipeline is executor-agnostic by design: the gateway currently runs
+executions through the Codex CLI, but the executing agent is a pluggable
+seam and the UI reads the executor identity from the gateway's exec config
+(see [docs/architecture.md](docs/architecture.md)).
+
+## Run
+
+> Requires a sibling `../abstractuic` checkout: `npm install`, `npm run
+> build`, and `npm start` all resolve the shared UI kit and the session
+> proxy from it (`file:` dependency + Vite aliases) until
+> `@abstractframework/app-server` is published (tracked in
+> `docs/backlog/planned/0001_publish_gated_app_server_dependency.md`).
+
+```bash
+npm install
+npm run dev        # vite dev server on :3002 (proxies /api to :8080)
+npm run build      # production build into dist/
+npm start          # serve dist/ + the app-origin gateway session proxy
+npm test           # vitest (unit + jsdom component tests)
+```
+
+Environment for `npm start`:
+
+- `PORT` (default 3002), `HOST` (default 0.0.0.0)
+- `ABSTRACTCONTINUUM_GATEWAY_URL` (or `ABSTRACTGATEWAY_URL`) — the gateway
+  this deployment talks to (default `http://127.0.0.1:8080`)
+
+Sign-in uses the gateway's session flow through the same-origin proxy
+(first-party HttpOnly cookies + CSRF; tokens never appear in URLs). See
+[docs/configuration.md](docs/configuration.md) for every knob and
+[docs/getting-started.md](docs/getting-started.md) for a first session.
+
+## Documentation
+
+- [docs/README.md](docs/README.md) — documentation index
+- [docs/getting-started.md](docs/getting-started.md) — first run and first execution
+- [docs/architecture.md](docs/architecture.md) — components, data flow, design boundaries
+- [docs/api.md](docs/api.md) — the gateway API families this app consumes
+- [docs/configuration.md](docs/configuration.md) — environment variables and settings
+- [docs/security.md](docs/security.md) — trust model (read before deploying)
+- [docs/faq.md](docs/faq.md) / [docs/troubleshooting.md](docs/troubleshooting.md)
+- [CHANGELOG.md](CHANGELOG.md) — release history
+- [CONTRIBUTING.md](CONTRIBUTING.md) — development workflow
+
+---
+
+<!-- source: docs/getting-started.md -->
+
+# Getting started
+
+## Prerequisites
+
+- Node.js ≥ 18
+- A running Run Gateway (`abstractgateway`, default `http://127.0.0.1:8080`)
+  with the features you want enabled (see
+  [configuration.md](configuration.md) for the gateway env vars;
+  [api.md](api.md) lists what this app calls on it)
+- A sibling `../abstractuic` checkout — required for `npm install`,
+  `npm run build`, AND `npm start` (the session proxy is a `file:`
+  dependency and the UI kit resolves via Vite aliases) until the package
+  publishes
+
+## First run (development)
+
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:3002`. The dev server proxies `/api` to
+`http://localhost:8080`; if your gateway needs auth in dev, open Settings
+and enter the gateway URL + bearer token (direct mode).
+
+## First run (production shape)
+
+```bash
+npm run build
+ABSTRACTCONTINUUM_GATEWAY_URL=http://127.0.0.1:8080 npm start
+```
+
+Open `http://localhost:3002` and sign in with a gateway user token. The
+token is exchanged server-side for a cookie session — it never lives in the
+browser. Before exposing this beyond localhost, read
+[security.md](security.md): this console can redeploy services.
+
+## Your first execution
+
+1. **Backlog → Planned** — pick an item (or create one with **New**: the
+   draft is prefilled from the shared template; guided fields and AI assist
+   can flesh it out).
+2. Press **Execute**. Keep the default **UAT** mode; confirm. The app jumps
+   to the live view.
+3. **Executions** (or Backlog → Processing) — watch the request move
+   queued → running with live event logs (commands, tokens, outputs).
+4. When it reaches **awaiting QA**: click **Restart UAT** to deploy the
+   candidate to the shared UAT stack and try it; then either
+   **Approve → promote to prod** or **Iterate (send feedback)** with QA
+   notes — the agent re-runs on top of its candidate.
+
+Note: sessions persist for 30 days; use Sign out in Settings on shared
+machines.
+
+## Where to go next
+
+- [architecture.md](architecture.md) — how the pieces fit
+- [configuration.md](configuration.md) — every knob
+- [troubleshooting.md](troubleshooting.md) — when something misbehaves
+
+---
+
+<!-- source: docs/architecture.md -->
+
+# Architecture
+
+AbstractContinuum is a thin browser client over the Run Gateway's
+development-lane APIs. It holds no durable state of its own: the gateway
+owns the backlog files, exec requests, reports, email access, and managed
+processes; the app renders them and issues commands.
+
+## System shape
+
+```mermaid
+flowchart LR
+    subgraph Browser["Browser (React SPA — sidebar shell)"]
+        BO[Board page<br/>kanban + drawer]
+        EX[Executions page]
+        BL[Backlog page]
+        AG[Agents page]
+        IN[Inbox page]
+        PR[Services page]
+        SE[Settings page<br/>uic sign-in card]
+        GC[GatewayClient<br/>src/lib/gateway_client.ts]
+        BO --> GC
+        EX --> GC
+        BL --> GC
+        AG --> GC
+        IN --> GC
+        PR --> GC
+    end
+
+    subgraph AppServer["bin/cli.js (node)"]
+        SP[Gateway session proxy<br/>@abstractframework/app-server]
+        ST[Static dist/ serving]
+    end
+
+    subgraph Gateway["Run Gateway (abstractgateway)"]
+        BK["/backlog/* (CRUD + template)"]
+        EP["/backlog/exec/* (requests, logs, QA)"]
+        RP["/reports/*, /triage/*, /email/*"]
+        PM["/processes/* (start/stop/redeploy, env)"]
+        SH["/runs, /attachments, /audio, /voice (shared reads)"]
+        WK[Exec worker<br/>executor: codex_cli today]
+    end
+
+    GC -- "/api/* + session cookies + CSRF" --> SP
+    SE -- "POST /api/connection/gateway" --> SP
+    SP -- "x-abstractgateway-session" --> BK & EP & RP & PM & SH
+    EP --- WK
+    WK -- "candidate workspace → UAT → promote" --> Repos[(Framework repos<br/>prod + UAT trees)]
+```
+
+Two transport modes:
+
+- **Same-origin (production)** — the browser talks only to `bin/cli.js`.
+  The session proxy signs in against the gateway, holds the session
+  server-side, sets first-party cookies, and enforces CSRF on mutating
+  requests. Tokens never reach the browser.
+- **Direct (development)** — Settings accepts a gateway URL + bearer token
+  and the client calls the gateway directly. Meant for local development
+  against a bare gateway.
+
+## The execution pipeline
+
+The heart of the app is the exec pipeline. One request moves through:
+
+```mermaid
+stateDiagram-v2
+    [*] --> queued: execute (item or batch)
+    queued --> running: worker picks up
+    running --> awaiting_qa: success (BOTH modes — human decision required)
+    running --> failed: error / non-zero exit
+    awaiting_qa --> running: Iterate (send feedback)
+    awaiting_qa --> promoted: Approve (UAT — promote to prod;<br/>inplace — finalize: prod already mutated)
+    awaiting_qa --> awaiting_qa: Restart UAT (deploy candidate)
+    promoted --> [*]
+    failed --> [*]
+```
+
+Success always parks at `awaiting_qa` — inplace mode does NOT bypass the
+human decision; its Approve merely finalizes a request whose changes are
+already in prod (the QA panel says so explicitly). A `completed` status
+survives in the filters for legacy requests but no current gateway path
+produces it.
+
+The **Executions page** (landing) pins `use_exec_pipeline` to the live
+view: it polls active requests (2s), follows the selected request's log
+tail (1.5s while running), and exposes the QA actions directly. The
+**Backlog page** drives the same hook from its Processing / Failed /
+Completed-runs tabs.
+
+### Executor agnosticism
+
+The executing agent is a deliberate seam, not a hardcoded dependency. The
+gateway's `/backlog/exec/config` names the executor (`executor`,
+`codex_bin`, `codex_model`, availability), and the UI renders whatever it
+reports. Today that is the Codex CLI running headless; the design intent is
+that other agents (for example `abstractcode`) can power the same pipeline
+without UI changes beyond what the config reports. Keep new UI copy
+executor-neutral and read identity from the config.
+
+## Module layout
+
+```text
+src/
+  app.tsx                     shell: sidebar nav, uic connect modal, probe
+  lib/
+    gateway_client.ts         typed client (dev-lane families only)
+    gateway_types.ts          request/response types
+    ids.ts                    random_id
+  ui/
+    shell/icons.tsx           sidebar nav glyphs (offered to ui-kit)
+    board/
+      board_model.ts          metadata convention + DoR + column derivation (pure, pinned)
+      use_board_data.ts       list/request fetches + lazy metadata cache
+      board_page.tsx          kanban columns/cards/filters + execute gate
+      work_item_drawer.tsx    Spec / Runs / Review tabs
+    agents_page.tsx           executor roster + track record
+    executions_page.tsx       live pipeline ops view
+    settings_page.tsx         uic session sign-in card + direct mode + AI prefs
+    exec_event.ts             codex exec-log event classification
+    backlog_browser.tsx       re-export of backlog/backlog_page
+    backlog/
+      model.ts                pure helpers (unit-pinned)
+      hooks.ts                use_media_query
+      use_backlog_items.ts    backlog file state + actions
+      use_exec_pipeline.ts    exec pipeline state + polling
+      backlog_page.tsx        composition root (cross-concern flows)
+      toolbar.tsx             tabs, filters, batch actions
+      list_pane.tsx           item + exec request lists
+      item_detail_pane.tsx    item view/edit + maintenance chat
+      exec_detail_pane.tsx    exec detail + QA panel
+      exec_events_view.tsx    live log/events viewer
+      execute_modals.tsx      execute / batch / merge confirms
+      new_task_modal.tsx      creation flow (template, guided, assist)
+      exec_full_log_modal.tsx full-log browser (artifact-backed)
+      advisor_drawer.tsx      read-only backlog advisor (chat + voice)
+    report_inbox.tsx          bug/feature reports + triage decisions
+    email_inbox.tsx           email accounts/messages/send
+    processes_page.tsx        managed process control + env vars
+    modal.tsx, multi_select.tsx, use_gateway_voice.ts   shared widgets
+bin/cli.js                    static serve + session proxy
+```
+
+### The Board model
+
+Columns derive from gateway state — no board-side storage:
+Triage = proposed files, Ready = planned files not inside a live request,
+In Progress / In Review = live exec requests (the busy set comes from the
+gateway's batch-aware `active_items` expansion — the same source the
+Backlog page uses), Done / Failed = recent terminal requests (attempts;
+the completed-file archive lives on the Backlog page). Work-item metadata
+(priority, labels — sprints are `sprint-N` labels) rides convention lines
+in the spec markdown header (`> Priority: P1`, `> Labels: ui, sprint-29`),
+parsed client-side until the gateway serves list-level metadata (ask on
+file). The Definition-of-Ready gate is advisory client-side (override
+always available); the server-side gate is a filed gateway ask.
+
+Design boundaries:
+
+- **Purpose boundary** — the observer observes and discusses; continuum
+  develops and deploys. Observation features do not grow here.
+- **Concern boundary** — `model.ts` is pure (no React/network);
+  `use_backlog_items` and `use_exec_pipeline` each own one concern; panes
+  are presentational; only `backlog_page.tsx` wires cross-concern flows
+  (execute → jump to Processing, QA actions → tab moves).
+- **Client boundary** — `gateway_client.ts` carries only the API families
+  this app uses (see [api.md](api.md)); new observation-lane methods belong
+  in the observer.
+
+## Related
+
+- [api.md](api.md) — the exact endpoint families consumed
+- [configuration.md](configuration.md) — env vars, settings, proxy knobs
+- [security.md](security.md) — trust model (process manager is high trust)
+- `docs/backlog/overview.md` — work planning and history
+- `history.md` (repo root) — provenance of the 2026-07-12 split
+
+---
+
+<!-- source: docs/api.md -->
+
+# API surface
+
+AbstractContinuum exposes no API of its own. This page documents the two
+surfaces that matter to integrators: the gateway API families the app
+consumes, and the session endpoints the bundled server provides.
+
+## Gateway API families consumed
+
+All calls go through `src/lib/gateway_client.ts` (types in
+`src/lib/gateway_types.ts`). Paths are relative to the gateway and reached
+as `/api/gateway/...` (proxied in same-origin mode).
+
+### Backlog CRUD
+
+| Method | Endpoint |
+| --- | --- |
+| `backlog_list(kind)` | `GET /backlog/{kind}` |
+| `backlog_content(kind, filename)` | `GET /backlog/{kind}/{filename}/content` |
+| `backlog_template()` | `GET /backlog/template` |
+| `backlog_create(...)` | `POST /backlog/create` |
+| `backlog_update(...)` | `POST /backlog/{kind}/{filename}/update` (sha-guarded) |
+| `backlog_move(...)` | `POST /backlog/move` |
+| `backlog_merge(...)` | `POST /backlog/merge` |
+| `backlog_upload_attachment(...)` | `POST /backlog/{kind}/{filename}/attachments/upload` |
+
+### Exec pipeline (codex executions)
+
+| Method | Endpoint |
+| --- | --- |
+| `backlog_execute(...)` | `POST /backlog/{kind}/{filename}/execute?execution_mode=` |
+| `backlog_execute_batch(...)` | `POST /backlog/execute_batch` |
+| `backlog_exec_config()` | `GET /backlog/exec/config` |
+| `backlog_exec_requests(...)` | `GET /backlog/exec/requests?status=&limit=` |
+| `backlog_exec_request(id)` | `GET /backlog/exec/requests/{id}` |
+| `backlog_exec_feedback(...)` | `POST /backlog/exec/requests/{id}/feedback` |
+| `backlog_exec_promote(...)` | `POST /backlog/exec/requests/{id}/promote` |
+| `backlog_exec_deploy_uat(...)` | `POST /backlog/exec/requests/{id}/uat/deploy` |
+| `backlog_exec_log_tail(...)` | `GET /backlog/exec/requests/{id}/logs/tail?name=&max_bytes=&after_bytes=` (cursor follow: delta + `next_offset` + rotation `reset` on gateways that support it) |
+| `backlog_exec_active_items(...)` | `GET /backlog/exec/active_items?status=&limit=` |
+
+### AI assistance
+
+| Method | Endpoint |
+| --- | --- |
+| `backlog_assist(...)` | `POST /backlog/assist` (draft a new item) |
+| `backlog_maintain(...)` | `POST /backlog/maintain` (refine an existing item) |
+| `backlog_advisor(...)` | `POST /backlog/advisor` (read-only agent chat) |
+
+### Reports, triage, email
+
+| Method | Endpoint |
+| --- | --- |
+| `list_bug_reports()` / `list_feature_requests()` | `GET /reports/bugs` / `GET /reports/features` |
+| `get_bug_report_content(f)` / `get_feature_request_content(f)` | `GET /reports/{bugs\|features}/{f}/content` |
+| `bug_report_create(...)` / `feature_report_create(...)` | `POST /bugs/report` / `POST /features/report` |
+| `triage_run(...)` | `POST /triage/run` |
+| `list_triage_decisions(...)` | `GET /triage/decisions` |
+| `apply_triage_decision(...)` | `POST /triage/decisions/{id}/apply` |
+| `email_list_accounts()` | `GET /email/accounts` |
+| `email_list_messages(...)` | `GET /email/messages` |
+| `email_read_message(...)` | `GET /email/messages/{uid}` |
+| `email_send(...)` | `POST /email/send` |
+
+### Managed processes (high trust — see [security.md](security.md))
+
+| Method | Endpoint |
+| --- | --- |
+| `list_processes()` | `GET /processes` |
+| `start_process(id)` / `stop_process(id)` / `restart_process(id)` / `redeploy_process(id)` | `POST /processes/{id}/{action}` |
+| `process_log_tail(id, ...)` | `GET /processes/{id}/logs/tail?max_bytes=` |
+| `list_process_env_vars()` / `update_process_env_vars(...)` | `GET`/`POST /processes/env` (write-only values) |
+
+### Shared reads
+
+| Method | Endpoint | Used for |
+| --- | --- | --- |
+| `list_runs({limit:1})` | `GET /runs` | authenticated reachability probe |
+| `download_run_artifact_content(run, artifact)` | `GET /runs/{run}/artifacts/{id}/content` | full exec logs, TTS audio |
+| `attachments_upload(...)` | `POST /attachments/upload` | voice recordings |
+| `audio_transcribe(...)` | `POST /runs/{run}/audio/transcribe` | advisor push-to-talk |
+| `voice_tts(...)` | `POST /runs/{run}/voice/tts` | advisor spoken replies |
+
+## Session endpoints (bundled server)
+
+`bin/cli.js` (via `@abstractframework/app-server`, appId
+`abstractcontinuum`):
+
+- `GET /api/connection/gateway` — session status (`{ok, gateway_url, has_session, gateway}`)
+- `POST /api/connection/gateway` — sign in `{gateway_url?, gateway_user_id, gateway_token, persist?}`
+- `DELETE /api/connection/gateway` — sign out
+- everything else under `/api/` — proxied to the gateway with the
+  server-held session; mutating requests require the CSRF header
+  (`x-abstractcontinuum-csrf` or `x-abstract-csrf`)
+
+## Notes
+
+- Error contract: HTTP failures throw `Error("<method> failed: <detail>")`
+  where detail is the response body when readable, else the HTTP status.
+  Missing required arguments throw before any request is made, as
+  `Error("<method>: <field> is required")`.
+- The client is deliberately scoped: observation-lane families (ledger
+  streams, KG queries, bundles, entity APIs) live in the observer's client,
+  not here.
+
+---
+
+<!-- source: docs/configuration.md -->
+
+# Configuration
+
+All configuration is environment-driven on the server side plus a small
+browser Settings page. Secrets stay in the environment — nothing in this
+repo or in browser storage holds credentials in same-origin mode.
+
+## Server (`npm start` / `bin/cli.js`)
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PORT` | `3002` | HTTP port |
+| `HOST` | `0.0.0.0` | Bind address |
+| `ABSTRACTCONTINUUM_GATEWAY_URL` | `http://127.0.0.1:8080` | Gateway this deployment talks to |
+| `ABSTRACTGATEWAY_URL` | — | Fallback for the above (shared across Abstract apps) |
+
+Session-proxy hardening knobs (from `@abstractframework/app-server`, appId
+`abstractcontinuum`; all default OFF):
+
+| Variable | Effect |
+| --- | --- |
+| `ABSTRACTCONTINUUM_ALLOW_REMOTE_BROWSER_GATEWAY_CONFIG` / `ABSTRACTGATEWAY_ALLOW_REMOTE_BROWSER_GATEWAY_CONFIG` | Allow non-loopback browsers to change the gateway URL at sign-in. Leave off unless you front the app with your own access control. |
+| `ABSTRACTCONTINUUM_ALLOW_BROWSER_GATEWAY_URL_COOKIE` | Honor a browser-supplied gateway-URL cookie on non-loopback hosts. |
+| `ABSTRACTCONTINUUM_TRUST_PROXY_HEADERS` / `ABSTRACTGATEWAY_TRUST_PROXY_HEADERS` | Trust `x-forwarded-host` for the loopback check (set only behind a reverse proxy you control). Cookies get the `Secure` attribute whenever `x-forwarded-proto: https` is present, independent of this flag. |
+
+## Gateway-side features
+
+The pages light up according to what the connected gateway enables:
+
+| Gateway variable | Enables |
+| --- | --- |
+| `ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER=1` | The exec worker (Executions + backlog Processing views) |
+| `ABSTRACTGATEWAY_BACKLOG_EXECUTOR=codex_cli` | Executor selection (reported by `/backlog/exec/config`) |
+| `ABSTRACTGATEWAY_BACKLOG_CODEX_BIN` / `..._CODEX_MODEL` | Executor binary + model |
+| `ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1` | The Processes page (high trust — see [security.md](security.md)) |
+| `ABSTRACTGATEWAY_TRIAGE_REPO_ROOT` | Repo root for backlog/triage/process features |
+
+The Executions and Backlog pages surface actionable messages (with the
+required env) when a feature is disabled or the worker is down.
+
+## Browser Settings page
+
+Persisted in `localStorage` under `abstractcontinuum_settings_v1`:
+
+| Setting | Purpose |
+| --- | --- |
+| Gateway user + token | Session sign-in through the proxy (production path). The token is sent once to `POST /api/connection/gateway` and never stored browser-side; only the user id persists. |
+| Gateway URL | Blank = same-origin via the session proxy (production). Non-empty = direct mode (development). |
+| Bearer token | Direct mode only; stored in `localStorage` — development machines only. |
+| Maintenance AI provider / model | Provider/model for backlog AI assist + maintenance chat (blank = gateway default). |
+| Backlog advisor agent | Gateway bundle id for the advisor (blank = `basic-agent`). |
+
+## Development
+
+`npm run dev` starts Vite on :3002 with `/api` proxied to
+`http://localhost:8080` (see `vite.config.ts`). The ui-kit and panel-chat
+packages resolve from a sibling `../abstractuic` checkout.
+
+---
+
+<!-- source: docs/security.md -->
+
+# Security model
+
+This page is the deep dive behind [SECURITY.md](../SECURITY.md). Read that
+first; this page explains the mechanics.
+
+## What this console can do
+
+AbstractContinuum is a **high-trust surface**. Through the gateway it can:
+
+| Surface | Capability | Blast radius |
+| --- | --- | --- |
+| Processes page | start / stop / restart / **redeploy** managed prod and UAT services; set/unset their env vars | full service control on the gateway host |
+| Executions + Backlog | run code-executing agents against framework repos; **promote candidate output to prod**; deploy candidates to UAT | writes to production working trees |
+| Inbox | read and send email via configured accounts | outbound mail as the configured identity |
+
+Whoever reaches this UI with a valid session can redeploy services. Deploy
+it accordingly: loopback or private networks by default, your own
+authenticating reverse proxy for anything broader, and gateway tokens only
+for people with deploy rights.
+
+## Defense layers
+
+1. **Gateway authentication** — every API family requires an authenticated
+   gateway principal; the app is a client, never a bypass.
+2. **App-origin session proxy** (`bin/cli.js`) — the browser never holds the
+   gateway token. Sign-in happens server-side; the session id lives in an
+   HttpOnly cookie scoped to this app's origin; the proxy strips any
+   client-supplied `Authorization`/cookie headers before forwarding.
+3. **CSRF** — mutating requests must echo the CSRF token from the
+   non-HttpOnly `abstractcontinuum_gateway_csrf` cookie in
+   `x-abstractcontinuum-csrf` (or canonical `x-abstract-csrf`); the proxy
+   rejects mismatches with 403.
+4. **Gateway URL pinning** — browsers cannot redirect the proxy to another
+   gateway unless the request comes from loopback or an operator explicitly
+   enabled remote config (see [configuration.md](configuration.md)).
+5. **Write-only env vars** — the gateway never returns managed env var
+   values; the UI can set/unset but never read them back.
+6. **Feature gating** — the process manager and exec worker exist only when
+   the gateway operator enabled them (`ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER`,
+   `ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER`).
+
+## Execution safety model
+
+Executions default to **UAT mode**: the agent works in a candidate
+workspace, the operator inspects it on the shared UAT stack, and only an
+explicit "Approve → promote to prod" writes to production (with conflict
+detection against a diverged prod base). **Inplace mode** edits prod
+directly and is labeled dangerous in the UI — use it only when you
+understand the risk.
+
+## Residual risks to keep in mind
+
+- Anyone with a session has, transitively, code execution on the gateway
+  host (via redeploy of services whose code an execution can change).
+  There is no per-page authorization: gateway access = full console.
+- The server binds `0.0.0.0` by default — set `HOST=127.0.0.1` for
+  loopback-only serving. The Vite dev server is deliberately open
+  (`allowedHosts: true`, CORS enabled) and must never be the production
+  surface.
+- Sessions persist for 30 days (the sign-in form always sets
+  `persist: true`); sign out explicitly on shared machines.
+- The sign-in POST itself carries no CSRF token (login-CSRF class). The
+  gateway-URL pinning bounds the damage — a forged login can only create a
+  session against the server-pinned gateway — but be aware of it when
+  fronting the app with additional auth.
+- Actor attribution for high-trust actions (who promoted, who redeployed)
+  is the gateway's responsibility; this console does not yet surface an
+  audit view. Check the gateway's audit/ledger facilities when you need
+  the trail.
+- The direct (bearer token) mode is for development; it stores the token in
+  `localStorage`, and it requires the gateway to accept cross-origin
+  requests. Do not use it on shared machines or over untrusted networks.
+- Email send uses whatever accounts the gateway configured; the console
+  does not add its own rate or recipient limits.
+
+---
+
+<!-- source: docs/faq.md -->
+
+# FAQ
+
+**How is this different from AbstractObserver?**
+One honest purpose each: the observer *observes and discusses* the running
+system (runs, ledgers, artifacts, memory graphs, entities); continuum
+*develops and deploys* it (backlog, executions, triage, process control).
+They were one app until 2026-07-12 (`history.md` records the split).
+
+**Is this tied to Codex?**
+No. The gateway currently executes backlog items through the Codex CLI, but
+the executor is a pluggable seam: the UI reads the executor identity from
+`/backlog/exec/config` and renders whatever the gateway reports. Other
+agents can power the same pipeline.
+
+**What is the difference between UAT and inplace execution?**
+UAT (default) runs the agent in a candidate workspace; you inspect the
+result on the shared UAT stack and explicitly promote to prod. Inplace runs
+directly in the production workspace — faster, dangerous, labeled as such.
+
+**Why don't I see the Processes page content / why is Execute disabled?**
+Those features exist only when the gateway operator enabled them. The UI
+shows the exact env vars required (`ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER`,
+`ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER`, …); see
+[configuration.md](configuration.md).
+
+**Can I read an environment variable's value from the ENV tab?**
+No, by design. Managed env vars are write-only: the gateway never returns
+values to the browser. You can see whether a value is set and where it came
+from, and you can set/unset it.
+
+**Where do "planned items hidden while queued/running" go?**
+Items with an active exec request are hidden from Planned to prevent double
+execution; they are visible under Processing until the request finishes.
+
+**Does the app store any secrets?**
+Same-origin mode: no — sessions are server-held HttpOnly cookies. Direct
+mode (development) stores the bearer token you enter in `localStorage`;
+avoid it outside local development. See [security.md](security.md).
+
+---
+
+<!-- source: docs/troubleshooting.md -->
+
+# Troubleshooting
+
+Symptom-first. Each entry links to the page owning the full explanation.
+
+## Sign-in / connectivity
+
+**The header LED stays gray (gateway unreachable).**
+The app probes with a 1-run list. Check the gateway is running and that
+`ABSTRACTCONTINUUM_GATEWAY_URL` (or the Settings gateway URL in dev) points
+at it. In same-origin mode, `bin/cli.js` logs the gateway it resolved at
+startup.
+
+**Sign-in succeeds but every action fails with 403 `csrf_required`.**
+Mutating requests need the CSRF header derived from the
+`abstractcontinuum_gateway_csrf` cookie. If you front the app with a proxy,
+make sure cookies pass through unmodified and that you did not strip
+`x-abstractcontinuum-csrf` / `x-abstract-csrf`. See
+[security.md](security.md).
+
+**"Browser-supplied Gateway URL changes are disabled for this non-local host."**
+You opened the app from a non-loopback host and tried to change the gateway
+URL at sign-in. Pin the URL server-side
+(`ABSTRACTCONTINUUM_GATEWAY_URL`) or explicitly enable remote config — see
+[configuration.md](configuration.md).
+
+## Executions
+
+**Execute button says the runner is disabled / not running / codex missing.**
+The gateway's exec worker is off or misconfigured. The confirm dialog shows
+the exact env needed (`ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER=1`,
+`ABSTRACTGATEWAY_BACKLOG_EXECUTOR`, `..._CODEX_BIN`, `..._CODEX_MODEL`) and
+a copy button. Restart the gateway after setting them.
+
+**A planned item disappeared.**
+It is executing: Planned hides items with an active request ("N planned
+items hidden while queued/running"). Find it under Processing.
+
+**Promotion is blocked with conflicts.**
+Prod diverged from the candidate's base while the agent worked. Use
+**Iterate** to re-run the request on top of current prod, or resolve the
+listed files manually.
+
+**UAT URLs do not respond after "Restart UAT".**
+The detail pane shows a probe warning when UAT processes fail their URL
+check. Open Processes → UAT and read the process logs; the process manager
+must be enabled for UAT deploys
+(`ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1`).
+
+**Log tail says "(tail truncated)".**
+Live tails are bounded (160 KB). For finished requests, use the
+**Execution log** button (Completed → Tasks → item) — it loads the full log
+from ledger artifacts, with a bounded-tail fallback for requests that
+predate artifact capture.
+
+## Inbox / processes
+
+**Inbox shows only the Email tab.**
+Triage is a prop (`enable_triage`) wired on in this app; if you embed the
+page elsewhere, pass it explicitly. Email account features additionally
+depend on the gateway's email configuration.
+
+**Processes page says the manager is disabled.**
+Set `ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1` and
+`ABSTRACTGATEWAY_TRIAGE_REPO_ROOT` on the gateway host — and read
+[security.md](security.md) first: this enables remote service control.
+
+## Development
+
+**`npm run dev` fails resolving `@abstractframework/ui-kit`.**
+The dev toolchain expects a sibling `../abstractuic` checkout (Vite aliases
++ `file:` dependency). Clone it next to this repo and `npm install` again.
+
+**Tests fail with `scrollIntoView is not a function`.**
+jsdom lacks it; the suites stub `Element.prototype.scrollIntoView` in their
+`beforeEach` — copy that pattern into new component tests.
+
+---
+
+<!-- source: SECURITY.md -->
+
+# Security
+
+## Trust model — read this before deploying
+
+AbstractContinuum is a **high-trust operator console**. A signed-in user
+can:
+
+- start, stop, restart, and **redeploy production and UAT services** through
+  the gateway's process manager;
+- set and unset environment variables for managed processes (write-only:
+  values are never returned to the browser, but writes take effect on the
+  next process start);
+- launch code-executing agent runs against the framework's repositories and
+  **promote their output to prod**;
+- read and send email through configured accounts, and read bug/feature
+  reports.
+
+Anyone who reaches this UI with a valid gateway session effectively holds
+deploy and service-control rights over the machines the gateway manages.
+Treat access to this app like SSH access to the deployment host:
+
+- serve it only on networks you trust (localhost or a private network by
+  default; put your own authenticating reverse proxy in front for anything
+  else);
+- give gateway user tokens only to people who should be able to redeploy;
+- keep the gateway's process manager disabled
+  (`ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER` unset) on gateways that should
+  not expose service control.
+
+## Session model
+
+The bundled server (`bin/cli.js`) uses the shared app-origin session proxy
+(`@abstractframework/app-server`):
+
+- Sign-in exchanges a gateway user token for a gateway session; the session
+  id and gateway URL land in first-party HttpOnly cookies
+  (`abstractcontinuum_gateway_*`, 30-day lifetime) that the proxy attaches
+  to every forwarded request. The user token itself is used once and never
+  stored anywhere.
+- Bearer tokens never appear in URLs. In session mode they never touch
+  browser storage either; the direct (development) mode below is the one
+  labeled exception.
+- Mutating requests require the CSRF token (`x-abstractcontinuum-csrf` or
+  the canonical `x-abstract-csrf`) matching the CSRF cookie (deliberately
+  JS-readable so the client can echo it).
+- The proxy strips client-supplied `Authorization` and cookies before
+  forwarding to the gateway; the proxied session is the only credential.
+- Browser-supplied gateway URLs are honored only from loopback hosts unless
+  explicitly enabled (see `docs/configuration.md`).
+
+Secrets stay in the environment: this repository contains no credentials.
+Direct (development) mode stores the bearer token you enter in
+`localStorage` — development machines only.
+
+Deployment defaults to note: the server binds `0.0.0.0` — set
+`HOST=127.0.0.1` for loopback-only serving; the Vite dev server is
+deliberately open (`allowedHosts: true`, CORS on) and is not a production
+surface. See `docs/security.md` for the full model and residual risks.
+
+## Reporting
+
+No dedicated security contact exists yet. Report vulnerabilities privately
+to the AbstractFramework maintainer rather than opening a public issue.
+
+---
+
+<!-- source: CONTRIBUTING.md -->
+
+# Contributing
+
+AbstractContinuum is a Vite + React + TypeScript app (snake_case files,
+strict TS, vitest). It is a thin client: all state lives on the Run
+Gateway; the app renders and commands it.
+
+## Setup
+
+```bash
+npm install
+npm run dev      # dev server on :3002, /api proxied to localhost:8080
+```
+
+The dev toolchain resolves `@abstractframework/ui-kit` and
+`@abstractframework/panel-chat` from a sibling `../abstractuic` checkout
+(see `vite.config.ts` aliases) and `@abstractframework/app-server` via a
+`file:` dependency. Clone `abstractuic` next to this repo.
+
+## Before you finish any change
+
+```bash
+npx tsc --noEmit   # typecheck
+npm test           # vitest: model pins + jsdom component tests
+npm run build      # production build must stay green
+```
+
+## Layout
+
+- `src/lib/` — the typed gateway client (development-lane API families
+  only; see `docs/api.md`).
+- `src/ui/backlog/` — the backlog + exec pipeline modules (keep files under
+  ~600 lines; `model.ts` stays pure and unit-pinned).
+- `src/ui/` — pages (executions, report inbox, email, processes) and small
+  shared widgets.
+- `bin/cli.js` — static serving + the app-origin gateway session proxy.
+
+## Conventions
+
+- One file, one concern; pure logic goes to `model.ts`-style modules with
+  unit tests; React modules stay presentational or single-hook.
+- Behavior changes need a test in the same change; refactors need pins
+  written BEFORE the refactor.
+- Degraded paths warn with `#FALLBACK`; UI truncation is labeled
+  `#TRUNCATION`.
+- Do not grow observation features here — the observer app owns watching
+  and discussing the running system; this app develops and deploys it.
+- Work items live in `docs/backlog/` (see `docs/backlog/overview.md`).
+
+---
+
+<!-- source: CHANGELOG.md -->
+
+# Changelog
+
+All notable, user-visible changes to AbstractContinuum.
+
+## 0.2.0 — 2026-07-12 (unreleased) — board-first redesign
+
+Maintainer-directed from-scratch redesign (kanban/scrum-inspired; see
+`docs/design/redesign_2026_07.md`).
+
+### Added
+
+- **Board landing page** — kanban over the development flow (Triage /
+  Ready / In Progress / In Review / Done + a Failed history lane), cards
+  with type/priority/label/package chips, readiness dots, failure badges,
+  and batch-execution cards; search + package/type filters;
+  priority-first ordering.
+- **Work-item drawer** — Spec (markdown view/edit + priority/labels
+  metadata editor + execution-snapshot staleness warning), Runs (the
+  item's execution history), Review (acceptance-criteria checklist with
+  unconfirmed-count promote labeling + QA actions).
+- **Work-item metadata convention** — `> Priority: P0..P3` and
+  `> Labels: a, b, sprint-N` header lines (sprints are labels), written by
+  the New task dialog and the drawer, parsed for chips/DoR. List-level
+  metadata + carrying lines through promote are filed gateway asks.
+- **Definition of Ready gate** on Execute (advisory, with parse evidence
+  and a labeled override) and **Definition of Done** checklist in review.
+- **Agents page** — executor roster (pluggable seam; Codex CLI today),
+  advisor agent, and a counts-based track record from execution history.
+- **Sidebar shell** — left navigation (Board / Executions / Backlog /
+  Agents / Inbox / Services / Settings), slim header with New task, and a
+  connection badge.
+
+### Changed
+
+- **Gateway connection now uses the shared abstractuic surface**:
+  `GatewayConnectModal` from the sidebar badge and
+  `GatewaySessionSignInCard` embedded in Settings (the homegrown sign-in
+  form is gone). Processes was renamed Services.
+
+### Fixed
+
+- **Sign-in "Not Found" in dev** — the Vite dev server now mounts the same
+  app-origin gateway session proxy as `bin/cli.js` (a plugin), so
+  `POST /api/connection/gateway` works identically in dev and prod; with a
+  signed-in dev session, all `/api/*` traffic rides the session proxy, and
+  without one it falls through to the raw dev proxy (no-auth gateways keep
+  working).
+- Three adversarial reviews folded (design pre-build, code, UX/product):
+  batch executions render as single multi-item cards with a batch-aware
+  busy set (no phantom Ready cards / duplicate keys / 409s); the readiness
+  gate can never be silently absent (fetch-on-demand + explicit unknown
+  state); Done cards resolve their archived spec instead of erroring;
+  promote is a two-step confirm; one failing endpoint degrades the board
+  with a label instead of blanking it; label facets with a coverage pill
+  make sprint labels usable; "Follow live" preselects the run in
+  Executions; recurrent task creation lands on Backlog with a notice;
+  attachment/metadata failures surface instead of being swallowed.
+
+## 0.1.0 — 2026-07-12 (unreleased)
+
+Born from the `abstractobserver` split: the development/deployment console
+moved into its own app (see `history.md` for the full provenance).
+
+### Added
+
+- **Executions landing page** — a live "what is executing right now"
+  surface: active exec requests (queued / running / awaiting QA) with
+  status counters, live log tails, one-click QA actions (feedback /
+  promote / deploy-UAT), and a recently-finished strip.
+- **Session sign-in in Settings** — the shell now exposes the app-origin
+  session flow (`POST /api/connection/gateway`): sign in with a gateway
+  user token (used once, never stored browser-side), sign out, and a
+  visible session status. Direct bearer mode remains as the labeled
+  development path. The shell shows a "sign in" hint when the gateway
+  probe fails.
+- **Cursor-based log follow** — live exec log polling now uses the
+  gateway's `after_bytes` contract (deltas + `next_offset` + rotation
+  `reset`) when available, falling back to whole-tail polling on older
+  gateways. Long follows cap the client buffer at 1 MB (labeled as
+  truncated; the full log stays available in the full-log modal).
+- Behavior test suite: pure-model pins, page-level component tests for
+  Backlog, Executions, Inbox, and Processes, pipeline-hook contract tests
+  (72 tests at the close of the wave).
+- Documentation set under `docs/` (architecture, configuration, security,
+  API, FAQ, troubleshooting) and a backlog system under `docs/backlog/`.
+
+### Changed
+
+- The backlog page was refactored from a single 4,141-line module into
+  focused modules under `src/ui/backlog/` (model, two state hooks, panes,
+  modals, drawer) with no behavior change; behavior pins were written
+  before the split and pass unchanged.
+- `src/lib/gateway_client.ts` now carries only the development-lane API
+  families this app uses (backlog + exec pipeline, reports/email/triage,
+  managed processes, and shared reads: runs-list probe, artifact download,
+  voice). The observation-lane client remains in `abstractobserver`.
+- `src/ui/styles.css` was pruned from the full observer stylesheet
+  (6,026 lines) to the rules the four pages use (~1,300 lines).
+
+### Fixed
+
+- Same-origin CSRF: the client now reads the `abstractcontinuum_gateway_csrf`
+  cookie and sends `x-abstractcontinuum-csrf` / `x-abstract-csrf`. The
+  copied client still used the observer's cookie/header names, so every
+  mutating request through the session proxy would have been rejected 403.
+- Bug/feature reports created from this app now identify the client as
+  `abstractcontinuum/web` (previously `abstractobserver/web`).
+- The email account preference and the advisor voice session are now stored
+  under `abstractcontinuum_*` keys instead of the observer's.
+- Shell layout: the app root (`.app`) was unstyled (the copied stylesheet
+  only carried the observer's `.app-shell`), so pages taller than the
+  viewport were clipped without scrollbars; the shell, brand, and process
+  status tags are now styled, and the panel-chat base stylesheet is
+  imported (markdown/chat surfaces previously rendered unstyled).
+- Exec detail: promoted requests no longer render two "Promotion"
+  sections; live "age"/"run time" now tick during a run; log polling stops
+  for terminal requests; overlapping polls can no longer duplicate
+  cursor-follow deltas (ref-based in-flight guards); a failed list poll
+  keeps the previous list visible instead of blanking it.
