@@ -7,35 +7,36 @@
   with the features you want enabled (see
   [configuration.md](configuration.md) for the gateway env vars;
   [api.md](api.md) lists what this app calls on it)
-- A sibling `../abstractuic` checkout — required for `npm install`,
-  `npm run build`, AND `npm start` (the session proxy is a `file:`
-  dependency and the UI kit resolves via Vite aliases) until the package
-  publishes
+- Optional, for the Team page: an agora hub and a seat key (see
+  [configuration.md](configuration.md#team-page-agora-hub))
 
-## First run (development)
+## First run
+
+```bash
+ABSTRACTCONTINUUM_GATEWAY_URL=http://127.0.0.1:8080 npx @abstractframework/continuum
+```
+
+Open `http://localhost:3002`, click the connection badge (bottom of the
+sidebar), and enter the gateway URL, user, and token in the connect dialog.
+The token is exchanged server-side for a cookie session — it never lives in
+the browser. The server binds loopback (`127.0.0.1`) by default; before
+exposing it beyond localhost, read [security.md](security.md): this console
+can redeploy services.
+
+## First run from source (development)
+
+Clone [AbstractUIC](https://github.com/lpalbou/AbstractUIC) next to this
+repository as `abstractuic` (the source build resolves the shared UI kit
+and the session proxy from `../abstractuic`), then:
 
 ```bash
 npm install
-npm run dev
+npm run dev        # http://localhost:3003
 ```
 
-Open `http://localhost:3002`. The dev server mounts the same session
-proxy as production (vite plugin), so sign in exactly the same way: click
-the connection badge (bottom of the sidebar) and enter the gateway URL,
-user, and token in the connect dialog. The token is exchanged for session
-cookies and never stored in the browser.
-
-## First run (production shape)
-
-```bash
-npm run build
-ABSTRACTCONTINUUM_GATEWAY_URL=http://127.0.0.1:8080 npm start
-```
-
-Open `http://localhost:3002` and sign in with a gateway user token. The
-token is exchanged server-side for a cookie session — it never lives in the
-browser. Before exposing this beyond localhost, read
-[security.md](security.md): this console can redeploy services.
+The dev server mounts the same session and hub proxies as production (a
+Vite plugin), so you sign in exactly the same way. For the production
+shape from source: `npm run build && npm start` (port 3002).
 
 ## Your first execution
 

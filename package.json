@@ -1,10 +1,18 @@
 {
   "name": "@abstractframework/continuum",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Continuous iterative development and deployment console for AbstractFramework - backlog browsing and codex execution, report/email inbox triage, and managed process control against a Run Gateway",
   "type": "module",
   "author": "Laurent-Philippe Albou",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lpalbou/AbstractContinuum.git"
+  },
+  "homepage": "https://github.com/lpalbou/AbstractContinuum#readme",
+  "bugs": {
+    "url": "https://github.com/lpalbou/AbstractContinuum/issues"
+  },
   "keywords": [
     "abstractframework",
     "ci-cd",
@@ -21,6 +29,7 @@
   },
   "files": [
     "dist",
+    "!dist/**/*.map",
     "bin",
     "README.md"
   ],
@@ -30,6 +39,7 @@
     "preview": "vite preview",
     "start": "node ./bin/cli.js",
     "test": "node scripts/clean_stale_js.mjs && vitest run",
+    "prepublishOnly": "npm run build",
     "gen:hub-types": "openapi-typescript vendor/hub/openapi.json -o src/lib/hub_api_types.ts"
   },
   "dependencies": {
@@ -39,7 +49,7 @@
     "react-dom": "^18.2.0",
     "ws": "^8.21.1"
   },
-  "scripts_doc": "gen:hub-types regenerates src/lib/hub_api_types.ts from the vendored hub OpenAPI artifact (agora-0121 parity spine); refresh vendor/hub/openapi.json + vector_05_message_ratings.json from the hub repo first, then let hub_contract.ts + hub_conformance.test.ts report drift.",
+  "scripts_doc": "gen:hub-types regenerates src/lib/hub_api_types.ts from the vendored hub OpenAPI artifact in vendor/hub/; refresh vendor/hub/*.json from the hub first, then hub_contract.ts and hub_conformance.test.ts report any drift.",
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",

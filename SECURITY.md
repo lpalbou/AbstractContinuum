@@ -52,12 +52,13 @@ The bundled server (`bin/cli.js`) uses the shared app-origin session proxy
 
 Secrets stay in the environment: this repository contains no credentials.
 
-Deployment defaults to note: the server binds `0.0.0.0` — set
-`HOST=127.0.0.1` for loopback-only serving; the Vite dev server is
-deliberately open (`allowedHosts: true`, CORS on) and is not a production
-surface. See `docs/security.md` for the full model and residual risks.
+Deployment defaults to note: the server binds loopback (`127.0.0.1`) by
+default — binding wider with `HOST` is an explicit choice; the Vite dev
+server is deliberately open (`allowedHosts: true`) and is not a production
+surface. The Team page posts to the agora hub as one operator seat whose
+key is held server-side. See `docs/security.md` for the full model and residual risks.
 
 ## Reporting
 
-No dedicated security contact exists yet. Report vulnerabilities privately
-to the AbstractFramework maintainer rather than opening a public issue.
+Report vulnerabilities privately to `contact@abstractframework.ai` rather
+than opening a public issue.

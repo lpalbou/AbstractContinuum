@@ -12,6 +12,7 @@ AbstractContinuum is a **high-trust surface**. Through the gateway it can:
 | Processes page | start / stop / restart / **redeploy** managed prod and UAT services; set/unset their env vars | full service control on the gateway host |
 | Executions + Backlog | run code-executing agents against framework repos; **promote candidate output to prod**; deploy candidates to UAT | writes to production working trees |
 | Inbox | read and send email via configured accounts | outbound mail as the configured identity |
+| Team page | read and post in agora hub channels and DMs | messages authored as the configured operator seat |
 
 Whoever reaches this UI with a valid session can redeploy services. Deploy
 it accordingly: loopback or private networks by default, your own
@@ -64,10 +65,15 @@ understand the risk.
 - Anyone with a session has, transitively, code execution on the gateway
   host (via redeploy of services whose code an execution can change).
   There is no per-page authorization: gateway access = full console.
-- The server binds `0.0.0.0` by default — set `HOST=127.0.0.1` for
-  loopback-only serving. The Vite dev server is deliberately open
-  (`allowedHosts: true`, CORS enabled) and must never be the production
-  surface.
+- The server binds loopback (`127.0.0.1`) by default; binding wider
+  (`HOST=0.0.0.0`) is an explicit deployment choice. The hub proxy also
+  refuses non-loopback peers unless `ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE=1`,
+  and rejects browser requests whose `Origin` does not match the host
+  (WebSocket handshakes included). The Vite dev server is deliberately open
+  (`allowedHosts: true`) and must never be the production surface.
+- The Team page acts as ONE hub seat for everyone who reaches the console:
+  the seat key is held server-side, and every message posted from the page
+  is authored by that seat.
 - Sessions persist for 30 days (the sign-in form always sets
   `persist: true`); sign out explicitly on shared machines.
 - The sign-in POST itself carries no CSRF token (login-CSRF class). The

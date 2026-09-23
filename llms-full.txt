@@ -1,8 +1,8 @@
 # AbstractContinuum — full documentation corpus
 
-> Aggregated from the core docs for LLM/tool consumption. Canonical
-> sources live in the repository; regenerate this file when docs change.
-
+> Aggregated from the core docs for LLM/tool consumption (package
+> `@abstractframework/continuum` 0.2.0). Canonical sources live in the
+> repository; this file is regenerated whenever the docs change.
 
 ---
 
@@ -27,58 +27,83 @@ cockpit (board-first, kanban/scrum-inspired — see
   a recently-finished strip.
 - **Backlog** — the full catalog power view (all kinds incl. recurrent /
   deprecated / trash, search, batch execute, merge, AI assist + advisor).
-- **Agents** — the workforce: the configured execution agent (executor is
-  a pluggable seam — Codex CLI today), the advisor agent, and a track
-  record from execution history.
+- **Agents & Entities** — the workforce: the configured execution agent
+  (executor is a pluggable seam — Codex CLI today), the advisor agent, a
+  track record from execution history, and gateway entities with their
+  skills.
+- **Team** — an [agora](docs/configuration.md#team-page-agora-hub) hub
+  client for human + agent collaboration: channels and DMs with threaded
+  messages, a unified inbox of open asks, hub-wide search, channel files,
+  work claims, and live updates over WebSocket. It posts as one configured
+  operator seat through a server-side proxy (the seat key never reaches the
+  browser).
 - **Inbox** — triage bug reports, feature requests, and email; run triage
   and apply decisions.
 - **Services** — control managed prod/UAT processes (start / stop /
   restart / redeploy) and write-only environment variables. This surface is
   high trust: see [SECURITY.md](SECURITY.md) before exposing it.
-- **Settings** — gateway session sign-in (the shared abstractuic card) and
-  AI preferences.
+- **Settings** — gateway session sign-in and AI preferences.
 
 Executing a Ready item is gated by an advisory **Definition of Ready**
 checklist (type, real summary, acceptance criteria, test commands — parsed
 from the spec, override always available and labeled); promoting from
 review shows the acceptance criteria as a **Definition of Done** checklist.
 
-The observer app (`abstractobserver`) watches and discusses the running
-system; this app develops and deploys it. See `history.md` for how the two
-were split (2026-07-12), and [docs/README.md](docs/README.md) for the full
-documentation set.
-
+The observer app ([AbstractObserver](https://github.com/lpalbou/AbstractObserver))
+watches and discusses the running system; this app develops and deploys it.
 The pipeline is executor-agnostic by design: the gateway currently runs
 executions through the Codex CLI, but the executing agent is a pluggable
 seam and the UI reads the executor identity from the gateway's exec config
 (see [docs/architecture.md](docs/architecture.md)).
 
-## Run
+## Install and run
 
-> Requires a sibling `../abstractuic` checkout: `npm install`, `npm run
-> build`, and `npm start` all resolve the shared UI kit and the session
-> proxy from it (`file:` dependency + Vite aliases) until
-> `@abstractframework/app-server` is published (tracked in
-> `docs/backlog/planned/0001_publish_gated_app_server_dependency.md`).
+Requires Node.js ≥ 18 and a running Run Gateway
+([AbstractGateway](https://github.com/lpalbou/AbstractGateway), default
+`http://127.0.0.1:8080`).
 
 ```bash
-npm install
-npm run dev        # vite dev server on :3002 (proxies /api to :8080)
-npm run build      # production build into dist/
-npm start          # serve dist/ + the app-origin gateway session proxy
-npm test           # vitest (unit + jsdom component tests)
+npx @abstractframework/continuum
+# or install the CLI globally
+npm install -g @abstractframework/continuum
+abstractcontinuum
 ```
 
-Environment for `npm start`:
+Open `http://localhost:3002` and sign in with a gateway user and token (the
+connection badge at the bottom of the sidebar). The token is exchanged
+server-side for an HttpOnly session cookie and never stored in the browser.
 
-- `PORT` (default 3002), `HOST` (default 0.0.0.0)
+Common environment variables (full list in
+[docs/configuration.md](docs/configuration.md), or `abstractcontinuum --help`):
+
+- `PORT` (default `3002`), `HOST` (default `127.0.0.1`)
 - `ABSTRACTCONTINUUM_GATEWAY_URL` (or `ABSTRACTGATEWAY_URL`) — the gateway
   this deployment talks to (default `http://127.0.0.1:8080`)
+- `ABSTRACTCONTINUUM_HUB_URL` / `ABSTRACTCONTINUUM_HUB_SEAT` — the agora hub
+  and operator seat for the Team page
 
-Sign-in uses the gateway's session flow through the same-origin proxy
-(first-party HttpOnly cookies + CSRF; tokens never appear in URLs). See
-[docs/configuration.md](docs/configuration.md) for every knob and
-[docs/getting-started.md](docs/getting-started.md) for a first session.
+Before exposing the console beyond localhost, read
+[docs/security.md](docs/security.md): a signed-in user can redeploy services.
+
+## Develop from source
+
+The source build resolves the shared UI kit (`@abstractframework/ui-kit`,
+`@abstractframework/panel-chat`) and the session proxy
+(`@abstractframework/app-server`) from a sibling
+[AbstractUIC](https://github.com/lpalbou/AbstractUIC) checkout:
+
+```bash
+git clone https://github.com/lpalbou/AbstractUIC.git abstractuic
+git clone https://github.com/lpalbou/AbstractContinuum.git abstractcontinuum
+cd abstractcontinuum
+npm install
+npm run dev        # vite dev server on :3003 (proxies /api to :8080)
+npm test           # vitest (unit + jsdom component tests)
+npm run build      # production build into dist/
+npm start          # serve dist/ + the app-origin gateway session proxy on :3002
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
 
 ## Documentation
 
@@ -91,6 +116,10 @@ Sign-in uses the gateway's session flow through the same-origin proxy
 - [docs/faq.md](docs/faq.md) / [docs/troubleshooting.md](docs/troubleshooting.md)
 - [CHANGELOG.md](CHANGELOG.md) — release history
 - [CONTRIBUTING.md](CONTRIBUTING.md) — development workflow
+
+## License
+
+MIT — see [LICENSE](LICENSE).
 
 ---
 
@@ -105,33 +134,36 @@ Sign-in uses the gateway's session flow through the same-origin proxy
   with the features you want enabled (see
   [configuration.md](configuration.md) for the gateway env vars;
   [api.md](api.md) lists what this app calls on it)
-- A sibling `../abstractuic` checkout — required for `npm install`,
-  `npm run build`, AND `npm start` (the session proxy is a `file:`
-  dependency and the UI kit resolves via Vite aliases) until the package
-  publishes
+- Optional, for the Team page: an agora hub and a seat key (see
+  [configuration.md](configuration.md#team-page-agora-hub))
 
-## First run (development)
+## First run
+
+```bash
+ABSTRACTCONTINUUM_GATEWAY_URL=http://127.0.0.1:8080 npx @abstractframework/continuum
+```
+
+Open `http://localhost:3002`, click the connection badge (bottom of the
+sidebar), and enter the gateway URL, user, and token in the connect dialog.
+The token is exchanged server-side for a cookie session — it never lives in
+the browser. The server binds loopback (`127.0.0.1`) by default; before
+exposing it beyond localhost, read [security.md](security.md): this console
+can redeploy services.
+
+## First run from source (development)
+
+Clone [AbstractUIC](https://github.com/lpalbou/AbstractUIC) next to this
+repository as `abstractuic` (the source build resolves the shared UI kit
+and the session proxy from `../abstractuic`), then:
 
 ```bash
 npm install
-npm run dev
+npm run dev        # http://localhost:3003
 ```
 
-Open `http://localhost:3002`. The dev server proxies `/api` to
-`http://localhost:8080`; if your gateway needs auth in dev, open Settings
-and enter the gateway URL + bearer token (direct mode).
-
-## First run (production shape)
-
-```bash
-npm run build
-ABSTRACTCONTINUUM_GATEWAY_URL=http://127.0.0.1:8080 npm start
-```
-
-Open `http://localhost:3002` and sign in with a gateway user token. The
-token is exchanged server-side for a cookie session — it never lives in the
-browser. Before exposing this beyond localhost, read
-[security.md](security.md): this console can redeploy services.
+The dev server mounts the same session and hub proxies as production (a
+Vite plugin), so you sign in exactly the same way. For the production
+shape from source: `npm run build && npm start` (port 3002).
 
 ## Your first execution
 
@@ -176,6 +208,8 @@ flowchart LR
         EX[Executions page]
         BL[Backlog page]
         AG[Agents page]
+        TM[Team page<br/>agora hub client]
+        HC[HubClient<br/>src/lib/hub_client.ts]
         IN[Inbox page]
         PR[Services page]
         SE[Settings page<br/>uic sign-in card]
@@ -186,11 +220,17 @@ flowchart LR
         AG --> GC
         IN --> GC
         PR --> GC
+        TM --> HC
     end
 
     subgraph AppServer["bin/cli.js (node)"]
         SP[Gateway session proxy<br/>@abstractframework/app-server]
         ST[Static dist/ serving]
+        HP[Hub proxy<br/>bin/hub_proxy.js<br/>seat key server-side]
+    end
+
+    subgraph Hub["agora hub (optional)"]
+        HA["channels, DMs, search,<br/>files, work, desk"]
     end
 
     subgraph Gateway["Run Gateway (abstractgateway)"]
@@ -205,19 +245,19 @@ flowchart LR
     GC -- "/api/* + session cookies + CSRF" --> SP
     SE -- "POST /api/connection/gateway" --> SP
     SP -- "x-abstractgateway-session" --> BK & EP & RP & PM & SH
+    HC -- "/api/hub/* + /api/hub/ws" --> HP
+    HP -- "allowlisted routes + Bearer seat key" --> HA
     EP --- WK
     WK -- "candidate workspace → UAT → promote" --> Repos[(Framework repos<br/>prod + UAT trees)]
 ```
 
-Two transport modes:
-
-- **Same-origin (production)** — the browser talks only to `bin/cli.js`.
-  The session proxy signs in against the gateway, holds the session
-  server-side, sets first-party cookies, and enforces CSRF on mutating
-  requests. Tokens never reach the browser.
-- **Direct (development)** — Settings accepts a gateway URL + bearer token
-  and the client calls the gateway directly. Meant for local development
-  against a bare gateway.
+One transport mode: same-origin. The browser talks only to the app
+server (`bin/cli.js` in production, the equivalent vite plugin in dev).
+The session proxy signs in against the gateway, holds the session
+server-side, sets first-party cookies, and enforces CSRF on mutating
+requests. Tokens never reach browser storage. The Team page uses the same
+origin: `/api/hub/*` and the `/api/hub/ws` WebSocket are served by the hub
+proxy, which attaches the operator seat's key server-side.
 
 ## The execution pipeline
 
@@ -264,41 +304,53 @@ executor-neutral and read identity from the config.
 src/
   app.tsx                     shell: sidebar nav, uic connect modal, probe
   lib/
-    gateway_client.ts         typed client (dev-lane families only)
+    gateway_client.ts         typed gateway client (dev-lane families only)
     gateway_types.ts          request/response types
-    ids.ts                    random_id
+    hub_client.ts             agora hub client (via the /api/hub proxy)
+    hub_api_types.ts          types generated from vendor/hub/openapi.json
+    hub_contract.ts           compile-time pins against the hub contract
+    hub_ledger.ts             independent hub ledger verification
+    team_model.ts             Team page pure model (threads, filters, badges)
+    work_id.ts                work-item id + rendered-state derivations
+    entity_skills_model.ts    entity skills view model
+    voice_settings.ts         per-browser voice overrides
+    markdown_segments.ts      prose / mermaid splitting for rendering
+    session_run_id.ts, ids.ts small id helpers
   ui/
-    shell/icons.tsx           sidebar nav glyphs (offered to ui-kit)
     board/
       board_model.ts          metadata convention + DoR + column derivation (pure, pinned)
       use_board_data.ts       list/request fetches + lazy metadata cache
+      use_work_claims.ts      hub work-claim rows joined onto board cards
       board_page.tsx          kanban columns/cards/filters + execute gate
       work_item_drawer.tsx    Spec / Runs / Review tabs
-    agents_page.tsx           executor roster + track record
-    executions_page.tsx       live pipeline ops view
-    settings_page.tsx         uic session sign-in card + direct mode + AI prefs
-    exec_event.ts             codex exec-log event classification
-    backlog_browser.tsx       re-export of backlog/backlog_page
+      work_activity_panel.tsx hub work activity for hub-backed cards
     backlog/
       model.ts                pure helpers (unit-pinned)
-      hooks.ts                use_media_query
-      use_backlog_items.ts    backlog file state + actions
+      hooks.ts                small shared hooks (media query, executor registry)
       use_exec_pipeline.ts    exec pipeline state + polling
-      backlog_page.tsx        composition root (cross-concern flows)
-      toolbar.tsx             tabs, filters, batch actions
-      list_pane.tsx           item + exec request lists
-      item_detail_pane.tsx    item view/edit + maintenance chat
+      backlog_page.tsx        catalog table + composition root
       exec_detail_pane.tsx    exec detail + QA panel
       exec_events_view.tsx    live log/events viewer
       execute_modals.tsx      execute / batch / merge confirms
       new_task_modal.tsx      creation flow (template, guided, assist)
-      exec_full_log_modal.tsx full-log browser (artifact-backed)
       advisor_drawer.tsx      read-only backlog advisor (chat + voice)
+    team_page.tsx             Team page (agora hub client)
+    team_file_viewer.tsx      channel file viewer
+    agents_page.tsx           executor roster, entities, track record
+    entity_skills_panel.tsx   entity skills section
+    executions_page.tsx       live pipeline ops view
     report_inbox.tsx          bug/feature reports + triage decisions
     email_inbox.tsx           email accounts/messages/send
-    processes_page.tsx        managed process control + env vars
-    modal.tsx, multi_select.tsx, use_gateway_voice.ts   shared widgets
-bin/cli.js                    static serve + session proxy
+    processes_page.tsx        managed process control + env vars (Services)
+    settings_page.tsx         connection status + AI and voice preferences
+    voice_settings_panel.tsx  voice override controls
+    exec_event.ts             exec-log event classification
+    backlog_unconfigured.tsx  rendering for a gateway without backlog browsing
+    memo_markdown.tsx, mermaid_block.tsx   markdown + mermaid rendering
+    modal.tsx, multi_select.tsx, error_boundary.tsx   shared widgets
+bin/cli.js                    static serve + session proxy + hub proxy mount
+bin/hub_proxy.js              allowlisted agora hub proxy (HTTP + WebSocket)
+vendor/hub/                   vendored hub OpenAPI + golden conformance vectors
 ```
 
 ### The Board model
@@ -319,10 +371,9 @@ Design boundaries:
 
 - **Purpose boundary** — the observer observes and discusses; continuum
   develops and deploys. Observation features do not grow here.
-- **Concern boundary** — `model.ts` is pure (no React/network);
-  `use_backlog_items` and `use_exec_pipeline` each own one concern; panes
-  are presentational; only `backlog_page.tsx` wires cross-concern flows
-  (execute → jump to Processing, QA actions → tab moves).
+- **Concern boundary** — `model.ts`, `board_model.ts` and `team_model.ts`
+  are pure (no React/network) and unit-pinned; hooks such as
+  `use_exec_pipeline` each own one concern; panes are presentational.
 - **Client boundary** — `gateway_client.ts` carries only the API families
   this app uses (see [api.md](api.md)); new observation-lane methods belong
   in the observer.
@@ -334,6 +385,7 @@ Design boundaries:
 - [security.md](security.md) — trust model (process manager is high trust)
 - `docs/backlog/overview.md` — work planning and history
 - `history.md` (repo root) — provenance of the 2026-07-12 split
+- `vendor/hub/` — the hub contract the Team page is typed and tested against
 
 ---
 
@@ -368,8 +420,8 @@ as `/api/gateway/...` (proxied in same-origin mode).
 
 | Method | Endpoint |
 | --- | --- |
-| `backlog_execute(...)` | `POST /backlog/{kind}/{filename}/execute?execution_mode=` |
-| `backlog_execute_batch(...)` | `POST /backlog/execute_batch` |
+| `backlog_execute(...)` | `POST /backlog/{kind}/{filename}/execute?execution_mode=&target_model=&target_reasoning_effort=&dor=check&override=true` — agent override validates against the gateway model allowlist (403 rendered verbatim); `dor=check` refuses 409 `{"error":"definition_of_ready_failed","checks":[...]}` unless `override=true` (recorded as `dor_overridden`) |
+| `backlog_execute_batch(...)` | `POST /backlog/execute_batch` (same `target_*`/`dor`/`override` fields in the body; DoR refusals name the failing members) |
 | `backlog_exec_config()` | `GET /backlog/exec/config` |
 | `backlog_exec_requests(...)` | `GET /backlog/exec/requests?status=&limit=` |
 | `backlog_exec_request(id)` | `GET /backlog/exec/requests/{id}` |
@@ -433,6 +485,22 @@ as `/api/gateway/...` (proxied in same-origin mode).
   server-held session; mutating requests require the CSRF header
   (`x-abstractcontinuum-csrf` or `x-abstract-csrf`)
 
+## Hub proxy endpoints (bundled server, Team page)
+
+`bin/hub_proxy.js` serves the Team page's agora hub transport:
+
+- `GET /api/hub/meta` — `{ok, hub_url, seat, seat_key_present}`
+- `/api/hub/<hub path>` — forwarded to the hub with the seat key attached
+  server-side, for an allowlisted set of routes only (channels, messages,
+  DMs, channel info/members/files/ledger/digest/store, search, work,
+  desk, owed asks, retraction, health); anything else is refused
+- `GET /api/hub/ws` (WebSocket upgrade) — live hub updates relayed with the
+  seat key attached server-side
+
+Loopback peers only unless `ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE=1`; browser
+requests whose `Origin` does not match the host are rejected. The hub
+contract the client is typed against is vendored in `vendor/hub/`.
+
 ## Notes
 
 - Error contract: HTTP failures throw `Error("<method> failed: <detail>")`
@@ -453,12 +521,12 @@ All configuration is environment-driven on the server side plus a small
 browser Settings page. Secrets stay in the environment — nothing in this
 repo or in browser storage holds credentials in same-origin mode.
 
-## Server (`npm start` / `bin/cli.js`)
+## Server (`abstractcontinuum` / `npm start` / `bin/cli.js`)
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `PORT` | `3002` | HTTP port |
-| `HOST` | `0.0.0.0` | Bind address |
+| `HOST` | `127.0.0.1` | Bind address (loopback by default; set `0.0.0.0` only behind your own access control) |
 | `ABSTRACTCONTINUUM_GATEWAY_URL` | `http://127.0.0.1:8080` | Gateway this deployment talks to |
 | `ABSTRACTGATEWAY_URL` | — | Fallback for the above (shared across Abstract apps) |
 
@@ -470,6 +538,25 @@ Session-proxy hardening knobs (from `@abstractframework/app-server`, appId
 | `ABSTRACTCONTINUUM_ALLOW_REMOTE_BROWSER_GATEWAY_CONFIG` / `ABSTRACTGATEWAY_ALLOW_REMOTE_BROWSER_GATEWAY_CONFIG` | Allow non-loopback browsers to change the gateway URL at sign-in. Leave off unless you front the app with your own access control. |
 | `ABSTRACTCONTINUUM_ALLOW_BROWSER_GATEWAY_URL_COOKIE` | Honor a browser-supplied gateway-URL cookie on non-loopback hosts. |
 | `ABSTRACTCONTINUUM_TRUST_PROXY_HEADERS` / `ABSTRACTGATEWAY_TRUST_PROXY_HEADERS` | Trust `x-forwarded-host` for the loopback check (set only behind a reverse proxy you control). Cookies get the `Secure` attribute whenever `x-forwarded-proto: https` is present, independent of this flag. |
+
+## Team page (agora hub)
+
+The Team page talks to an agora hub through the server's `/api/hub/*`
+proxy, which forwards an allowlisted subset of the hub API and attaches one
+operator seat's API key server-side. The key never reaches the browser.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `ABSTRACTCONTINUUM_HUB_URL` | `http://127.0.0.1:8765` | Hub base URL (fallback: `AGORA_HUB_URL`) |
+| `ABSTRACTCONTINUUM_HUB_SEAT` | `laurent` | The seat the Team page reads and posts as — set this to your own seat |
+| `ABSTRACTCONTINUUM_HUB_KEYS` | `~/.agora/keys.json` | Key store; the entry `"<hub_url>::<seat>"` supplies the seat key (re-read per request, so rotation needs no restart) |
+| `ABSTRACTCONTINUUM_HUB_KEY` | — | Seat API key; overrides the key store |
+| `ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE` | off | Set to `1` to let non-loopback browsers use the hub proxy. Leave off unless you front the app with your own access control. |
+
+Without a key, hub routes other than the keyless health check answer
+`503 hub_seat_unavailable` naming the seat and key store to provision;
+`GET /api/hub/meta` reports the configured hub URL, seat, and whether a key
+is present.
 
 ## Gateway-side features
 
@@ -492,16 +579,20 @@ Persisted in `localStorage` under `abstractcontinuum_settings_v1`:
 
 | Setting | Purpose |
 | --- | --- |
-| Gateway user + token | Session sign-in through the proxy (production path). The token is sent once to `POST /api/connection/gateway` and never stored browser-side; only the user id persists. |
-| Gateway URL | Blank = same-origin via the session proxy (production). Non-empty = direct mode (development). |
-| Bearer token | Direct mode only; stored in `localStorage` — development machines only. |
 | Maintenance AI provider / model | Provider/model for backlog AI assist + maintenance chat (blank = gateway default). |
 | Backlog advisor agent | Gateway bundle id for the advisor (blank = `basic-agent`). |
 
+Connection is NOT a settings field: the shared `GatewayConnectModal`
+(sidebar badge, or "Manage connection" in Settings) signs in through
+`POST /api/connection/gateway`; the token is exchanged once for HttpOnly
+session cookies and never stored browser-side. Older builds' persisted
+direct-mode tokens are scrubbed at startup.
+
 ## Development
 
-`npm run dev` starts Vite on :3002 with `/api` proxied to
-`http://localhost:8080` (see `vite.config.ts`). The ui-kit and panel-chat
+`npm run dev` starts Vite on :3003 with `/api` proxied to
+`http://localhost:8080` (see `vite.config.ts`); the dev server mounts the
+same session and hub proxies as production. The ui-kit and panel-chat
 packages resolve from a sibling `../abstractuic` checkout.
 
 ---
@@ -522,6 +613,7 @@ AbstractContinuum is a **high-trust surface**. Through the gateway it can:
 | Processes page | start / stop / restart / **redeploy** managed prod and UAT services; set/unset their env vars | full service control on the gateway host |
 | Executions + Backlog | run code-executing agents against framework repos; **promote candidate output to prod**; deploy candidates to UAT | writes to production working trees |
 | Inbox | read and send email via configured accounts | outbound mail as the configured identity |
+| Team page | read and post in agora hub channels and DMs | messages authored as the configured operator seat |
 
 Whoever reaches this UI with a valid session can redeploy services. Deploy
 it accordingly: loopback or private networks by default, your own
@@ -548,6 +640,17 @@ for people with deploy rights.
 6. **Feature gating** — the process manager and exec worker exist only when
    the gateway operator enabled them (`ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER`,
    `ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER`).
+7. **Content-Security-Policy on the app document** — the Team page renders
+   untrusted content (hub messages, channel fs files, attachments) as
+   markdown. The renderer emits only React elements (no raw-HTML pass, no
+   `javascript:` links), and the prod server adds a CSP backstop:
+   `img-src 'self' data:` blocks remote-image beacons from untrusted
+   markdown, `script-src 'self'` blocks any script injection class,
+   `object-src 'none'` and `frame-ancestors 'none'` close embed vectors.
+   Inline text previews are size-capped (256 KiB; larger files download)
+   so pathological input cannot freeze the tab. Note: the Vite dev server
+   (port 3003, developer-only) does not send the CSP header — the operator
+   surface is always the prod server on :3002.
 
 ## Execution safety model
 
@@ -563,10 +666,15 @@ understand the risk.
 - Anyone with a session has, transitively, code execution on the gateway
   host (via redeploy of services whose code an execution can change).
   There is no per-page authorization: gateway access = full console.
-- The server binds `0.0.0.0` by default — set `HOST=127.0.0.1` for
-  loopback-only serving. The Vite dev server is deliberately open
-  (`allowedHosts: true`, CORS enabled) and must never be the production
-  surface.
+- The server binds loopback (`127.0.0.1`) by default; binding wider
+  (`HOST=0.0.0.0`) is an explicit deployment choice. The hub proxy also
+  refuses non-loopback peers unless `ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE=1`,
+  and rejects browser requests whose `Origin` does not match the host
+  (WebSocket handshakes included). The Vite dev server is deliberately open
+  (`allowedHosts: true`) and must never be the production surface.
+- The Team page acts as ONE hub seat for everyone who reaches the console:
+  the seat key is held server-side, and every message posted from the page
+  is authored by that seat.
 - Sessions persist for 30 days (the sign-in form always sets
   `persist: true`); sign out explicitly on shared machines.
 - The sign-in POST itself carries no CSRF token (login-CSRF class). The
@@ -577,11 +685,143 @@ understand the risk.
   is the gateway's responsibility; this console does not yet surface an
   audit view. Check the gateway's audit/ledger facilities when you need
   the trail.
-- The direct (bearer token) mode is for development; it stores the token in
-  `localStorage`, and it requires the gateway to accept cross-origin
-  requests. Do not use it on shared machines or over untrusted networks.
+- There is no client-side bearer-token mode: the browser talks only to the
+  same-origin proxy, which holds credentials in HttpOnly cookies. The
+  former "direct mode" (bearer in `localStorage`) was removed 2026-07-12
+  per the shared connection contract (tokens never rest client-side); app
+  startup scrubs tokens persisted by older builds.
 - Email send uses whatever accounts the gateway configured; the console
   does not add its own rate or recipient limits.
+
+---
+
+<!-- source: docs/conventions.md -->
+
+# Work-item conventions (the board's grammar)
+
+This is the canonical reference for the conventions AbstractContinuum's
+board and the gateway's backlog parser agree on. It exists so process
+teachings (the `backlog`/`coredoc` skills on the AbstractSkill shelf) and
+the rendering/enforcing surface cannot drift apart: **the deployment's
+parser is truth; this document describes it.**
+
+Changes to any grammar below must update this file in the same change
+as the parser or board code that implements them.
+
+## File layout and lifecycle
+
+Work items are markdown files under `docs/backlog/` in the repository the
+gateway serves (`ABSTRACTGATEWAY_TRIAGE_REPO_ROOT`):
+
+| Directory | Board home | Meaning |
+| --- | --- | --- |
+| `proposed/` | Triage column | ideas, not yet ready |
+| `planned/` | Ready column | ready to execute (DoR applies) |
+| `completed/` | Done column (recent) | promoted/archived items |
+| `deprecated/` | Backlog page only | closed without execution (restorable) |
+| `trash/` | Backlog page only | discarded (restorable) |
+| `recurrent/` | Backlog page only | periodic process tasks — **no board home (ruled)** |
+
+Execution states ride exec requests, not directories: `queued` / `running`
+(In progress), `awaiting_qa` (In review), `promoted`/`completed`/`failed`
+(terminal). Promotion archives the planned file to `completed/`.
+
+## Title line (H1)
+
+```markdown
+# 0123-package: [TYPE] Short imperative title
+```
+
+- `0123` — item id (stable, list-assigned).
+- `package` — the owning package (`framework` for cross-cutting work).
+- `[TYPE]` — the ruled work-item enum, UPPERCASE in the H1.
+
+## Type vocabulary (ruled enum)
+
+`bug | feature | improvement | task` — per the semantics seat's
+`decision:workitem-type-enum`. The UI offers exactly these four; **read
+paths never coerce**: an unknown at-rest type renders as-written with a
+"labeled unknown" chip. Do not invent new types in items; propose enum
+changes to the semantics seat.
+
+> **Upstream normalization**: the gateway list parser accepts the full
+> type enum (`improvement` included). Unknown at-rest words normalize to
+> `task` upstream, so the console's labeled-unknown chip fires only for
+> values the gateway lets through.
+
+## Metadata lines (blockquote grammar — NOT a `## Metadata` section)
+
+The gateway parses **blockquote lines** in the file header. List
+sections like `## Metadata` with `- Created:` bullets are **not parsed**
+— an item written that way renders metadata-blind on the board.
+
+```markdown
+> Created: 2026-07-13 21:00:00 +0200
+> Type: bug
+> Priority: P1
+> Labels: ui, wave-doctoring, seat-memory
+```
+
+- `Priority`: `P0` (drop everything) … `P3` (someday). Absent = unranked
+  (sorts last within its column).
+- `Labels`: comma-separated free strings. Sprints are labels (`sprint-N`).
+
+## Definition of Ready (the execution gate, not advice)
+
+Execute is **gated**, client-side (advisory chips) and server-side (the
+gateway refuses `409 definition_of_ready_failed` unless an explicit
+override is recorded as `dor_overridden`). The checks:
+
+1. Type present (H1 `[TYPE]` or `> Type:` line), in the ruled enum
+   (`bug | feature | improvement | task`).
+2. A `## Summary` section with prose (non-placeholder).
+3. Acceptance criteria as markdown checkboxes (`- [ ] …`, non-placeholder).
+4. A Testing section naming how it will be verified (backticked commands;
+   `...`/`n/a` don't count — ADR-0019 levels).
+
+The gate is FOUR checks (matching the gateway parser `backlog_dor.py`):
+**priority is NOT a gate check** — it is advisory metadata the board
+renders as chips.
+
+Overrides are legitimate (the operator's judgment wins) but always
+explicit and recorded — never silent.
+
+## Definition of Done
+
+Acceptance checkboxes ticked + QA review (the drawer's Review tab) before
+promote. "Done" means validated — the promote flow is the verification
+surface, and an unreviewed promote carries its unconfirmed count on the
+button label.
+
+## Supervision vocabulary (room coordination on the board)
+
+| Label | Meaning | Board behavior |
+| --- | --- | --- |
+| `decision-gate` | an OPERATOR decision (his gates stay his) | renders as an amber "operator gate" card — never draggable, never promotable, never executable; resolved only by the operator's ruling |
+| `wave-<slug>` | a room wave (directive fanned to N seats) | normal task item; the Supervision toggle filters to these |
+| `seat-<owner>` | the seat(s) owning the row | chip + Supervision filter |
+
+Per-seat receipts inside a wave item are acceptance checkboxes carrying
+the hub message id:
+
+```markdown
+- [ ] gateway: writer wave shipped (c1234)
+- [x] continuum: supervision view live (c1240)
+```
+
+## Docs freshness (the coredoc half)
+
+The Projects conformance read flags a package red when
+`llms.txt`/`llms-full.txt` is **older than the newest `docs/*.md`** —
+regenerate the llms files in the same change that edits docs. Presence
+checks: `README.md`, `docs/`, `llms.txt`, `llms-full.txt`.
+
+## Sources
+
+- Parser: gateway backlog family (list-level metadata; DoR gate).
+- Board: `src/ui/board/board_model.ts` (metadata regexes, readiness,
+  gate semantics — test-pinned).
+- Type enum: the hub decision `decision:workitem-type-enum`.
 
 ---
 
@@ -622,9 +862,10 @@ Items with an active exec request are hidden from Planned to prevent double
 execution; they are visible under Processing until the request finishes.
 
 **Does the app store any secrets?**
-Same-origin mode: no — sessions are server-held HttpOnly cookies. Direct
-mode (development) stores the bearer token you enter in `localStorage`;
-avoid it outside local development. See [security.md](security.md).
+No. Sessions are server-held HttpOnly cookies; raw tokens are exchanged
+once at sign-in and never stored browser-side. (The former development
+"direct mode" that kept a bearer in `localStorage` was removed; startup
+scrubs tokens persisted by older builds.) See [security.md](security.md).
 
 ---
 
@@ -696,11 +937,28 @@ Set `ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1` and
 `ABSTRACTGATEWAY_TRIAGE_REPO_ROOT` on the gateway host — and read
 [security.md](security.md) first: this enables remote service control.
 
+## Team page
+
+**The Team page reports `hub_seat_unavailable`.**
+The server has no key for the configured seat. Set
+`ABSTRACTCONTINUUM_HUB_SEAT` to your seat and either provision it in the key
+store (`ABSTRACTCONTINUUM_HUB_KEYS`, default `~/.agora/keys.json`) or set
+`ABSTRACTCONTINUUM_HUB_KEY`. `GET /api/hub/meta` shows the hub URL, seat,
+and whether a key was found. See
+[configuration.md](configuration.md#team-page-agora-hub).
+
+**The Team page works on localhost but not from another machine.**
+The hub proxy refuses non-loopback peers by default. Set
+`ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE=1` only behind your own access control:
+everyone who reaches the page posts as the configured seat.
+
 ## Development
 
 **`npm run dev` fails resolving `@abstractframework/ui-kit`.**
-The dev toolchain expects a sibling `../abstractuic` checkout (Vite aliases
-+ `file:` dependency). Clone it next to this repo and `npm install` again.
+The source build expects a sibling `../abstractuic` checkout (Vite aliases
++ `file:` dependency). Clone [AbstractUIC](https://github.com/lpalbou/AbstractUIC)
+next to this repo as `abstractuic` and run `npm install` again. The
+published npm package does not need it.
 
 **Tests fail with `scrollIntoView is not a function`.**
 jsdom lacks it; the suites stub `Element.prototype.scrollIntoView` in their
@@ -749,9 +1007,11 @@ The bundled server (`bin/cli.js`) uses the shared app-origin session proxy
   (`abstractcontinuum_gateway_*`, 30-day lifetime) that the proxy attaches
   to every forwarded request. The user token itself is used once and never
   stored anywhere.
-- Bearer tokens never appear in URLs. In session mode they never touch
-  browser storage either; the direct (development) mode below is the one
-  labeled exception.
+- Bearer tokens never appear in URLs and never touch browser storage —
+  there is no client-side token mode. (The former "direct mode" that kept
+  a bearer in `localStorage` was removed 2026-07-12 per the shared
+  connection contract; app startup scrubs any token persisted by older
+  builds.)
 - Mutating requests require the CSRF token (`x-abstractcontinuum-csrf` or
   the canonical `x-abstract-csrf`) matching the CSRF cookie (deliberately
   JS-readable so the client can echo it).
@@ -761,18 +1021,17 @@ The bundled server (`bin/cli.js`) uses the shared app-origin session proxy
   explicitly enabled (see `docs/configuration.md`).
 
 Secrets stay in the environment: this repository contains no credentials.
-Direct (development) mode stores the bearer token you enter in
-`localStorage` — development machines only.
 
-Deployment defaults to note: the server binds `0.0.0.0` — set
-`HOST=127.0.0.1` for loopback-only serving; the Vite dev server is
-deliberately open (`allowedHosts: true`, CORS on) and is not a production
-surface. See `docs/security.md` for the full model and residual risks.
+Deployment defaults to note: the server binds loopback (`127.0.0.1`) by
+default — binding wider with `HOST` is an explicit choice; the Vite dev
+server is deliberately open (`allowedHosts: true`) and is not a production
+surface. The Team page posts to the agora hub as one operator seat whose
+key is held server-side. See `docs/security.md` for the full model and residual risks.
 
 ## Reporting
 
-No dedicated security contact exists yet. Report vulnerabilities privately
-to the AbstractFramework maintainer rather than opening a public issue.
+Report vulnerabilities privately to `contact@abstractframework.ai` rather
+than opening a public issue.
 
 ---
 
@@ -788,7 +1047,7 @@ Gateway; the app renders and commands it.
 
 ```bash
 npm install
-npm run dev      # dev server on :3002, /api proxied to localhost:8080
+npm run dev      # dev server on :3003, /api proxied to localhost:8080
 ```
 
 The dev toolchain resolves `@abstractframework/ui-kit` and
@@ -813,6 +1072,10 @@ npm run build      # production build must stay green
 - `src/ui/` — pages (executions, report inbox, email, processes) and small
   shared widgets.
 - `bin/cli.js` — static serving + the app-origin gateway session proxy.
+- `bin/hub_proxy.js` — the Team page's allowlisted agora hub proxy.
+- `vendor/hub/` — the vendored hub OpenAPI artifact and golden vectors that
+  `src/lib/hub_contract.ts` and `src/lib/hub_conformance.test.ts` pin
+  against (`npm run gen:hub-types` regenerates `src/lib/hub_api_types.ts`).
 
 ## Conventions
 
@@ -834,118 +1097,66 @@ npm run build      # production build must stay green
 
 All notable, user-visible changes to AbstractContinuum.
 
-## 0.2.0 — 2026-07-12 (unreleased) — board-first redesign
+## 0.2.0 — 2026-09-23 — first public release
 
-Maintainer-directed from-scratch redesign (kanban/scrum-inspired; see
-`docs/design/redesign_2026_07.md`).
+First release published to npm as `@abstractframework/continuum`. Run it
+with `npx @abstractframework/continuum` (CLI: `abstractcontinuum`).
 
-### Added
-
-- **Board landing page** — kanban over the development flow (Triage /
-  Ready / In Progress / In Review / Done + a Failed history lane), cards
-  with type/priority/label/package chips, readiness dots, failure badges,
-  and batch-execution cards; search + package/type filters;
-  priority-first ordering.
-- **Work-item drawer** — Spec (markdown view/edit + priority/labels
-  metadata editor + execution-snapshot staleness warning), Runs (the
-  item's execution history), Review (acceptance-criteria checklist with
-  unconfirmed-count promote labeling + QA actions).
-- **Work-item metadata convention** — `> Priority: P0..P3` and
-  `> Labels: a, b, sprint-N` header lines (sprints are labels), written by
-  the New task dialog and the drawer, parsed for chips/DoR. List-level
-  metadata + carrying lines through promote are filed gateway asks.
-- **Definition of Ready gate** on Execute (advisory, with parse evidence
-  and a labeled override) and **Definition of Done** checklist in review.
-- **Agents page** — executor roster (pluggable seam; Codex CLI today),
-  advisor agent, and a counts-based track record from execution history.
-- **Sidebar shell** — left navigation (Board / Executions / Backlog /
-  Agents / Inbox / Services / Settings), slim header with New task, and a
-  connection badge.
-
-### Changed
-
-- **Gateway connection now uses the shared abstractuic surface**:
-  `GatewayConnectModal` from the sidebar badge and
-  `GatewaySessionSignInCard` embedded in Settings (the homegrown sign-in
-  form is gone). Processes was renamed Services.
-
-### Fixed
-
-- **Sign-in "Not Found" in dev** — the Vite dev server now mounts the same
-  app-origin gateway session proxy as `bin/cli.js` (a plugin), so
-  `POST /api/connection/gateway` works identically in dev and prod; with a
-  signed-in dev session, all `/api/*` traffic rides the session proxy, and
-  without one it falls through to the raw dev proxy (no-auth gateways keep
-  working).
-- Three adversarial reviews folded (design pre-build, code, UX/product):
-  batch executions render as single multi-item cards with a batch-aware
-  busy set (no phantom Ready cards / duplicate keys / 409s); the readiness
-  gate can never be silently absent (fetch-on-demand + explicit unknown
-  state); Done cards resolve their archived spec instead of erroring;
-  promote is a two-step confirm; one failing endpoint degrades the board
-  with a label instead of blanking it; label facets with a coverage pill
-  make sprint labels usable; "Follow live" preselects the run in
-  Executions; recurrent task creation lands on Backlog with a notice;
-  attachment/metadata failures surface instead of being swallowed.
-
-## 0.1.0 — 2026-07-12 (unreleased)
-
-Born from the `abstractobserver` split: the development/deployment console
-moved into its own app (see `history.md` for the full provenance).
+AbstractContinuum is the AbstractFramework development and deployment
+console: a thin React client over a Run Gateway's development-lane APIs,
+served by a small Node server that holds the gateway session.
 
 ### Added
 
-- **Executions landing page** — a live "what is executing right now"
-  surface: active exec requests (queued / running / awaiting QA) with
-  status counters, live log tails, one-click QA actions (feedback /
-  promote / deploy-UAT), and a recently-finished strip.
-- **Session sign-in in Settings** — the shell now exposes the app-origin
-  session flow (`POST /api/connection/gateway`): sign in with a gateway
-  user token (used once, never stored browser-side), sign out, and a
-  visible session status. Direct bearer mode remains as the labeled
-  development path. The shell shows a "sign in" hint when the gateway
-  probe fails.
-- **Cursor-based log follow** — live exec log polling now uses the
-  gateway's `after_bytes` contract (deltas + `next_offset` + rotation
-  `reset`) when available, falling back to whole-tail polling on older
-  gateways. Long follows cap the client buffer at 1 MB (labeled as
-  truncated; the full log stays available in the full-log modal).
-- Behavior test suite: pure-model pins, page-level component tests for
-  Backlog, Executions, Inbox, and Processes, pipeline-hook contract tests
-  (72 tests at the close of the wave).
-- Documentation set under `docs/` (architecture, configuration, security,
-  API, FAQ, troubleshooting) and a backlog system under `docs/backlog/`.
+- **Board** (landing page) — kanban work flow (Triage → Ready → In Progress
+  → In Review → Done, plus a Failed history lane) derived from gateway state.
+  Cards carry type, priority (P0–P3), labels (sprints via `sprint-N`),
+  package chips, and a Definition-of-Ready indicator; the card drawer holds
+  the spec (view/edit + metadata), the item's runs, and the QA review
+  (acceptance-criteria checklist → promote / iterate / deploy to UAT).
+  Hub-backed cards show their work claims and activity.
+- **Executions** — live view of queued / running / awaiting-QA exec
+  requests with cursor-following log tails, one-click QA actions, and a
+  recently-finished strip.
+- **Backlog** — catalog view over every kind (planned, proposed, recurrent,
+  completed, deprecated, trash) with search, batch execute, merge, guided
+  item creation from the gateway template, AI assist, and a read-only
+  advisor with voice input and spoken replies.
+- **Agents & Entities** — the configured executor (Codex CLI today; the
+  executor is read from the gateway's exec config), the advisor agent, a
+  track record folded from execution history, and gateway entities with
+  their skills.
+- **Team** — an agora hub client: channels and DMs with threaded messages,
+  reactions and retraction, an inbox of open asks, hub-wide grouped search
+  (with semantic-search mode and coverage when the hub serves it), channel
+  files with markdown and Mermaid rendering, work claims, ledger
+  verification, and live updates over WebSocket. It posts as one operator
+  seat configured on the server.
+- **Inbox** — bug report, feature request, and email triage with decisions.
+- **Services** — managed prod/UAT process control (start / stop / restart /
+  redeploy) and write-only environment variables.
+- **Settings** — gateway sign-in through the shared connection dialog, AI
+  provider/model and reasoning-effort preferences, and per-browser voice
+  overrides.
+- **Server** (`abstractcontinuum`, `bin/cli.js`) — serves the built app and
+  proxies `/api/*` through the `@abstractframework/app-server` session proxy
+  (first-party HttpOnly cookies + CSRF; tokens never stored in the browser),
+  plus an allowlisted agora hub proxy under `/api/hub/*` that attaches the
+  seat key server-side. Sends a Content-Security-Policy on the app document.
+  `--help` and `--version` flags.
 
-### Changed
+### Security
 
-- The backlog page was refactored from a single 4,141-line module into
-  focused modules under `src/ui/backlog/` (model, two state hooks, panes,
-  modals, drawer) with no behavior change; behavior pins were written
-  before the split and pass unchanged.
-- `src/lib/gateway_client.ts` now carries only the development-lane API
-  families this app uses (backlog + exec pipeline, reports/email/triage,
-  managed processes, and shared reads: runs-list probe, artifact download,
-  voice). The observation-lane client remains in `abstractobserver`.
-- `src/ui/styles.css` was pruned from the full observer stylesheet
-  (6,026 lines) to the rules the four pages use (~1,300 lines).
+- The server binds loopback (`127.0.0.1`) by default; wider binds are an
+  explicit `HOST` choice. The hub proxy refuses non-loopback peers unless
+  `ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE=1` and rejects cross-origin browser
+  requests, including WebSocket handshakes. See `docs/security.md`.
 
-### Fixed
+### Compatibility
 
-- Same-origin CSRF: the client now reads the `abstractcontinuum_gateway_csrf`
-  cookie and sends `x-abstractcontinuum-csrf` / `x-abstract-csrf`. The
-  copied client still used the observer's cookie/header names, so every
-  mutating request through the session proxy would have been rejected 403.
-- Bug/feature reports created from this app now identify the client as
-  `abstractcontinuum/web` (previously `abstractobserver/web`).
-- The email account preference and the advisor voice session are now stored
-  under `abstractcontinuum_*` keys instead of the observer's.
-- Shell layout: the app root (`.app`) was unstyled (the copied stylesheet
-  only carried the observer's `.app-shell`), so pages taller than the
-  viewport were clipped without scrollbars; the shell, brand, and process
-  status tags are now styled, and the panel-chat base stylesheet is
-  imported (markdown/chat surfaces previously rendered unstyled).
-- Exec detail: promoted requests no longer render two "Promotion"
-  sections; live "age"/"run time" now tick during a run; log polling stops
-  for terminal requests; overlapping polls can no longer duplicate
-  cursor-follow deltas (ref-based in-flight guards); a failed list poll
-  keeps the previous list visible instead of blanking it.
+- Requires Node.js ≥ 18 and a Run Gateway (`abstractgateway`) that serves
+  the development-lane API families listed in `docs/api.md`. Features the
+  gateway has not enabled (exec runner, process manager, backlog browsing)
+  render with the gateway setting that enables them.
+- The Team page's hub contract is typed and tested against the vendored
+  hub OpenAPI artifact in `vendor/hub/`.

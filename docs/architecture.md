@@ -14,6 +14,8 @@ flowchart LR
         EX[Executions page]
         BL[Backlog page]
         AG[Agents page]
+        TM[Team page<br/>agora hub client]
+        HC[HubClient<br/>src/lib/hub_client.ts]
         IN[Inbox page]
         PR[Services page]
         SE[Settings page<br/>uic sign-in card]
@@ -24,11 +26,17 @@ flowchart LR
         AG --> GC
         IN --> GC
         PR --> GC
+        TM --> HC
     end
 
     subgraph AppServer["bin/cli.js (node)"]
         SP[Gateway session proxy<br/>@abstractframework/app-server]
         ST[Static dist/ serving]
+        HP[Hub proxy<br/>bin/hub_proxy.js<br/>seat key server-side]
+    end
+
+    subgraph Hub["agora hub (optional)"]
+        HA["channels, DMs, search,<br/>files, work, desk"]
     end
 
     subgraph Gateway["Run Gateway (abstractgateway)"]
@@ -43,6 +51,8 @@ flowchart LR
     GC -- "/api/* + session cookies + CSRF" --> SP
     SE -- "POST /api/connection/gateway" --> SP
     SP -- "x-abstractgateway-session" --> BK & EP & RP & PM & SH
+    HC -- "/api/hub/* + /api/hub/ws" --> HP
+    HP -- "allowlisted routes + Bearer seat key" --> HA
     EP --- WK
     WK -- "candidate workspace → UAT → promote" --> Repos[(Framework repos<br/>prod + UAT trees)]
 ```
@@ -51,9 +61,9 @@ One transport mode: same-origin. The browser talks only to the app
 server (`bin/cli.js` in production, the equivalent vite plugin in dev).
 The session proxy signs in against the gateway, holds the session
 server-side, sets first-party cookies, and enforces CSRF on mutating
-requests. Tokens never reach browser storage. (The former development
-"direct mode" — gateway URL + bearer in `localStorage` — was removed
-2026-07-12 per the shared connection contract.)
+requests. Tokens never reach browser storage. The Team page uses the same
+origin: `/api/hub/*` and the `/api/hub/ws` WebSocket are served by the hub
+proxy, which attaches the operator seat's key server-side.
 
 ## The execution pipeline
 
@@ -100,41 +110,53 @@ executor-neutral and read identity from the config.
 src/
   app.tsx                     shell: sidebar nav, uic connect modal, probe
   lib/
-    gateway_client.ts         typed client (dev-lane families only)
+    gateway_client.ts         typed gateway client (dev-lane families only)
     gateway_types.ts          request/response types
-    ids.ts                    random_id
+    hub_client.ts             agora hub client (via the /api/hub proxy)
+    hub_api_types.ts          types generated from vendor/hub/openapi.json
+    hub_contract.ts           compile-time pins against the hub contract
+    hub_ledger.ts             independent hub ledger verification
+    team_model.ts             Team page pure model (threads, filters, badges)
+    work_id.ts                work-item id + rendered-state derivations
+    entity_skills_model.ts    entity skills view model
+    voice_settings.ts         per-browser voice overrides
+    markdown_segments.ts      prose / mermaid splitting for rendering
+    session_run_id.ts, ids.ts small id helpers
   ui/
-    shell/icons.tsx           sidebar nav glyphs (offered to ui-kit)
     board/
       board_model.ts          metadata convention + DoR + column derivation (pure, pinned)
       use_board_data.ts       list/request fetches + lazy metadata cache
+      use_work_claims.ts      hub work-claim rows joined onto board cards
       board_page.tsx          kanban columns/cards/filters + execute gate
       work_item_drawer.tsx    Spec / Runs / Review tabs
-    agents_page.tsx           executor roster + track record
-    executions_page.tsx       live pipeline ops view
-    settings_page.tsx         connection status + connect-modal launcher + AI prefs
-    exec_event.ts             codex exec-log event classification
-    backlog_browser.tsx       re-export of backlog/backlog_page
+      work_activity_panel.tsx hub work activity for hub-backed cards
     backlog/
       model.ts                pure helpers (unit-pinned)
-      hooks.ts                use_media_query
-      use_backlog_items.ts    backlog file state + actions
+      hooks.ts                small shared hooks (media query, executor registry)
       use_exec_pipeline.ts    exec pipeline state + polling
-      backlog_page.tsx        composition root (cross-concern flows)
-      toolbar.tsx             tabs, filters, batch actions
-      list_pane.tsx           item + exec request lists
-      item_detail_pane.tsx    item view/edit + maintenance chat
+      backlog_page.tsx        catalog table + composition root
       exec_detail_pane.tsx    exec detail + QA panel
       exec_events_view.tsx    live log/events viewer
       execute_modals.tsx      execute / batch / merge confirms
       new_task_modal.tsx      creation flow (template, guided, assist)
-      exec_full_log_modal.tsx full-log browser (artifact-backed)
       advisor_drawer.tsx      read-only backlog advisor (chat + voice)
+    team_page.tsx             Team page (agora hub client)
+    team_file_viewer.tsx      channel file viewer
+    agents_page.tsx           executor roster, entities, track record
+    entity_skills_panel.tsx   entity skills section
+    executions_page.tsx       live pipeline ops view
     report_inbox.tsx          bug/feature reports + triage decisions
     email_inbox.tsx           email accounts/messages/send
-    processes_page.tsx        managed process control + env vars
-    modal.tsx, multi_select.tsx, use_gateway_voice.ts   shared widgets
-bin/cli.js                    static serve + session proxy
+    processes_page.tsx        managed process control + env vars (Services)
+    settings_page.tsx         connection status + AI and voice preferences
+    voice_settings_panel.tsx  voice override controls
+    exec_event.ts             exec-log event classification
+    backlog_unconfigured.tsx  rendering for a gateway without backlog browsing
+    memo_markdown.tsx, mermaid_block.tsx   markdown + mermaid rendering
+    modal.tsx, multi_select.tsx, error_boundary.tsx   shared widgets
+bin/cli.js                    static serve + session proxy + hub proxy mount
+bin/hub_proxy.js              allowlisted agora hub proxy (HTTP + WebSocket)
+vendor/hub/                   vendored hub OpenAPI + golden conformance vectors
 ```
 
 ### The Board model
@@ -155,10 +177,9 @@ Design boundaries:
 
 - **Purpose boundary** — the observer observes and discusses; continuum
   develops and deploys. Observation features do not grow here.
-- **Concern boundary** — `model.ts` is pure (no React/network);
-  `use_backlog_items` and `use_exec_pipeline` each own one concern; panes
-  are presentational; only `backlog_page.tsx` wires cross-concern flows
-  (execute → jump to Processing, QA actions → tab moves).
+- **Concern boundary** — `model.ts`, `board_model.ts` and `team_model.ts`
+  are pure (no React/network) and unit-pinned; hooks such as
+  `use_exec_pipeline` each own one concern; panes are presentational.
 - **Client boundary** — `gateway_client.ts` carries only the API families
   this app uses (see [api.md](api.md)); new observation-lane methods belong
   in the observer.
@@ -170,3 +191,4 @@ Design boundaries:
 - [security.md](security.md) — trust model (process manager is high trust)
 - `docs/backlog/overview.md` — work planning and history
 - `history.md` (repo root) — provenance of the 2026-07-12 split
+- `vendor/hub/` — the hub contract the Team page is typed and tested against

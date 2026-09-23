@@ -15,46 +15,58 @@ different scope.
 | State | Count |
 | --- | --- |
 | Planned | 2 |
-| Proposed | 6 |
-| Completed | 2 |
+| Proposed | 5 |
+| Completed | 16 |
 | Deprecated | 0 |
 | Recurrent | 2 |
 
 ## Next recommended work
 
-1. `planned/0002_uic_adoption_shared_modules.md` — blocked on the uic
-   seat's answer (agora commons c1073); execute the migration when the kit
-   lands the components.
-2. `planned/0001_publish_gated_app_server_dependency.md` — swap the
-   `file:` dependency when `@abstractframework/app-server` publishes.
-3. `proposed/0003_exec_stream_and_log_cursor.md` — log-cursor half shipped
-   and consumed 2026-07-12 (c1075/c1078); promote the SSE half when the
-   gateway ships the stream (they committed to it post-fleet-leg).
+1. `planned/0001_publish_gated_app_server_dependency.md` — swap the
+   `file:` dependency to `@abstractframework/app-server@^0.1.9` once that
+   package is on npm; it gates the first npm publish of this app.
+2. `proposed/0021_panel_hub_boundary_hardening.md` — settles the Team
+   page / hub boundary ahead of any web-chat extraction.
+3. `planned/0002_uic_adoption_shared_modules.md` — adopt the shared kit
+   components for `modal.tsx` / `multi_select.tsx` when they land.
 
 ## Planned
 
 | ID | Item | Notes |
 | --- | --- | --- |
 | 0001 | `planned/0001_publish_gated_app_server_dependency.md` | Swap `file:../abstractuic/app-server` to a semver range on publish |
-| 0002 | `planned/0002_uic_adoption_shared_modules.md` | Migrate modal / multi_select / use_gateway_voice to abstractuic once adopted |
+| 0002 | `planned/0002_uic_adoption_shared_modules.md` | Migrate shared widgets (modal / multi_select) to abstractuic once adopted |
 
 ## Proposed
 
 | ID | Item | Promotion criteria |
 | --- | --- | --- |
-| 0003 | `proposed/0003_exec_stream_and_log_cursor.md` | Log cursor DONE (c1075, consumed same day); promote when the gateway ships exec-request SSE |
+| 0003 | `proposed/0003_exec_stream_and_log_cursor.md` | Log cursor done; promote when the gateway ships exec-request SSE |
 | 0004 | `proposed/0004_executor_abstraction.md` | A second executor (e.g. abstractcode) becomes concrete gateway-side |
-| 0005 | `proposed/0005_ci_workflow.md` | Repo gets its first commit / publish decision from the maintainer |
-| 0006 | `proposed/0006_attachment_insert_order_quirk.md` | Anyone confirms the intended order for repeated attachment uploads |
-| 0008 | `proposed/0008_gateway_metadata_and_promote_carry.md` | Gateway ships list-level metadata / promote-carry (c1087/c1088) |
-| 0009 | `proposed/0009_server_dor_gate_and_agent_assignment.md` | Gateway ships the execute-time DoR gate / agent overrides |
+| 0008 | `proposed/0008_gateway_metadata_and_promote_carry.md` | Gateway ships promote-carry (list-level metadata already consumed) |
+| 0021 | `proposed/0021_panel_hub_boundary_hardening.md` | A hub web-chat extraction is scheduled |
+| 0022 | `proposed/0022_desk_ws_test_harness_tail.md` | Desk / WS relay test-harness debt is picked up |
 
 ## Completed
 
-| ID | Item | Completed | Outcome |
-| --- | --- | --- | --- |
-| 0007 | `completed/0007_birth_cleanup_wave.md` | 2026-07-12 | Client + CSS pruned, monolith split, Executions page, docs/tests bootstrapped (62 tests green) |
-| 0010 | `completed/0010_board_first_redesign.md` | 2026-07-12 | Board-first redesign: uic auth (dev-proxy 404 fixed), sidebar IA, kanban + drawer, DoR/DoD, Agents page; 3 adversary folds; 101 tests green |
+| ID | Item | Outcome |
+| --- | --- | --- |
+| 0005 | `completed/0005_ci_workflow.md` | CI + release workflows (2026-09-23) |
+| 0006 | `completed/0006_attachment_insert_order_quirk.md` | Attachment insert order decided |
+| 0007 | `completed/0007_birth_cleanup_wave.md` | Client + CSS pruned, monolith split, Executions page, docs/tests bootstrapped |
+| 0009 | `completed/0009_server_dor_gate_and_agent_assignment.md` | Server-side DoR gate + execute-time agent assignment consumed |
+| 0010 | `completed/0010_board_first_redesign.md` | Board-first redesign: sidebar IA, kanban + drawer, DoR/DoD, Agents page |
+| 0010 | `completed/0010_team_settings_adversary_p2_tail.md` | Team/Settings review tail (shares the 0010 prefix by mistake; kept for history) |
+| 0011 | `completed/0011_unified_work_board_join.md` | Board claim-join + Team work-id chips |
+| 0012 | `completed/0012_console_entity_skills_section.md` | Entity Skills section |
+| 0013 | `completed/0013_per_message_reactions.md` | Per-message ±1 reactions |
+| 0014 | `completed/0014_message_retraction_console.md` | Message retraction |
+| 0015 | `completed/0015_board_team_reconciliation.md` | Board reflects Team work |
+| 0016 | `completed/0016_unified_backlog_hub_union.md` | Board/Backlog read the hub work union |
+| 0017 | `completed/0017_operator_desk.md` | Operator desk |
+| 0018 | `completed/0018_board_content_access.md` | Every board card opens real content |
+| 0019 | `completed/0019_message_display_reliability_tail.md` | Message-display reliability tail |
+| 0020 | `completed/0020_md_doc_hierarchy_all_surfaces.md` | Reading hierarchy on every markdown surface |
 
 ## Deprecated
 
@@ -83,6 +95,6 @@ None.
 
 ## Planning notes
 
-- 2026-07-12 — backlog bootstrapped during the birth cleanup wave. The
-  standing maintainer rule applies: no commits without his explicit word;
-  branches stay local.
+- 2026-07-12 — backlog bootstrapped during the birth cleanup wave.
+- 2026-09-23 — overview reconciled with the directories for the first
+  public release (0.2.0); CI item 0005 completed.

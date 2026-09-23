@@ -1,0 +1,121 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish-npm:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: abstractcontinuum
+    steps:
+      - name: Check out AbstractContinuum
+        uses: actions/checkout@v4
+        with:
+          path: abstractcontinuum
+
+      # ui-kit / panel-chat are bundled from source via Vite aliases to
+      # ../abstractuic, so the sibling checkout is needed for the build.
+      - name: Check out AbstractUIC
+        uses: actions/checkout@v4
+        with:
+          repository: lpalbou/AbstractUIC
+          path: abstractuic
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+          cache-dependency-path: abstractcontinuum/package-lock.json
+
+      - name: Refuse local file dependencies
+        run: |
+          node -e "
+            const pkg = require('./package.json');
+            const bad = Object.entries({ ...pkg.dependencies, ...pkg.peerDependencies })
+              .filter(([, spec]) => /^(file|link|workspace):/.test(String(spec)));
+            if (bad.length) {
+              console.error('Cannot publish with local dependency specs: ' + bad.map(([n, s]) => n + '@' + s).join(', '));
+              process.exit(1);
+            }
+          "
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: CLI smoke test
+        run: node bin/cli.js --help
+
+      - name: Validate npm package contents
+        run: npm pack --dry-run
+
+      - name: Validate tag version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "Tag version ($TAG_VERSION) does not match package.json version ($PKG_VERSION)." >&2
+            exit 1
+          fi
+
+      - name: Publish package
+        run: |
+          PKG_NAME="$(node -p "require('./package.json').name")"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if npm view "${PKG_NAME}@${PKG_VERSION}" version >/dev/null 2>&1; then
+            echo "${PKG_NAME}@${PKG_VERSION} is already published; skipping."
+          else
+            npm publish --access public --provenance
+          fi
+
+  github-release:
+    name: GitHub release
+    needs: publish-npm
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out AbstractContinuum
+        uses: actions/checkout@v4
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          # Release notes: the CHANGELOG section for this version.
+          awk -v ver="$VERSION" '
+            /^## / { if (found) exit; if (index($0, "## " ver " ") == 1 || $0 == "## " ver) { found = 1; next } }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "No CHANGELOG.md section found for ${VERSION}." >&2
+            exit 1
+          fi
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --title "AbstractContinuum ${VERSION}" --notes-file release-notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" --title "AbstractContinuum ${VERSION}" --notes-file release-notes.md --verify-tag
+          fi

@@ -6,9 +6,8 @@ teachings (the `backlog`/`coredoc` skills on the AbstractSkill shelf) and
 the rendering/enforcing surface cannot drift apart: **the deployment's
 parser is truth; this document describes it.**
 
-Scope note: authored 2026-07-13 (skill canvass c1676 ask 5; fold design
-c1694/c1697). The gateway seat co-signs the parser half; changes to any
-grammar below must update this file in the same change.
+Changes to any grammar below must update this file in the same change
+as the parser or board code that implements them.
 
 ## File layout and lifecycle
 
@@ -46,17 +45,14 @@ paths never coerce**: an unknown at-rest type renders as-written with a
 "labeled unknown" chip. Do not invent new types in items; propose enum
 changes to the semantics seat.
 
-> **Upstream-normalization caveat (skill's fable5 find c3546; gateway
-> fix c3556)**: the gateway list parser now accepts the full ruled enum
-> (`improvement` included — the coercion that made the DoR type-refusal
-> unreachable is fixed). Remaining honest limit: genuinely UNKNOWN
-> at-rest words still normalize to `task` upstream, so the console's
-> labeled-unknown chip fires only for values the gateway lets through;
-> raw-unknown survival is a priced-but-unscheduled gateway change.
+> **Upstream normalization**: the gateway list parser accepts the full
+> type enum (`improvement` included). Unknown at-rest words normalize to
+> `task` upstream, so the console's labeled-unknown chip fires only for
+> values the gateway lets through.
 
 ## Metadata lines (blockquote grammar — NOT a `## Metadata` section)
 
-The gateway parses **blockquote lines** in the file header (c1090). List
+The gateway parses **blockquote lines** in the file header. List
 sections like `## Metadata` with `- Created:` bullets are **not parsed**
 — an item written that way renders metadata-blind on the board.
 
@@ -84,11 +80,9 @@ override is recorded as `dor_overridden`). The checks:
 4. A Testing section naming how it will be verified (backticked commands;
    `...`/`n/a` don't count — ADR-0019 levels).
 
-The gate is FOUR checks (gateway co-sign c3514, verified against the
-shipped parser `backlog_dor.py`): **priority is NOT a gate check** — it is
-advisory metadata the board renders as chips. An earlier revision of this
-document listed "Priority set" as a fifth check; that taught a check the
-gate does not run.
+The gate is FOUR checks (matching the gateway parser `backlog_dor.py`):
+**priority is NOT a gate check** — it is advisory metadata the board
+renders as chips.
 
 Overrides are legitimate (the operator's judgment wins) but always
 explicit and recorded — never silent.
@@ -100,7 +94,7 @@ promote. "Done" means validated — the promote flow is the verification
 surface, and an unreviewed promote carries its unconfirmed count on the
 button label.
 
-## Supervision vocabulary (room coordination on the board, c1631/c1634)
+## Supervision vocabulary (room coordination on the board)
 
 | Label | Meaning | Board behavior |
 | --- | --- | --- |
@@ -112,21 +106,20 @@ Per-seat receipts inside a wave item are acceptance checkboxes carrying
 the hub message id:
 
 ```markdown
-- [ ] gateway: writer wave shipped (c1608)
-- [x] continuum: supervision view live (c1636)
+- [ ] gateway: writer wave shipped (c1234)
+- [x] continuum: supervision view live (c1240)
 ```
 
 ## Docs freshness (the coredoc half)
 
-The Projects conformance read (designed c1660) flags a package red when
+The Projects conformance read flags a package red when
 `llms.txt`/`llms-full.txt` is **older than the newest `docs/*.md`** —
 regenerate the llms files in the same change that edits docs. Presence
 checks: `README.md`, `docs/`, `llms.txt`, `llms-full.txt`.
 
 ## Sources
 
-- Parser: gateway backlog family (list-level metadata c1090; DoR gate c1140).
+- Parser: gateway backlog family (list-level metadata; DoR gate).
 - Board: `src/ui/board/board_model.ts` (metadata regexes, readiness,
   gate semantics — test-pinned).
-- Rulings: `decision:workitem-type-enum` (semantics), c1631 supervision
-  directive, c1634 mapping, c1694 fold design.
+- Type enum: the hub decision `decision:workitem-type-enum`.

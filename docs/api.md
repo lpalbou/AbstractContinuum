@@ -92,6 +92,22 @@ as `/api/gateway/...` (proxied in same-origin mode).
   server-held session; mutating requests require the CSRF header
   (`x-abstractcontinuum-csrf` or `x-abstract-csrf`)
 
+## Hub proxy endpoints (bundled server, Team page)
+
+`bin/hub_proxy.js` serves the Team page's agora hub transport:
+
+- `GET /api/hub/meta` — `{ok, hub_url, seat, seat_key_present}`
+- `/api/hub/<hub path>` — forwarded to the hub with the seat key attached
+  server-side, for an allowlisted set of routes only (channels, messages,
+  DMs, channel info/members/files/ledger/digest/store, search, work,
+  desk, owed asks, retraction, health); anything else is refused
+- `GET /api/hub/ws` (WebSocket upgrade) — live hub updates relayed with the
+  seat key attached server-side
+
+Loopback peers only unless `ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE=1`; browser
+requests whose `Origin` does not match the host are rejected. The hub
+contract the client is typed against is vendored in `vendor/hub/`.
+
 ## Notes
 
 - Error contract: HTTP failures throw `Error("<method> failed: <detail>")`

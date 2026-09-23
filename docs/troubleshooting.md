@@ -64,11 +64,28 @@ Set `ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1` and
 `ABSTRACTGATEWAY_TRIAGE_REPO_ROOT` on the gateway host — and read
 [security.md](security.md) first: this enables remote service control.
 
+## Team page
+
+**The Team page reports `hub_seat_unavailable`.**
+The server has no key for the configured seat. Set
+`ABSTRACTCONTINUUM_HUB_SEAT` to your seat and either provision it in the key
+store (`ABSTRACTCONTINUUM_HUB_KEYS`, default `~/.agora/keys.json`) or set
+`ABSTRACTCONTINUUM_HUB_KEY`. `GET /api/hub/meta` shows the hub URL, seat,
+and whether a key was found. See
+[configuration.md](configuration.md#team-page-agora-hub).
+
+**The Team page works on localhost but not from another machine.**
+The hub proxy refuses non-loopback peers by default. Set
+`ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE=1` only behind your own access control:
+everyone who reaches the page posts as the configured seat.
+
 ## Development
 
 **`npm run dev` fails resolving `@abstractframework/ui-kit`.**
-The dev toolchain expects a sibling `../abstractuic` checkout (Vite aliases
-+ `file:` dependency). Clone it next to this repo and `npm install` again.
+The source build expects a sibling `../abstractuic` checkout (Vite aliases
++ `file:` dependency). Clone [AbstractUIC](https://github.com/lpalbou/AbstractUIC)
+next to this repo as `abstractuic` and run `npm install` again. The
+published npm package does not need it.
 
 **Tests fail with `scrollIntoView is not a function`.**
 jsdom lacks it; the suites stub `Element.prototype.scrollIntoView` in their

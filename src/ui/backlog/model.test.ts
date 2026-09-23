@@ -188,7 +188,9 @@ describe("exec pipeline model", () => {
     expect(out.executor_type).toBe("codex_cli");
     expect(out.ok).toBe(true);
     expect(out.exit_code).toBe(0);
-    expect(out.last_message).toHaveLength(1200);
+    // Bounded to 1200 chars, and the cut names itself (never a silent truncation).
+    expect(out.last_message?.startsWith("m".repeat(1200) + "\n")).toBe(true);
+    expect(out.last_message).toContain("[#TRUNCATION: 1200 of 2000 chars");
     expect(exec_summary_from_payload(null, "r").status).toBe("unknown");
   });
 

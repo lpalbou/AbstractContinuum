@@ -18,6 +18,33 @@ import { createHubProxy } from './hub_proxy.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = join(__dirname, '..', 'dist');
+
+const argv = process.argv.slice(2);
+if (argv.includes('--version') || argv.includes('-v')) {
+  const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8'));
+  console.log(pkg.version);
+  process.exit(0);
+}
+if (argv.includes('--help') || argv.includes('-h')) {
+  console.log(`Usage: abstractcontinuum [--help] [--version]
+
+Serves the AbstractContinuum console and proxies /api/* to a Run Gateway
+through a same-origin session proxy. Configuration is environment-driven:
+
+  PORT                            HTTP port (default 3002)
+  HOST                            bind address (default 127.0.0.1)
+  ABSTRACTCONTINUUM_GATEWAY_URL   gateway URL (fallback ABSTRACTGATEWAY_URL,
+                                  default http://127.0.0.1:8080)
+  ABSTRACTCONTINUUM_HUB_URL       agora hub for the Team page (fallback
+                                  AGORA_HUB_URL, default http://127.0.0.1:8765)
+  ABSTRACTCONTINUUM_HUB_SEAT      hub seat the Team page acts as (default laurent)
+  ABSTRACTCONTINUUM_HUB_KEYS      hub key store (default ~/.agora/keys.json)
+  ABSTRACTCONTINUUM_HUB_KEY       hub API key (overrides the key store)
+
+Documentation: https://github.com/lpalbou/AbstractContinuum#readme`);
+  process.exit(0);
+}
+
 const PORT = process.env.PORT || 3002;
 // Default bind is LOOPBACK (entity's c1768 SSRF finding against the shared
 // session proxy, plus a continuum-specific amplifier: this server also

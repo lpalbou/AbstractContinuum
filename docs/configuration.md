@@ -4,12 +4,12 @@ All configuration is environment-driven on the server side plus a small
 browser Settings page. Secrets stay in the environment — nothing in this
 repo or in browser storage holds credentials in same-origin mode.
 
-## Server (`npm start` / `bin/cli.js`)
+## Server (`abstractcontinuum` / `npm start` / `bin/cli.js`)
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `PORT` | `3002` | HTTP port |
-| `HOST` | `0.0.0.0` | Bind address |
+| `HOST` | `127.0.0.1` | Bind address (loopback by default; set `0.0.0.0` only behind your own access control) |
 | `ABSTRACTCONTINUUM_GATEWAY_URL` | `http://127.0.0.1:8080` | Gateway this deployment talks to |
 | `ABSTRACTGATEWAY_URL` | — | Fallback for the above (shared across Abstract apps) |
 
@@ -21,6 +21,25 @@ Session-proxy hardening knobs (from `@abstractframework/app-server`, appId
 | `ABSTRACTCONTINUUM_ALLOW_REMOTE_BROWSER_GATEWAY_CONFIG` / `ABSTRACTGATEWAY_ALLOW_REMOTE_BROWSER_GATEWAY_CONFIG` | Allow non-loopback browsers to change the gateway URL at sign-in. Leave off unless you front the app with your own access control. |
 | `ABSTRACTCONTINUUM_ALLOW_BROWSER_GATEWAY_URL_COOKIE` | Honor a browser-supplied gateway-URL cookie on non-loopback hosts. |
 | `ABSTRACTCONTINUUM_TRUST_PROXY_HEADERS` / `ABSTRACTGATEWAY_TRUST_PROXY_HEADERS` | Trust `x-forwarded-host` for the loopback check (set only behind a reverse proxy you control). Cookies get the `Secure` attribute whenever `x-forwarded-proto: https` is present, independent of this flag. |
+
+## Team page (agora hub)
+
+The Team page talks to an agora hub through the server's `/api/hub/*`
+proxy, which forwards an allowlisted subset of the hub API and attaches one
+operator seat's API key server-side. The key never reaches the browser.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `ABSTRACTCONTINUUM_HUB_URL` | `http://127.0.0.1:8765` | Hub base URL (fallback: `AGORA_HUB_URL`) |
+| `ABSTRACTCONTINUUM_HUB_SEAT` | `laurent` | The seat the Team page reads and posts as — set this to your own seat |
+| `ABSTRACTCONTINUUM_HUB_KEYS` | `~/.agora/keys.json` | Key store; the entry `"<hub_url>::<seat>"` supplies the seat key (re-read per request, so rotation needs no restart) |
+| `ABSTRACTCONTINUUM_HUB_KEY` | — | Seat API key; overrides the key store |
+| `ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE` | off | Set to `1` to let non-loopback browsers use the hub proxy. Leave off unless you front the app with your own access control. |
+
+Without a key, hub routes other than the keyless health check answer
+`503 hub_seat_unavailable` naming the seat and key store to provision;
+`GET /api/hub/meta` reports the configured hub URL, seat, and whether a key
+is present.
 
 ## Gateway-side features
 
@@ -54,6 +73,7 @@ direct-mode tokens are scrubbed at startup.
 
 ## Development
 
-`npm run dev` starts Vite on :3002 with `/api` proxied to
-`http://localhost:8080` (see `vite.config.ts`). The ui-kit and panel-chat
+`npm run dev` starts Vite on :3003 with `/api` proxied to
+`http://localhost:8080` (see `vite.config.ts`); the dev server mounts the
+same session and hub proxies as production. The ui-kit and panel-chat
 packages resolve from a sibling `../abstractuic` checkout.

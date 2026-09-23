@@ -2,3 +2,25 @@ node_modules/
 dist/
 *.log
 .DS_Store
+*.tgz
+
+# ---------------------------------------------------------------------------
+# Agent harness and local tooling
+#
+# Coding-agent configuration embeds absolute local paths, hook commands, seat
+# identities and API-key slots. None of it belongs in a public repository.
+# ---------------------------------------------------------------------------
+.claude/
+.codex/
+.cursor/
+.agora/
+.abstractcode/
+.mcp.json
+CLAUDE.md
+AGENTS.md
+AGENT_SPAWN_PROMPT.md
+abstractcode-export-*.md
+
+# Local scratch space and virtual environments
+untracked/
+.venv/

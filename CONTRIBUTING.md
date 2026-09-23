@@ -8,7 +8,7 @@ Gateway; the app renders and commands it.
 
 ```bash
 npm install
-npm run dev      # dev server on :3002, /api proxied to localhost:8080
+npm run dev      # dev server on :3003, /api proxied to localhost:8080
 ```
 
 The dev toolchain resolves `@abstractframework/ui-kit` and
@@ -33,6 +33,10 @@ npm run build      # production build must stay green
 - `src/ui/` — pages (executions, report inbox, email, processes) and small
   shared widgets.
 - `bin/cli.js` — static serving + the app-origin gateway session proxy.
+- `bin/hub_proxy.js` — the Team page's allowlisted agora hub proxy.
+- `vendor/hub/` — the vendored hub OpenAPI artifact and golden vectors that
+  `src/lib/hub_contract.ts` and `src/lib/hub_conformance.test.ts` pin
+  against (`npm run gen:hub-types` regenerates `src/lib/hub_api_types.ts`).
 
 ## Conventions
 

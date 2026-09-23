@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-build:
+    name: Test and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: abstractcontinuum
+    steps:
+      # The source build resolves @abstractframework/ui-kit and panel-chat
+      # (Vite/TS aliases) and, until it is on npm, @abstractframework/app-server
+      # (file: dependency) from ../abstractuic — so both repos are checked out
+      # side by side.
+      - name: Check out AbstractContinuum
+        uses: actions/checkout@v4
+        with:
+          path: abstractcontinuum
+
+      - name: Check out AbstractUIC
+        uses: actions/checkout@v4
+        with:
+          repository: lpalbou/AbstractUIC
+          path: abstractuic
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: abstractcontinuum/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check app-server resolves
+        run: node -e "import('@abstractframework/app-server').then(m => { if (typeof m.createGatewaySessionProxy !== 'function') throw new Error('createGatewaySessionProxy missing'); console.log('app-server OK'); })"
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: CLI smoke test
+        run: |
+          node bin/cli.js --version
+          node bin/cli.js --help
+
+      - name: Validate npm package contents
+        run: npm pack --dry-run
