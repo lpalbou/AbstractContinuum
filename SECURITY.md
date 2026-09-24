@@ -37,10 +37,8 @@ The bundled server (`bin/cli.js`) uses the shared app-origin session proxy
   to every forwarded request. The user token itself is used once and never
   stored anywhere.
 - Bearer tokens never appear in URLs and never touch browser storage —
-  there is no client-side token mode. (The former "direct mode" that kept
-  a bearer in `localStorage` was removed 2026-07-12 per the shared
-  connection contract; app startup scrubs any token persisted by older
-  builds.)
+  there is no client-side token mode; app startup removes any token an
+  older build left in browser storage.
 - Mutating requests require the CSRF token (`x-abstractcontinuum-csrf` or
   the canonical `x-abstract-csrf`) matching the CSRF cookie (deliberately
   JS-readable so the client can echo it).

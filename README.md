@@ -18,7 +18,8 @@ cockpit (board-first, kanban/scrum-inspired — see
 - **Backlog** — the full catalog power view (all kinds incl. recurrent /
   deprecated / trash, search, batch execute, merge, AI assist + advisor).
 - **Agents & Entities** — the workforce: the configured execution agent
-  (executor is a pluggable seam — Codex CLI today), the advisor agent, a
+  (Codex CLI, Claude Code, Cursor Agent or AbstractCode — a gateway
+  setting), the advisor agent, a
   track record from execution history, and gateway entities with their
   skills.
 - **Team** — an [agora](docs/configuration.md#team-page-agora-hub) hub
@@ -32,7 +33,11 @@ cockpit (board-first, kanban/scrum-inspired — see
 - **Services** — control managed prod/UAT processes (start / stop /
   restart / redeploy) and write-only environment variables. This surface is
   high trust: see [SECURITY.md](SECURITY.md) before exposing it.
-- **Settings** — gateway session sign-in and AI preferences.
+- **Settings** — gateway sign-in, execution defaults (UAT or inplace), AI
+  and voice preferences, and **Gateway administration**: the backlog
+  folder, exec runner, executor and process manager, each shown with where
+  its value comes from (launch flag, setting, environment (legacy), or
+  default). Only a gateway admin can change them.
 
 Executing a Ready item is gated by an advisory **Definition of Ready**
 checklist (type, real summary, acceptance criteria, test commands — parsed
@@ -41,18 +46,20 @@ review shows the acceptance criteria as a **Definition of Done** checklist.
 
 The observer app ([AbstractObserver](https://github.com/lpalbou/AbstractObserver))
 watches and discusses the running system; this app develops and deploys it.
-The pipeline is executor-agnostic by design: the gateway currently runs
-executions through the Codex CLI, but the executing agent is a pluggable
-seam and the UI reads the executor identity from the gateway's exec config
-(see [docs/architecture.md](docs/architecture.md)).
+The pipeline is executor-agnostic: the gateway's `executor` setting picks
+the agent that runs items (`codex` by default; also `claude`,
+`cursor-agent`, `abstractcode`), and the UI reads the executor identity from
+the gateway's exec config (see [docs/architecture.md](docs/architecture.md)).
 
 ## Install and run
 
-Requires Node.js ≥ 18 and a running Run Gateway
-([AbstractGateway](https://github.com/lpalbou/AbstractGateway), default
-`http://127.0.0.1:8080`). AbstractGateway 0.4.1 or newer is needed for the
-backlog folder panel and the Settings → Gateway administration controls; an
-older gateway shows the Board's *folder not available* panel instead.
+Requirements:
+
+- Node.js ≥ 18.
+- **AbstractGateway 0.4.1 or newer** (the supported gateway; default
+  `http://127.0.0.1:8080`). See
+  [AbstractGateway](https://github.com/lpalbou/AbstractGateway). Against an
+  older gateway the Board shows its *folder not available* panel.
 
 ```bash
 npx @abstractframework/continuum
@@ -65,7 +72,7 @@ Open `http://localhost:3002` and sign in with a gateway user and token (the
 connection badge at the bottom of the sidebar). The token is exchanged
 server-side for an HttpOnly session cookie and never stored in the browser.
 
-Common environment variables (full list in
+The server itself is configured with environment variables (full list in
 [docs/configuration.md](docs/configuration.md), or `abstractcontinuum --help`):
 
 - `PORT` (default `3002`), `HOST` (default `127.0.0.1`)
@@ -73,6 +80,11 @@ Common environment variables (full list in
   this deployment talks to (default `http://127.0.0.1:8080`)
 - `ABSTRACTCONTINUUM_HUB_URL` / `ABSTRACTCONTINUUM_HUB_SEAT` — the agora hub
   and operator seat for the Team page
+
+A fresh gateway needs no backlog setup: it keeps its own backlog folder, and
+the Board opens on **Your backlog is empty** with **Create your first item**.
+To point the Board at a project, or to enable executions, see
+[docs/getting-started.md](docs/getting-started.md#your-backlog).
 
 Before exposing the console beyond localhost, read
 [docs/security.md](docs/security.md): a signed-in user can redeploy services.
@@ -103,7 +115,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
 - [docs/getting-started.md](docs/getting-started.md) — first run and first execution
 - [docs/architecture.md](docs/architecture.md) — components, data flow, design boundaries
 - [docs/api.md](docs/api.md) — the gateway API families this app consumes
-- [docs/configuration.md](docs/configuration.md) — environment variables and settings
+- [docs/configuration.md](docs/configuration.md) — server environment variables, gateway settings, browser settings
+- [docs/conventions.md](docs/conventions.md) — the work-item grammar the Board reads
 - [docs/security.md](docs/security.md) — trust model (read before deploying)
 - [docs/faq.md](docs/faq.md) / [docs/troubleshooting.md](docs/troubleshooting.md)
 - [CHANGELOG.md](CHANGELOG.md) — release history

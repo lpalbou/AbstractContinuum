@@ -111,12 +111,12 @@ the hub message id:
 - [x] continuum: supervision view live (c1240)
 ```
 
-## Docs freshness (the coredoc half)
+## Docs freshness
 
-The Projects conformance read flags a package red when
-`llms.txt`/`llms-full.txt` is **older than the newest `docs/*.md`** —
-regenerate the llms files in the same change that edits docs. Presence
-checks: `README.md`, `docs/`, `llms.txt`, `llms-full.txt`.
+A package's `llms.txt`/`llms-full.txt` are stale when they are **older than
+the newest `docs/*.md`** — regenerate the llms files in the same change that
+edits docs. Every package is expected to carry `README.md`, `docs/`,
+`llms.txt`, and `llms-full.txt`.
 
 ## Sources
 

@@ -3,10 +3,9 @@
 ## Prerequisites
 
 - Node.js ≥ 18
-- A running Run Gateway (`abstractgateway`, default `http://127.0.0.1:8080`)
-  — 0.4.1 or newer for the backlog folder and gateway settings (see
-  [configuration.md](configuration.md#gateway-side-features) for the gateway
-  settings; [api.md](api.md) lists what this app calls on it)
+- A running Run Gateway: AbstractGateway 0.4.1 or newer (`abstractgateway`,
+  default `http://127.0.0.1:8080`). [api.md](api.md) lists what this app
+  calls on it.
 - Optional, for the Team page: an agora hub and a seat key (see
   [configuration.md](configuration.md#team-page-agora-hub))
 
@@ -49,19 +48,20 @@ To work on a project's backlog instead (any folder that contains
 `docs/backlog/`), a gateway admin sets **Settings → Gateway administration →
 Backlog folder → Change…**, or runs `abstractgateway config set
 triage_repo_root /path/to/project` on the gateway's computer. Executing items
-also needs the exec runner: **Settings → Exec runner → Enable** (or
-`abstractgateway config set backlog_exec_runner on`). See
+also needs the exec runner: **Settings → Gateway administration → Exec runner
+→ Enable** (or `abstractgateway config set backlog_exec_runner on`). See
 [configuration.md](configuration.md#gateway-side-features).
 
 ## Your first execution
 
-1. **Backlog → Planned** — pick an item (or create one with **New**: the
-   draft is prefilled from the shared template; guided fields and AI assist
-   can flesh it out).
-2. Press **Execute**. Keep the default **UAT** mode; confirm. The app jumps
-   to the live view.
-3. **Executions** (or Backlog → Processing) — watch the request move
-   queued → running with live event logs (commands, tokens, outputs).
+1. Pick a **Ready** item on the **Board** (or **Backlog → Planned**), or
+   create one with **New**: the draft is prefilled from the backlog
+   template; guided fields and AI assist can flesh it out.
+2. Press **Execute**. The Definition-of-Ready checklist shows what the item
+   is missing (you can override it explicitly). Keep the default **UAT**
+   mode; confirm. The app opens the request on the **Executions** page.
+3. **Executions** — watch the request move queued → running with live event
+   logs (commands, tokens, outputs).
 4. When it reaches **awaiting QA**: click **Restart UAT** to deploy the
    candidate to the shared UAT stack and try it; then either
    **Approve → promote to prod** or **Iterate (send feedback)** with QA
@@ -72,6 +72,9 @@ machines.
 
 ## Where to go next
 
+- [../README.md](../README.md) — the pages at a glance
 - [architecture.md](architecture.md) — how the pieces fit
+- [conventions.md](conventions.md) — how to write items the Board and the
+  Definition of Ready understand
 - [configuration.md](configuration.md) — every knob
 - [troubleshooting.md](troubleshooting.md) — when something misbehaves

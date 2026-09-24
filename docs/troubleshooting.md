@@ -4,11 +4,12 @@ Symptom-first. Each entry links to the page owning the full explanation.
 
 ## Sign-in / connectivity
 
-**The header LED stays gray (gateway unreachable).**
-The app probes with a 1-run list. Check the gateway is running and that
-`ABSTRACTCONTINUUM_GATEWAY_URL` (or the Settings gateway URL in dev) points
-at it. In same-origin mode, `bin/cli.js` logs the gateway it resolved at
-startup.
+**The banner says "Gateway unreachable or not signed in."**
+The app probes the gateway with a one-run list. Check that the gateway is
+running and that `ABSTRACTCONTINUUM_GATEWAY_URL` (or the URL you entered in
+the connect dialog) points at it; `bin/cli.js` logs the gateway it resolved
+at startup. Then sign in again from the connection badge at the bottom of
+the sidebar. See [getting-started.md](getting-started.md#first-run).
 
 **Sign-in succeeds but every action fails with 403 `csrf_required`.**
 Mutating requests need the CSRF header derived from the
@@ -25,16 +26,18 @@ URL at sign-in. Pin the URL server-side
 
 ## Executions
 
-**Execute button says the runner is disabled / not running / codex missing.**
-The gateway's exec worker is off or misconfigured. A gateway admin enables it
-in Settings → Gateway administration (it applies at once), or on the gateway's
-computer with `abstractgateway config set backlog_exec_runner on` and
-`abstractgateway config set executor codex`; the agent program must be
-installed there.
+**Execute says the runner is disabled / not running / the executor is missing.**
+The gateway's exec worker is off or its executor is not installed. A gateway
+admin enables it in **Settings → Gateway administration → Exec runner** (it
+applies at once) and picks an installed **Executor**, or on the gateway's
+computer runs `abstractgateway config set backlog_exec_runner on` and
+`abstractgateway config set executor codex`. The agent program must be
+installed on the gateway's computer. See
+[configuration.md](configuration.md#gateway-side-features).
 
-**A planned item disappeared.**
-It is executing: Planned hides items with an active request ("N planned
-items hidden while queued/running"). Find it under Processing.
+**A planned item's Execute button says "Processing…".**
+The item already has a live exec request. Follow it on the **Executions**
+page; the button returns to **Execute** when the request finishes.
 
 **Promotion is blocked with conflicts.**
 Prod diverged from the candidate's base while the agent worked. Use
@@ -43,25 +46,26 @@ listed files manually.
 
 **UAT URLs do not respond after "Restart UAT".**
 The detail pane shows a probe warning when UAT processes fail their URL
-check. Open Processes → UAT and read the process logs; the process manager
-must be enabled for UAT deploys (Settings → Process manager, or
-`abstractgateway config set process_manager on`).
+check. Open **Services → UAT** and read the process logs; the process
+manager must be enabled for UAT deploys (**Settings → Gateway administration
+→ Process manager**, or `abstractgateway config set process_manager on`).
 
-**Log tail says "(tail truncated)".**
-Live tails are bounded (160 KB). For finished requests, use the
-**Execution log** button (Completed → Tasks → item) — it loads the full log
-from ledger artifacts, with a bounded-tail fallback for requests that
-predate artifact capture.
+**Live logs say "#TRUNCATION: log tail truncated".**
+Live logs are bounded: each fetch reads at most the last 160 KB, and the
+followed view keeps about 1 MB. The complete logs stay on the gateway with
+the exec request; switch between **events**, **stderr** and **last
+message** to read the part you need.
 
-## Inbox / processes
+## Inbox / services
 
 **Inbox shows only the Email tab.**
 Triage is a prop (`enable_triage`) wired on in this app; if you embed the
 page elsewhere, pass it explicitly. Email account features additionally
 depend on the gateway's email configuration.
 
-**Processes page says the manager is disabled.**
-A gateway admin turns on Settings → Process manager (or
+**The Services page says the process manager is disabled.**
+A gateway admin turns on **Settings → Gateway administration → Process
+manager** (or
 `abstractgateway config set process_manager on`) and sets the backlog folder
 to the framework checkout it manages — read [security.md](security.md)
 first: this enables remote service control.
@@ -71,7 +75,9 @@ The gateway's saved backlog folder no longer exists (or is not a folder). An
 admin clicks **Use the gateway's own folder** (the gateway creates it) or
 **Choose a folder…** (a folder containing `docs/backlog`; the gateway
 explains a refusal). A fresh gateway never shows this: it starts on its own
-folder, and the Board shows **Your backlog is empty**.
+folder, and the Board shows **Your backlog is empty**. The same panel
+appears when the gateway is older than 0.4.1: upgrade the gateway. See
+[getting-started.md](getting-started.md#your-backlog).
 
 ## Team page
 

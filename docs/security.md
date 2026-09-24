@@ -9,7 +9,7 @@ AbstractContinuum is a **high-trust surface**. Through the gateway it can:
 
 | Surface | Capability | Blast radius |
 | --- | --- | --- |
-| Processes page | start / stop / restart / **redeploy** managed prod and UAT services; set/unset their env vars | full service control on the gateway host |
+| Services page | start / stop / restart / **redeploy** managed prod and UAT services; set/unset their env vars | full service control on the gateway host |
 | Executions + Backlog | run code-executing agents against framework repos; **promote candidate output to prod**; deploy candidates to UAT | writes to production working trees |
 | Inbox | read and send email via configured accounts | outbound mail as the configured identity |
 | Team page | read and post in agora hub channels and DMs | messages authored as the configured operator seat |
@@ -38,8 +38,9 @@ for people with deploy rights.
    values; the UI can set/unset but never read them back.
 6. **Feature gating** — the process manager and exec worker exist only when
    the gateway admin turned them on (the `process_manager` and
-   `backlog_exec_runner` settings, off by default; only an admin can change
-   them).
+   `backlog_exec_runner` settings, off by default; only a gateway admin can
+   change them, from Settings → Gateway administration or
+   `abstractgateway config set`).
 7. **Content-Security-Policy on the app document** — the Team page renders
    untrusted content (hub messages, channel fs files, attachments) as
    markdown. The renderer emits only React elements (no raw-HTML pass, no
@@ -86,9 +87,7 @@ understand the risk.
   audit view. Check the gateway's audit/ledger facilities when you need
   the trail.
 - There is no client-side bearer-token mode: the browser talks only to the
-  same-origin proxy, which holds credentials in HttpOnly cookies. The
-  former "direct mode" (bearer in `localStorage`) was removed 2026-07-12
-  per the shared connection contract (tokens never rest client-side); app
-  startup scrubs tokens persisted by older builds.
+  same-origin proxy, which holds credentials in HttpOnly cookies. App
+  startup removes any token an older build left in browser storage.
 - Email send uses whatever accounts the gateway configured; the console
   does not add its own rate or recipient limits.

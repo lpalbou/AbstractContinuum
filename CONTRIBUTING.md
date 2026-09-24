@@ -30,8 +30,10 @@ npm run build      # production build must stay green
   only; see `docs/api.md`).
 - `src/ui/backlog/` — the backlog + exec pipeline modules (keep files under
   ~600 lines; `model.ts` stays pure and unit-pinned).
-- `src/ui/` — pages (executions, report inbox, email, processes) and small
-  shared widgets.
+- `src/ui/board/` — the Board (kanban model, drawer, work claims).
+- `src/ui/` — the other pages (executions, agents, team, report inbox,
+  email, services, settings), the backlog folder panel, and small shared
+  widgets.
 - `bin/cli.js` — static serving + the app-origin gateway session proxy.
 - `bin/hub_proxy.js` — the Team page's allowlisted agora hub proxy.
 - `vendor/hub/` — the vendored hub OpenAPI artifact and golden vectors that
@@ -49,3 +51,12 @@ npm run build      # production build must stay green
 - Do not grow observation features here — the observer app owns watching
   and discussing the running system; this app develops and deploys it.
 - Work items live in `docs/backlog/` (see `docs/backlog/overview.md`).
+- Documentation changes regenerate `llms.txt` / `llms-full.txt` in the same
+  change (see [docs/conventions.md](docs/conventions.md#docs-freshness)).
+
+## See also
+
+- [docs/architecture.md](docs/architecture.md) — components and boundaries
+- [docs/api.md](docs/api.md) — the gateway families the client may call
+- [CHANGELOG.md](CHANGELOG.md) — add a user-visible entry for behavior changes
+- [SECURITY.md](SECURITY.md) — the trust model your change must keep

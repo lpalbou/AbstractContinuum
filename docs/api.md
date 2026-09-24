@@ -16,6 +16,7 @@ as `/api/gateway/...` (proxied in same-origin mode).
 | --- | --- |
 | `backlog_list(kind)` | `GET /backlog/{kind}` |
 | `backlog_content(kind, filename)` | `GET /backlog/{kind}/{filename}/content` |
+| `backlog_status()` | `GET /backlog/status` — the backlog folder's state (`available`, `path`, `source`, `is_default`, `writable`, reason when unavailable); drives the Board's empty state and *folder not available* panel |
 | `backlog_template()` | `GET /backlog/template` |
 | `backlog_create(...)` | `POST /backlog/create` |
 | `backlog_update(...)` | `POST /backlog/{kind}/{filename}/update` (sha-guarded) |
@@ -23,7 +24,7 @@ as `/api/gateway/...` (proxied in same-origin mode).
 | `backlog_merge(...)` | `POST /backlog/merge` |
 | `backlog_upload_attachment(...)` | `POST /backlog/{kind}/{filename}/attachments/upload` |
 
-### Exec pipeline (codex executions)
+### Exec pipeline (agent executions)
 
 | Method | Endpoint |
 | --- | --- |
@@ -38,6 +39,19 @@ as `/api/gateway/...` (proxied in same-origin mode).
 | `backlog_exec_log_tail(...)` | `GET /backlog/exec/requests/{id}/logs/tail?name=&max_bytes=&after_bytes=` (cursor follow: delta + `next_offset` + rotation `reset` on gateways that support it) |
 | `backlog_exec_active_items(...)` | `GET /backlog/exec/active_items?status=&limit=` |
 
+### Gateway settings (Settings → Gateway administration)
+
+| Method | Endpoint |
+| --- | --- |
+| `admin_runtime_config()` | `GET /admin/runtime-config` — each setting's value and source (`flag`, `stored`, `env`, `default`) plus the gateway's label and help text |
+| `admin_runtime_config_update(patch)` | `POST /admin/runtime-config` — admin only; patch any of `triage_repo_root` (a path, or `null` for the gateway's own folder), `backlog_exec_runner`, `executor`, `process_manager`; the gateway validates and its refusal is shown as is |
+| `admin_executors()` | `GET /admin/executors` — the executor registry (which agents are installed) for the Executor picker and the Agents page |
+| `admin_data_homes()` | `GET /admin/data-homes` — the Data and caches panel |
+
+These are the same settings as `abstractgateway config get|set` and the
+gateway console's *Backlog settings*; see
+[configuration.md](configuration.md#gateway-side-features).
+
 ### AI assistance
 
 | Method | Endpoint |
@@ -45,6 +59,8 @@ as `/api/gateway/...` (proxied in same-origin mode).
 | `backlog_assist(...)` | `POST /backlog/assist` (draft a new item) |
 | `backlog_maintain(...)` | `POST /backlog/maintain` (refine an existing item) |
 | `backlog_advisor(...)` | `POST /backlog/advisor` (read-only agent chat) |
+| `discovery_providers()` / `discovery_provider_models(p)` / `discovery_model_capabilities(m)` | `GET /discovery/providers`, `GET /discovery/providers/{p}/models`, `GET /discovery/models/capabilities?model_name=` (provider/model pickers in Settings) |
+| `list_bundles()` | `GET /bundles` (advisor agent picker) |
 
 ### Reports, triage, email
 
@@ -78,7 +94,10 @@ as `/api/gateway/...` (proxied in same-origin mode).
 | `download_run_artifact_content(run, artifact)` | `GET /runs/{run}/artifacts/{id}/content` | full exec logs, TTS audio |
 | `attachments_upload(...)` | `POST /attachments/upload` | voice recordings |
 | `audio_transcribe(...)` | `POST /runs/{run}/audio/transcribe` | advisor push-to-talk |
-| `voice_tts(...)` | `POST /runs/{run}/voice/tts` | advisor spoken replies |
+| `voice_tts(...)` | `POST /runs/{run}/voice/tts` (and `/voice/tts/stream`) | advisor spoken replies |
+| `voice_voices(...)` / `capability_defaults()` | `GET /voice/voices`, `GET /config/capability-defaults` | voice settings |
+| `list_entities()` / `entity_state(name)` | `GET /entities`, `POST /entities/{name}/state` | Agents & Entities page |
+| `entity_skills(name)` / `put_entity_skills(name, ...)` | `GET`/`PUT /entities/{name}/skills` | entity skills panel |
 
 ## Session endpoints (bundled server)
 
@@ -114,6 +133,10 @@ contract the client is typed against is vendored in `vendor/hub/`.
   where detail is the response body when readable, else the HTTP status.
   Missing required arguments throw before any request is made, as
   `Error("<method>: <field> is required")`.
-- The client is deliberately scoped: observation-lane families (ledger
-  streams, KG queries, bundles, entity APIs) live in the observer's client,
-  not here.
+- The client is deliberately scoped to the families above: run-observation
+  families (ledger streams, knowledge-graph queries) live in the observer's
+  client, not here.
+- Setup and first run: [getting-started.md](getting-started.md); how these
+  families fit together: [architecture.md](architecture.md); failures such
+  as `csrf_required` or an unavailable backlog folder:
+  [troubleshooting.md](troubleshooting.md).

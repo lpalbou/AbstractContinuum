@@ -7,33 +7,46 @@ system (runs, ledgers, artifacts, memory graphs, entities); continuum
 They were one app until 2026-07-12 (`history.md` records the split).
 
 **Is this tied to Codex?**
-No. The gateway currently executes backlog items through the Codex CLI, but
-the executor is a pluggable seam: the UI reads the executor identity from
-`/backlog/exec/config` and renders whatever the gateway reports. Other
-agents can power the same pipeline.
+No. The executor is a gateway setting: Codex CLI (`codex`, the default),
+Claude Code (`claude`), Cursor Agent (`cursor-agent`) or AbstractCode
+(`abstractcode`). Pick it in Settings → Gateway administration → Executor,
+or with `abstractgateway config set executor <id>`; the UI reads the
+executor identity from `/backlog/exec/config`.
 
 **What is the difference between UAT and inplace execution?**
 UAT (default) runs the agent in a candidate workspace; you inspect the
 result on the shared UAT stack and explicitly promote to prod. Inplace runs
 directly in the production workspace — faster, dangerous, labeled as such.
 
-**Why don't I see the Processes page content / why is Execute disabled?**
-Those features exist only when the gateway admin turned them on: the process
-manager and the backlog exec runner are gateway settings (Settings → Gateway
+**Which gateway version do I need?**
+AbstractGateway 0.4.1 or newer. It serves the backlog folder state and the
+settings that Settings → Gateway administration edits; see
+[api.md](api.md).
+
+**Why is the Services page empty / why is Execute disabled?**
+Those features exist only when a gateway admin turns them on: the process
+manager and the exec runner are gateway settings (Settings → Gateway
 administration, or `abstractgateway config set process_manager on` /
-`backlog_exec_runner on`); see [configuration.md](configuration.md).
+`backlog_exec_runner on`); see [configuration.md](configuration.md#gateway-side-features).
+
+**Where is my backlog stored?**
+In the gateway's backlog folder: by default the gateway's own
+`<data dir>/backlog/`, or any project folder containing `docs/backlog/` that
+an admin chooses. The Board's empty state shows the path. See
+[getting-started.md](getting-started.md#your-backlog) and
+[conventions.md](conventions.md) for the file layout.
 
 **Can I read an environment variable's value from the ENV tab?**
 No, by design. Managed env vars are write-only: the gateway never returns
 values to the browser. You can see whether a value is set and where it came
 from, and you can set/unset it.
 
-**Where do "planned items hidden while queued/running" go?**
-Items with an active exec request are hidden from Planned to prevent double
-execution; they are visible under Processing until the request finishes.
+**Why does a planned item's Execute button say "Processing…"?**
+The item already has a live exec request, so it cannot be executed twice.
+Follow it on the **Executions** page (or in the Board's In Progress / In
+Review columns) until the request finishes.
 
 **Does the app store any secrets?**
 No. Sessions are server-held HttpOnly cookies; raw tokens are exchanged
-once at sign-in and never stored browser-side. (The former development
-"direct mode" that kept a bearer in `localStorage` was removed; startup
-scrubs tokens persisted by older builds.) See [security.md](security.md).
+once at sign-in and never stored browser-side. See
+[security.md](security.md).

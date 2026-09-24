@@ -1,7 +1,10 @@
 # AbstractContinuum documentation
 
 Continuous iterative development and deployment console for
-AbstractFramework — the development cockpit over a Run Gateway.
+AbstractFramework — the development cockpit over a Run Gateway
+(AbstractGateway 0.4.1 or newer). Start with
+[getting-started.md](getting-started.md), then read the page that matches
+your task below.
 
 ## Core docs
 
@@ -10,11 +13,16 @@ AbstractFramework — the development cockpit over a Run Gateway.
 | [getting-started.md](getting-started.md) | Install, first run (dev + production shape), your first execution |
 | [architecture.md](architecture.md) | System shape (diagrams), the exec pipeline, module layout, design boundaries |
 | [api.md](api.md) | The gateway API families this app consumes + the session endpoints it serves |
-| [configuration.md](configuration.md) | Server env vars, session-proxy knobs, gateway-side feature gates, browser settings |
+| [configuration.md](configuration.md) | Server environment variables, session-proxy knobs, Team page hub settings, gateway settings (backlog folder, exec runner, executor, process manager), browser settings |
 | [security.md](security.md) | Trust model — the process manager and promote-to-prod are high trust; read before deploying |
 | [conventions.md](conventions.md) | The board's work-item grammar: lifecycle, metadata lines, type enum, DoR/DoD, supervision labels — the canonical reference process skills teach from |
 | [faq.md](faq.md) | Recurring questions (observer vs continuum, executor agnosticism, UAT vs inplace, …) |
-| [troubleshooting.md](troubleshooting.md) | Symptom-oriented fixes for sign-in, executions, inbox, processes, and dev setup |
+| [troubleshooting.md](troubleshooting.md) | Symptom-oriented fixes for sign-in, executions, the backlog folder, inbox, services, the Team page, and dev setup |
+
+## Design
+
+- [design/redesign_2026_07.md](design/redesign_2026_07.md) — the
+  board-first design the pages follow (Board, Executions, Backlog, Agents)
 
 ## Root docs
 

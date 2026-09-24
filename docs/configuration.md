@@ -1,8 +1,19 @@
 # Configuration
 
-All configuration is environment-driven on the server side plus a small
-browser Settings page. Secrets stay in the environment — nothing in this
-repo or in browser storage holds credentials in same-origin mode.
+Configuration lives in three places:
+
+- **The Continuum server** (`abstractcontinuum`): environment variables,
+  below. The server has no configuration file and no flags beyond `--help`
+  and `--version`.
+- **The gateway**: the backlog folder, exec runner, executor, and process
+  manager are gateway settings, changed from Settings → Gateway
+  administration, the gateway console, or `abstractgateway config set`
+  (see [Gateway-side features](#gateway-side-features)).
+- **The browser**: per-browser preferences on the Settings page.
+
+Credentials never live in this repository or in browser storage: the
+gateway token is exchanged for a server-held session, and the hub seat key
+is read on the server.
 
 ## Server (`abstractcontinuum` / `npm start` / `bin/cli.js`)
 
@@ -55,10 +66,15 @@ item template on first use.
 | `executor` | The agent that runs queued items (`codex`, `claude`, `cursor-agent`, `abstractcode`) | Settings (Executor); `abstractgateway config set executor codex` |
 | `process_manager` | The Services page (high trust — see [security.md](security.md)); process control also needs the backlog folder set to the framework checkout it manages | Settings (*Enable*); `abstractgateway config set process_manager on` |
 
-Settings shows where each value comes from: *launch flag*, *setting*,
-*environment (legacy)* (a gateway set up before these settings existed; saving
-a value replaces it) or *default*. Only a gateway admin can change them; the
-gateway validates every change and its refusal is shown as is.
+All Settings entries above live under **Settings → Gateway administration**;
+`abstractgateway config get` prints the current values on the gateway's
+computer.
+
+Settings shows where each value comes from: *launch flag* (a saved value
+applies once the gateway restarts without the flag), *setting*,
+*environment (legacy)* (saving a value here replaces it) or *default*. Only
+a gateway admin can change them; the gateway validates every change and its
+refusal is shown as is.
 
 When the backlog folder is not available (a saved folder that was deleted or
 unmounted), the Board, Backlog and Executions pages show the folder and the
@@ -71,14 +87,17 @@ Persisted in `localStorage` under `abstractcontinuum_settings_v1`:
 
 | Setting | Purpose |
 | --- | --- |
-| Maintenance AI provider / model | Provider/model for backlog AI assist + maintenance chat (blank = gateway default). |
+| Default execution mode | `UAT` (default, staged) or `Inplace` (edits prod) for the Execute dialog. |
+| Maintenance AI provider / model / reasoning effort | Provider, model and reasoning effort for backlog AI assist + maintenance chat (blank = gateway default). |
 | Backlog advisor agent | Gateway bundle id for the advisor (blank = `basic-agent`). |
+
+Voice overrides (Settings → voice panel) are stored separately under
+`abstractcontinuum_voice_override_v1`.
 
 Connection is NOT a settings field: the shared `GatewayConnectModal`
 (sidebar badge, or "Manage connection" in Settings) signs in through
 `POST /api/connection/gateway`; the token is exchanged once for HttpOnly
-session cookies and never stored browser-side. Older builds' persisted
-direct-mode tokens are scrubbed at startup.
+session cookies and never stored browser-side.
 
 ## Development
 

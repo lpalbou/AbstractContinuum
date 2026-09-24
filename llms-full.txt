@@ -28,7 +28,8 @@ cockpit (board-first, kanban/scrum-inspired — see
 - **Backlog** — the full catalog power view (all kinds incl. recurrent /
   deprecated / trash, search, batch execute, merge, AI assist + advisor).
 - **Agents & Entities** — the workforce: the configured execution agent
-  (executor is a pluggable seam — Codex CLI today), the advisor agent, a
+  (Codex CLI, Claude Code, Cursor Agent or AbstractCode — a gateway
+  setting), the advisor agent, a
   track record from execution history, and gateway entities with their
   skills.
 - **Team** — an [agora](docs/configuration.md#team-page-agora-hub) hub
@@ -42,7 +43,11 @@ cockpit (board-first, kanban/scrum-inspired — see
 - **Services** — control managed prod/UAT processes (start / stop /
   restart / redeploy) and write-only environment variables. This surface is
   high trust: see [SECURITY.md](SECURITY.md) before exposing it.
-- **Settings** — gateway session sign-in and AI preferences.
+- **Settings** — gateway sign-in, execution defaults (UAT or inplace), AI
+  and voice preferences, and **Gateway administration**: the backlog
+  folder, exec runner, executor and process manager, each shown with where
+  its value comes from (launch flag, setting, environment (legacy), or
+  default). Only a gateway admin can change them.
 
 Executing a Ready item is gated by an advisory **Definition of Ready**
 checklist (type, real summary, acceptance criteria, test commands — parsed
@@ -51,18 +56,20 @@ review shows the acceptance criteria as a **Definition of Done** checklist.
 
 The observer app ([AbstractObserver](https://github.com/lpalbou/AbstractObserver))
 watches and discusses the running system; this app develops and deploys it.
-The pipeline is executor-agnostic by design: the gateway currently runs
-executions through the Codex CLI, but the executing agent is a pluggable
-seam and the UI reads the executor identity from the gateway's exec config
-(see [docs/architecture.md](docs/architecture.md)).
+The pipeline is executor-agnostic: the gateway's `executor` setting picks
+the agent that runs items (`codex` by default; also `claude`,
+`cursor-agent`, `abstractcode`), and the UI reads the executor identity from
+the gateway's exec config (see [docs/architecture.md](docs/architecture.md)).
 
 ## Install and run
 
-Requires Node.js ≥ 18 and a running Run Gateway
-([AbstractGateway](https://github.com/lpalbou/AbstractGateway), default
-`http://127.0.0.1:8080`). AbstractGateway 0.4.1 or newer is needed for the
-backlog folder panel and the Settings → Gateway administration controls; an
-older gateway shows the Board's *folder not available* panel instead.
+Requirements:
+
+- Node.js ≥ 18.
+- **AbstractGateway 0.4.1 or newer** (the supported gateway; default
+  `http://127.0.0.1:8080`). See
+  [AbstractGateway](https://github.com/lpalbou/AbstractGateway). Against an
+  older gateway the Board shows its *folder not available* panel.
 
 ```bash
 npx @abstractframework/continuum
@@ -75,7 +82,7 @@ Open `http://localhost:3002` and sign in with a gateway user and token (the
 connection badge at the bottom of the sidebar). The token is exchanged
 server-side for an HttpOnly session cookie and never stored in the browser.
 
-Common environment variables (full list in
+The server itself is configured with environment variables (full list in
 [docs/configuration.md](docs/configuration.md), or `abstractcontinuum --help`):
 
 - `PORT` (default `3002`), `HOST` (default `127.0.0.1`)
@@ -83,6 +90,11 @@ Common environment variables (full list in
   this deployment talks to (default `http://127.0.0.1:8080`)
 - `ABSTRACTCONTINUUM_HUB_URL` / `ABSTRACTCONTINUUM_HUB_SEAT` — the agora hub
   and operator seat for the Team page
+
+A fresh gateway needs no backlog setup: it keeps its own backlog folder, and
+the Board opens on **Your backlog is empty** with **Create your first item**.
+To point the Board at a project, or to enable executions, see
+[docs/getting-started.md](docs/getting-started.md#your-backlog).
 
 Before exposing the console beyond localhost, read
 [docs/security.md](docs/security.md): a signed-in user can redeploy services.
@@ -113,7 +125,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
 - [docs/getting-started.md](docs/getting-started.md) — first run and first execution
 - [docs/architecture.md](docs/architecture.md) — components, data flow, design boundaries
 - [docs/api.md](docs/api.md) — the gateway API families this app consumes
-- [docs/configuration.md](docs/configuration.md) — environment variables and settings
+- [docs/configuration.md](docs/configuration.md) — server environment variables, gateway settings, browser settings
+- [docs/conventions.md](docs/conventions.md) — the work-item grammar the Board reads
 - [docs/security.md](docs/security.md) — trust model (read before deploying)
 - [docs/faq.md](docs/faq.md) / [docs/troubleshooting.md](docs/troubleshooting.md)
 - [CHANGELOG.md](CHANGELOG.md) — release history
@@ -132,10 +145,9 @@ MIT — see [LICENSE](LICENSE).
 ## Prerequisites
 
 - Node.js ≥ 18
-- A running Run Gateway (`abstractgateway`, default `http://127.0.0.1:8080`)
-  — 0.4.1 or newer for the backlog folder and gateway settings (see
-  [configuration.md](configuration.md#gateway-side-features) for the gateway
-  settings; [api.md](api.md) lists what this app calls on it)
+- A running Run Gateway: AbstractGateway 0.4.1 or newer (`abstractgateway`,
+  default `http://127.0.0.1:8080`). [api.md](api.md) lists what this app
+  calls on it.
 - Optional, for the Team page: an agora hub and a seat key (see
   [configuration.md](configuration.md#team-page-agora-hub))
 
@@ -178,19 +190,20 @@ To work on a project's backlog instead (any folder that contains
 `docs/backlog/`), a gateway admin sets **Settings → Gateway administration →
 Backlog folder → Change…**, or runs `abstractgateway config set
 triage_repo_root /path/to/project` on the gateway's computer. Executing items
-also needs the exec runner: **Settings → Exec runner → Enable** (or
-`abstractgateway config set backlog_exec_runner on`). See
+also needs the exec runner: **Settings → Gateway administration → Exec runner
+→ Enable** (or `abstractgateway config set backlog_exec_runner on`). See
 [configuration.md](configuration.md#gateway-side-features).
 
 ## Your first execution
 
-1. **Backlog → Planned** — pick an item (or create one with **New**: the
-   draft is prefilled from the shared template; guided fields and AI assist
-   can flesh it out).
-2. Press **Execute**. Keep the default **UAT** mode; confirm. The app jumps
-   to the live view.
-3. **Executions** (or Backlog → Processing) — watch the request move
-   queued → running with live event logs (commands, tokens, outputs).
+1. Pick a **Ready** item on the **Board** (or **Backlog → Planned**), or
+   create one with **New**: the draft is prefilled from the backlog
+   template; guided fields and AI assist can flesh it out.
+2. Press **Execute**. The Definition-of-Ready checklist shows what the item
+   is missing (you can override it explicitly). Keep the default **UAT**
+   mode; confirm. The app opens the request on the **Executions** page.
+3. **Executions** — watch the request move queued → running with live event
+   logs (commands, tokens, outputs).
 4. When it reaches **awaiting QA**: click **Restart UAT** to deploy the
    candidate to the shared UAT stack and try it; then either
    **Approve → promote to prod** or **Iterate (send feedback)** with QA
@@ -201,7 +214,10 @@ machines.
 
 ## Where to go next
 
+- [../README.md](../README.md) — the pages at a glance
 - [architecture.md](architecture.md) — how the pieces fit
+- [conventions.md](conventions.md) — how to write items the Board and the
+  Definition of Ready understand
 - [configuration.md](configuration.md) — every knob
 - [troubleshooting.md](troubleshooting.md) — when something misbehaves
 
@@ -229,8 +245,9 @@ flowchart LR
         HC[HubClient<br/>src/lib/hub_client.ts]
         IN[Inbox page]
         PR[Services page]
-        SE[Settings page<br/>uic sign-in card]
+        SE[Settings page<br/>sign-in + Gateway administration]
         GC[GatewayClient<br/>src/lib/gateway_client.ts]
+        SE --> GC
         BO --> GC
         EX --> GC
         BL --> GC
@@ -250,18 +267,21 @@ flowchart LR
         HA["channels, DMs, search,<br/>files, work, desk"]
     end
 
-    subgraph Gateway["Run Gateway (abstractgateway)"]
+    subgraph Gateway["Run Gateway (AbstractGateway 0.4.1+)"]
+        BS["/backlog/status (backlog folder state)"]
+        AD["/admin/runtime-config (settings door),<br/>/admin/executors, /admin/data-homes"]
         BK["/backlog/* (CRUD + template)"]
         EP["/backlog/exec/* (requests, logs, QA)"]
         RP["/reports/*, /triage/*, /email/*"]
         PM["/processes/* (start/stop/redeploy, env)"]
-        SH["/runs, /attachments, /audio, /voice (shared reads)"]
-        WK[Exec worker<br/>executor: codex_cli today]
+        SH["/runs, /attachments, /audio, /voice,<br/>/entities, /bundles, /discovery (shared reads)"]
+        WK[Exec worker<br/>executor: codex / claude /<br/>cursor-agent / abstractcode]
     end
 
     GC -- "/api/* + session cookies + CSRF" --> SP
     SE -- "POST /api/connection/gateway" --> SP
-    SP -- "x-abstractgateway-session" --> BK & EP & RP & PM & SH
+    SP -- "x-abstractgateway-session" --> BS & AD & BK & EP & RP & PM & SH
+    AD -. "backlog folder, exec runner,<br/>executor, process manager" .-> BK & WK & PM
     HC -- "/api/hub/* + /api/hub/ws" --> HP
     HP -- "allowlisted routes + Bearer seat key" --> HA
     EP --- WK
@@ -272,9 +292,41 @@ One transport mode: same-origin. The browser talks only to the app
 server (`bin/cli.js` in production, the equivalent vite plugin in dev).
 The session proxy signs in against the gateway, holds the session
 server-side, sets first-party cookies, and enforces CSRF on mutating
-requests. Tokens never reach browser storage. The Team page uses the same
+requests. Tokens never reach browser storage. Every gateway path is reached
+as `/api/gateway/<path>` (for example `GET /api/gateway/backlog/status`).
+The Team page uses the same
 origin: `/api/hub/*` and the `/api/hub/ws` WebSocket are served by the hub
 proxy, which attaches the operator seat's key server-side.
+
+## Gateway settings and the backlog folder
+
+The gateway, not this app, owns the settings that decide which pages have
+data: the backlog folder (`triage_repo_root`), the exec runner
+(`backlog_exec_runner`), the `executor`, and the `process_manager`. They have
+three doors, all writing the same gateway setting: the gateway console
+(Apps → *Backlog settings*), `abstractgateway config get|set` on the
+gateway's computer, and this app's **Settings → Gateway administration**
+(`GET`/`POST /admin/runtime-config`, admin only). Each value carries its
+source (launch flag, setting, environment (legacy), or default), which
+Settings renders as a pill.
+
+The Board, Backlog and Executions pages read `GET /backlog/status` to decide
+what to show:
+
+```mermaid
+flowchart TD
+    S["GET /api/gateway/backlog/status"] --> A{available?}
+    A -- "no (folder missing, or gateway older than 0.4.1)" --> U["Folder not available panel<br/>admin: Use the gateway's own folder / Choose a folder…<br/>others: ask the gateway admin"]
+    A -- yes --> E{any items?}
+    E -- no --> Y["Your backlog is empty<br/>folder path + Copy + Create your first item"]
+    E -- yes --> B[Board columns]
+    U -- "admin action" --> C["POST /api/gateway/admin/runtime-config<br/>triage_repo_root = path, or null for the default"]
+    C --> S
+```
+
+A fresh gateway keeps its own backlog folder (`<gateway data dir>/backlog/`,
+created with a starter overview and item template on first use), so a new
+install lands on the empty state, never on the unavailable panel.
 
 ## The execution pipeline
 
@@ -299,21 +351,21 @@ already in prod (the QA panel says so explicitly). A `completed` status
 survives in the filters for legacy requests but no current gateway path
 produces it.
 
-The **Executions page** (landing) pins `use_exec_pipeline` to the live
-view: it polls active requests (2s), follows the selected request's log
-tail (1.5s while running), and exposes the QA actions directly. The
-**Backlog page** drives the same hook from its Processing / Failed /
-Completed-runs tabs.
+The **Executions page** pins `use_exec_pipeline` to the live view: it
+polls active requests (2s), follows the selected request's log tail while
+it runs, and exposes the QA actions directly. The **Board** and the
+**Backlog page** use the same hook to execute items and to mark planned
+items that already have a live request (their **Execute** button reads
+*Processing…*).
 
 ### Executor agnosticism
 
 The executing agent is a deliberate seam, not a hardcoded dependency. The
-gateway's `/backlog/exec/config` names the executor (`executor`,
-`codex_bin`, `codex_model`, availability), and the UI renders whatever it
-reports. Today that is the Codex CLI running headless; the design intent is
-that other agents (for example `abstractcode`) can power the same pipeline
-without UI changes beyond what the config reports. Keep new UI copy
-executor-neutral and read identity from the config.
+gateway's `executor` setting chooses it from the registry that
+`/admin/executors` reports (`codex`, `claude`, `cursor-agent`,
+`abstractcode`, each with whether it is installed), and
+`/backlog/exec/config` names the active executor for the UI to render. Keep
+new UI copy executor-neutral and read identity from the config.
 
 ## Module layout
 
@@ -359,7 +411,7 @@ src/
     report_inbox.tsx          bug/feature reports + triage decisions
     email_inbox.tsx           email accounts/messages/send
     processes_page.tsx        managed process control + env vars (Services)
-    settings_page.tsx         connection status + AI and voice preferences
+    settings_page.tsx         connection, execution defaults, AI + voice preferences, Gateway administration
     voice_settings_panel.tsx  voice override controls
     exec_event.ts             exec-log event classification
     backlog_folder.tsx        backlog folder state panel (empty / not available + admin actions)
@@ -379,10 +431,11 @@ gateway's batch-aware `active_items` expansion — the same source the
 Backlog page uses), Done / Failed = recent terminal requests (attempts;
 the completed-file archive lives on the Backlog page). Work-item metadata
 (priority, labels — sprints are `sprint-N` labels) rides convention lines
-in the spec markdown header (`> Priority: P1`, `> Labels: ui, sprint-29`),
-parsed client-side until the gateway serves list-level metadata (ask on
-file). The Definition-of-Ready gate is advisory client-side (override
-always available); the server-side gate is a filed gateway ask.
+in the spec markdown header (`> Priority: P1`, `> Labels: ui, sprint-29`);
+see [conventions.md](conventions.md) for the grammar. The Definition of
+Ready is checked twice: advisory chips on the client, and the gateway's
+`dor=check` gate on execute, which refuses with `409` unless the operator
+records an explicit override.
 
 Design boundaries:
 
@@ -392,15 +445,17 @@ Design boundaries:
   are pure (no React/network) and unit-pinned; hooks such as
   `use_exec_pipeline` each own one concern; panes are presentational.
 - **Client boundary** — `gateway_client.ts` carries only the API families
-  this app uses (see [api.md](api.md)); new observation-lane methods belong
-  in the observer.
+  this app uses (see [api.md](api.md)); entity and bundle reads serve the
+  Agents page and the advisor picker, and run-observation features (ledger
+  streams, knowledge-graph queries) belong in the observer.
 
 ## Related
 
 - [api.md](api.md) — the exact endpoint families consumed
 - [configuration.md](configuration.md) — env vars, settings, proxy knobs
 - [security.md](security.md) — trust model (process manager is high trust)
-- `docs/backlog/overview.md` — work planning and history
+- [conventions.md](conventions.md) — the work-item grammar the Board parses
+- [backlog/overview.md](backlog/overview.md) — work planning and history
 - `history.md` (repo root) — provenance of the 2026-07-12 split
 - `vendor/hub/` — the hub contract the Team page is typed and tested against
 
@@ -426,6 +481,7 @@ as `/api/gateway/...` (proxied in same-origin mode).
 | --- | --- |
 | `backlog_list(kind)` | `GET /backlog/{kind}` |
 | `backlog_content(kind, filename)` | `GET /backlog/{kind}/{filename}/content` |
+| `backlog_status()` | `GET /backlog/status` — the backlog folder's state (`available`, `path`, `source`, `is_default`, `writable`, reason when unavailable); drives the Board's empty state and *folder not available* panel |
 | `backlog_template()` | `GET /backlog/template` |
 | `backlog_create(...)` | `POST /backlog/create` |
 | `backlog_update(...)` | `POST /backlog/{kind}/{filename}/update` (sha-guarded) |
@@ -433,7 +489,7 @@ as `/api/gateway/...` (proxied in same-origin mode).
 | `backlog_merge(...)` | `POST /backlog/merge` |
 | `backlog_upload_attachment(...)` | `POST /backlog/{kind}/{filename}/attachments/upload` |
 
-### Exec pipeline (codex executions)
+### Exec pipeline (agent executions)
 
 | Method | Endpoint |
 | --- | --- |
@@ -448,6 +504,19 @@ as `/api/gateway/...` (proxied in same-origin mode).
 | `backlog_exec_log_tail(...)` | `GET /backlog/exec/requests/{id}/logs/tail?name=&max_bytes=&after_bytes=` (cursor follow: delta + `next_offset` + rotation `reset` on gateways that support it) |
 | `backlog_exec_active_items(...)` | `GET /backlog/exec/active_items?status=&limit=` |
 
+### Gateway settings (Settings → Gateway administration)
+
+| Method | Endpoint |
+| --- | --- |
+| `admin_runtime_config()` | `GET /admin/runtime-config` — each setting's value and source (`flag`, `stored`, `env`, `default`) plus the gateway's label and help text |
+| `admin_runtime_config_update(patch)` | `POST /admin/runtime-config` — admin only; patch any of `triage_repo_root` (a path, or `null` for the gateway's own folder), `backlog_exec_runner`, `executor`, `process_manager`; the gateway validates and its refusal is shown as is |
+| `admin_executors()` | `GET /admin/executors` — the executor registry (which agents are installed) for the Executor picker and the Agents page |
+| `admin_data_homes()` | `GET /admin/data-homes` — the Data and caches panel |
+
+These are the same settings as `abstractgateway config get|set` and the
+gateway console's *Backlog settings*; see
+[configuration.md](configuration.md#gateway-side-features).
+
 ### AI assistance
 
 | Method | Endpoint |
@@ -455,6 +524,8 @@ as `/api/gateway/...` (proxied in same-origin mode).
 | `backlog_assist(...)` | `POST /backlog/assist` (draft a new item) |
 | `backlog_maintain(...)` | `POST /backlog/maintain` (refine an existing item) |
 | `backlog_advisor(...)` | `POST /backlog/advisor` (read-only agent chat) |
+| `discovery_providers()` / `discovery_provider_models(p)` / `discovery_model_capabilities(m)` | `GET /discovery/providers`, `GET /discovery/providers/{p}/models`, `GET /discovery/models/capabilities?model_name=` (provider/model pickers in Settings) |
+| `list_bundles()` | `GET /bundles` (advisor agent picker) |
 
 ### Reports, triage, email
 
@@ -488,7 +559,10 @@ as `/api/gateway/...` (proxied in same-origin mode).
 | `download_run_artifact_content(run, artifact)` | `GET /runs/{run}/artifacts/{id}/content` | full exec logs, TTS audio |
 | `attachments_upload(...)` | `POST /attachments/upload` | voice recordings |
 | `audio_transcribe(...)` | `POST /runs/{run}/audio/transcribe` | advisor push-to-talk |
-| `voice_tts(...)` | `POST /runs/{run}/voice/tts` | advisor spoken replies |
+| `voice_tts(...)` | `POST /runs/{run}/voice/tts` (and `/voice/tts/stream`) | advisor spoken replies |
+| `voice_voices(...)` / `capability_defaults()` | `GET /voice/voices`, `GET /config/capability-defaults` | voice settings |
+| `list_entities()` / `entity_state(name)` | `GET /entities`, `POST /entities/{name}/state` | Agents & Entities page |
+| `entity_skills(name)` / `put_entity_skills(name, ...)` | `GET`/`PUT /entities/{name}/skills` | entity skills panel |
 
 ## Session endpoints (bundled server)
 
@@ -524,9 +598,13 @@ contract the client is typed against is vendored in `vendor/hub/`.
   where detail is the response body when readable, else the HTTP status.
   Missing required arguments throw before any request is made, as
   `Error("<method>: <field> is required")`.
-- The client is deliberately scoped: observation-lane families (ledger
-  streams, KG queries, bundles, entity APIs) live in the observer's client,
-  not here.
+- The client is deliberately scoped to the families above: run-observation
+  families (ledger streams, knowledge-graph queries) live in the observer's
+  client, not here.
+- Setup and first run: [getting-started.md](getting-started.md); how these
+  families fit together: [architecture.md](architecture.md); failures such
+  as `csrf_required` or an unavailable backlog folder:
+  [troubleshooting.md](troubleshooting.md).
 
 ---
 
@@ -534,9 +612,20 @@ contract the client is typed against is vendored in `vendor/hub/`.
 
 # Configuration
 
-All configuration is environment-driven on the server side plus a small
-browser Settings page. Secrets stay in the environment — nothing in this
-repo or in browser storage holds credentials in same-origin mode.
+Configuration lives in three places:
+
+- **The Continuum server** (`abstractcontinuum`): environment variables,
+  below. The server has no configuration file and no flags beyond `--help`
+  and `--version`.
+- **The gateway**: the backlog folder, exec runner, executor, and process
+  manager are gateway settings, changed from Settings → Gateway
+  administration, the gateway console, or `abstractgateway config set`
+  (see [Gateway-side features](#gateway-side-features)).
+- **The browser**: per-browser preferences on the Settings page.
+
+Credentials never live in this repository or in browser storage: the
+gateway token is exchanged for a server-held session, and the hub seat key
+is read on the server.
 
 ## Server (`abstractcontinuum` / `npm start` / `bin/cli.js`)
 
@@ -589,10 +678,15 @@ item template on first use.
 | `executor` | The agent that runs queued items (`codex`, `claude`, `cursor-agent`, `abstractcode`) | Settings (Executor); `abstractgateway config set executor codex` |
 | `process_manager` | The Services page (high trust — see [security.md](security.md)); process control also needs the backlog folder set to the framework checkout it manages | Settings (*Enable*); `abstractgateway config set process_manager on` |
 
-Settings shows where each value comes from: *launch flag*, *setting*,
-*environment (legacy)* (a gateway set up before these settings existed; saving
-a value replaces it) or *default*. Only a gateway admin can change them; the
-gateway validates every change and its refusal is shown as is.
+All Settings entries above live under **Settings → Gateway administration**;
+`abstractgateway config get` prints the current values on the gateway's
+computer.
+
+Settings shows where each value comes from: *launch flag* (a saved value
+applies once the gateway restarts without the flag), *setting*,
+*environment (legacy)* (saving a value here replaces it) or *default*. Only
+a gateway admin can change them; the gateway validates every change and its
+refusal is shown as is.
 
 When the backlog folder is not available (a saved folder that was deleted or
 unmounted), the Board, Backlog and Executions pages show the folder and the
@@ -605,14 +699,17 @@ Persisted in `localStorage` under `abstractcontinuum_settings_v1`:
 
 | Setting | Purpose |
 | --- | --- |
-| Maintenance AI provider / model | Provider/model for backlog AI assist + maintenance chat (blank = gateway default). |
+| Default execution mode | `UAT` (default, staged) or `Inplace` (edits prod) for the Execute dialog. |
+| Maintenance AI provider / model / reasoning effort | Provider, model and reasoning effort for backlog AI assist + maintenance chat (blank = gateway default). |
 | Backlog advisor agent | Gateway bundle id for the advisor (blank = `basic-agent`). |
+
+Voice overrides (Settings → voice panel) are stored separately under
+`abstractcontinuum_voice_override_v1`.
 
 Connection is NOT a settings field: the shared `GatewayConnectModal`
 (sidebar badge, or "Manage connection" in Settings) signs in through
 `POST /api/connection/gateway`; the token is exchanged once for HttpOnly
-session cookies and never stored browser-side. Older builds' persisted
-direct-mode tokens are scrubbed at startup.
+session cookies and never stored browser-side.
 
 ## Development
 
@@ -636,7 +733,7 @@ AbstractContinuum is a **high-trust surface**. Through the gateway it can:
 
 | Surface | Capability | Blast radius |
 | --- | --- | --- |
-| Processes page | start / stop / restart / **redeploy** managed prod and UAT services; set/unset their env vars | full service control on the gateway host |
+| Services page | start / stop / restart / **redeploy** managed prod and UAT services; set/unset their env vars | full service control on the gateway host |
 | Executions + Backlog | run code-executing agents against framework repos; **promote candidate output to prod**; deploy candidates to UAT | writes to production working trees |
 | Inbox | read and send email via configured accounts | outbound mail as the configured identity |
 | Team page | read and post in agora hub channels and DMs | messages authored as the configured operator seat |
@@ -665,8 +762,9 @@ for people with deploy rights.
    values; the UI can set/unset but never read them back.
 6. **Feature gating** — the process manager and exec worker exist only when
    the gateway admin turned them on (the `process_manager` and
-   `backlog_exec_runner` settings, off by default; only an admin can change
-   them).
+   `backlog_exec_runner` settings, off by default; only a gateway admin can
+   change them, from Settings → Gateway administration or
+   `abstractgateway config set`).
 7. **Content-Security-Policy on the app document** — the Team page renders
    untrusted content (hub messages, channel fs files, attachments) as
    markdown. The renderer emits only React elements (no raw-HTML pass, no
@@ -713,10 +811,8 @@ understand the risk.
   audit view. Check the gateway's audit/ledger facilities when you need
   the trail.
 - There is no client-side bearer-token mode: the browser talks only to the
-  same-origin proxy, which holds credentials in HttpOnly cookies. The
-  former "direct mode" (bearer in `localStorage`) was removed 2026-07-12
-  per the shared connection contract (tokens never rest client-side); app
-  startup scrubs tokens persisted by older builds.
+  same-origin proxy, which holds credentials in HttpOnly cookies. App
+  startup removes any token an older build left in browser storage.
 - Email send uses whatever accounts the gateway configured; the console
   does not add its own rate or recipient limits.
 
@@ -837,12 +933,12 @@ the hub message id:
 - [x] continuum: supervision view live (c1240)
 ```
 
-## Docs freshness (the coredoc half)
+## Docs freshness
 
-The Projects conformance read flags a package red when
-`llms.txt`/`llms-full.txt` is **older than the newest `docs/*.md`** —
-regenerate the llms files in the same change that edits docs. Presence
-checks: `README.md`, `docs/`, `llms.txt`, `llms-full.txt`.
+A package's `llms.txt`/`llms-full.txt` are stale when they are **older than
+the newest `docs/*.md`** — regenerate the llms files in the same change that
+edits docs. Every package is expected to carry `README.md`, `docs/`,
+`llms.txt`, and `llms-full.txt`.
 
 ## Sources
 
@@ -864,36 +960,49 @@ system (runs, ledgers, artifacts, memory graphs, entities); continuum
 They were one app until 2026-07-12 (`history.md` records the split).
 
 **Is this tied to Codex?**
-No. The gateway currently executes backlog items through the Codex CLI, but
-the executor is a pluggable seam: the UI reads the executor identity from
-`/backlog/exec/config` and renders whatever the gateway reports. Other
-agents can power the same pipeline.
+No. The executor is a gateway setting: Codex CLI (`codex`, the default),
+Claude Code (`claude`), Cursor Agent (`cursor-agent`) or AbstractCode
+(`abstractcode`). Pick it in Settings → Gateway administration → Executor,
+or with `abstractgateway config set executor <id>`; the UI reads the
+executor identity from `/backlog/exec/config`.
 
 **What is the difference between UAT and inplace execution?**
 UAT (default) runs the agent in a candidate workspace; you inspect the
 result on the shared UAT stack and explicitly promote to prod. Inplace runs
 directly in the production workspace — faster, dangerous, labeled as such.
 
-**Why don't I see the Processes page content / why is Execute disabled?**
-Those features exist only when the gateway admin turned them on: the process
-manager and the backlog exec runner are gateway settings (Settings → Gateway
+**Which gateway version do I need?**
+AbstractGateway 0.4.1 or newer. It serves the backlog folder state and the
+settings that Settings → Gateway administration edits; see
+[api.md](api.md).
+
+**Why is the Services page empty / why is Execute disabled?**
+Those features exist only when a gateway admin turns them on: the process
+manager and the exec runner are gateway settings (Settings → Gateway
 administration, or `abstractgateway config set process_manager on` /
-`backlog_exec_runner on`); see [configuration.md](configuration.md).
+`backlog_exec_runner on`); see [configuration.md](configuration.md#gateway-side-features).
+
+**Where is my backlog stored?**
+In the gateway's backlog folder: by default the gateway's own
+`<data dir>/backlog/`, or any project folder containing `docs/backlog/` that
+an admin chooses. The Board's empty state shows the path. See
+[getting-started.md](getting-started.md#your-backlog) and
+[conventions.md](conventions.md) for the file layout.
 
 **Can I read an environment variable's value from the ENV tab?**
 No, by design. Managed env vars are write-only: the gateway never returns
 values to the browser. You can see whether a value is set and where it came
 from, and you can set/unset it.
 
-**Where do "planned items hidden while queued/running" go?**
-Items with an active exec request are hidden from Planned to prevent double
-execution; they are visible under Processing until the request finishes.
+**Why does a planned item's Execute button say "Processing…"?**
+The item already has a live exec request, so it cannot be executed twice.
+Follow it on the **Executions** page (or in the Board's In Progress / In
+Review columns) until the request finishes.
 
 **Does the app store any secrets?**
 No. Sessions are server-held HttpOnly cookies; raw tokens are exchanged
-once at sign-in and never stored browser-side. (The former development
-"direct mode" that kept a bearer in `localStorage` was removed; startup
-scrubs tokens persisted by older builds.) See [security.md](security.md).
+once at sign-in and never stored browser-side. See
+[security.md](security.md).
 
 ---
 
@@ -905,11 +1014,12 @@ Symptom-first. Each entry links to the page owning the full explanation.
 
 ## Sign-in / connectivity
 
-**The header LED stays gray (gateway unreachable).**
-The app probes with a 1-run list. Check the gateway is running and that
-`ABSTRACTCONTINUUM_GATEWAY_URL` (or the Settings gateway URL in dev) points
-at it. In same-origin mode, `bin/cli.js` logs the gateway it resolved at
-startup.
+**The banner says "Gateway unreachable or not signed in."**
+The app probes the gateway with a one-run list. Check that the gateway is
+running and that `ABSTRACTCONTINUUM_GATEWAY_URL` (or the URL you entered in
+the connect dialog) points at it; `bin/cli.js` logs the gateway it resolved
+at startup. Then sign in again from the connection badge at the bottom of
+the sidebar. See [getting-started.md](getting-started.md#first-run).
 
 **Sign-in succeeds but every action fails with 403 `csrf_required`.**
 Mutating requests need the CSRF header derived from the
@@ -926,16 +1036,18 @@ URL at sign-in. Pin the URL server-side
 
 ## Executions
 
-**Execute button says the runner is disabled / not running / codex missing.**
-The gateway's exec worker is off or misconfigured. A gateway admin enables it
-in Settings → Gateway administration (it applies at once), or on the gateway's
-computer with `abstractgateway config set backlog_exec_runner on` and
-`abstractgateway config set executor codex`; the agent program must be
-installed there.
+**Execute says the runner is disabled / not running / the executor is missing.**
+The gateway's exec worker is off or its executor is not installed. A gateway
+admin enables it in **Settings → Gateway administration → Exec runner** (it
+applies at once) and picks an installed **Executor**, or on the gateway's
+computer runs `abstractgateway config set backlog_exec_runner on` and
+`abstractgateway config set executor codex`. The agent program must be
+installed on the gateway's computer. See
+[configuration.md](configuration.md#gateway-side-features).
 
-**A planned item disappeared.**
-It is executing: Planned hides items with an active request ("N planned
-items hidden while queued/running"). Find it under Processing.
+**A planned item's Execute button says "Processing…".**
+The item already has a live exec request. Follow it on the **Executions**
+page; the button returns to **Execute** when the request finishes.
 
 **Promotion is blocked with conflicts.**
 Prod diverged from the candidate's base while the agent worked. Use
@@ -944,25 +1056,26 @@ listed files manually.
 
 **UAT URLs do not respond after "Restart UAT".**
 The detail pane shows a probe warning when UAT processes fail their URL
-check. Open Processes → UAT and read the process logs; the process manager
-must be enabled for UAT deploys (Settings → Process manager, or
-`abstractgateway config set process_manager on`).
+check. Open **Services → UAT** and read the process logs; the process
+manager must be enabled for UAT deploys (**Settings → Gateway administration
+→ Process manager**, or `abstractgateway config set process_manager on`).
 
-**Log tail says "(tail truncated)".**
-Live tails are bounded (160 KB). For finished requests, use the
-**Execution log** button (Completed → Tasks → item) — it loads the full log
-from ledger artifacts, with a bounded-tail fallback for requests that
-predate artifact capture.
+**Live logs say "#TRUNCATION: log tail truncated".**
+Live logs are bounded: each fetch reads at most the last 160 KB, and the
+followed view keeps about 1 MB. The complete logs stay on the gateway with
+the exec request; switch between **events**, **stderr** and **last
+message** to read the part you need.
 
-## Inbox / processes
+## Inbox / services
 
 **Inbox shows only the Email tab.**
 Triage is a prop (`enable_triage`) wired on in this app; if you embed the
 page elsewhere, pass it explicitly. Email account features additionally
 depend on the gateway's email configuration.
 
-**Processes page says the manager is disabled.**
-A gateway admin turns on Settings → Process manager (or
+**The Services page says the process manager is disabled.**
+A gateway admin turns on **Settings → Gateway administration → Process
+manager** (or
 `abstractgateway config set process_manager on`) and sets the backlog folder
 to the framework checkout it manages — read [security.md](security.md)
 first: this enables remote service control.
@@ -972,7 +1085,9 @@ The gateway's saved backlog folder no longer exists (or is not a folder). An
 admin clicks **Use the gateway's own folder** (the gateway creates it) or
 **Choose a folder…** (a folder containing `docs/backlog`; the gateway
 explains a refusal). A fresh gateway never shows this: it starts on its own
-folder, and the Board shows **Your backlog is empty**.
+folder, and the Board shows **Your backlog is empty**. The same panel
+appears when the gateway is older than 0.4.1: upgrade the gateway. See
+[getting-started.md](getting-started.md#your-backlog).
 
 ## Team page
 
@@ -1044,10 +1159,8 @@ The bundled server (`bin/cli.js`) uses the shared app-origin session proxy
   to every forwarded request. The user token itself is used once and never
   stored anywhere.
 - Bearer tokens never appear in URLs and never touch browser storage —
-  there is no client-side token mode. (The former "direct mode" that kept
-  a bearer in `localStorage` was removed 2026-07-12 per the shared
-  connection contract; app startup scrubs any token persisted by older
-  builds.)
+  there is no client-side token mode; app startup removes any token an
+  older build left in browser storage.
 - Mutating requests require the CSRF token (`x-abstractcontinuum-csrf` or
   the canonical `x-abstract-csrf`) matching the CSRF cookie (deliberately
   JS-readable so the client can echo it).
@@ -1105,8 +1218,10 @@ npm run build      # production build must stay green
   only; see `docs/api.md`).
 - `src/ui/backlog/` — the backlog + exec pipeline modules (keep files under
   ~600 lines; `model.ts` stays pure and unit-pinned).
-- `src/ui/` — pages (executions, report inbox, email, processes) and small
-  shared widgets.
+- `src/ui/board/` — the Board (kanban model, drawer, work claims).
+- `src/ui/` — the other pages (executions, agents, team, report inbox,
+  email, services, settings), the backlog folder panel, and small shared
+  widgets.
 - `bin/cli.js` — static serving + the app-origin gateway session proxy.
 - `bin/hub_proxy.js` — the Team page's allowlisted agora hub proxy.
 - `vendor/hub/` — the vendored hub OpenAPI artifact and golden vectors that
@@ -1124,6 +1239,15 @@ npm run build      # production build must stay green
 - Do not grow observation features here — the observer app owns watching
   and discussing the running system; this app develops and deploys it.
 - Work items live in `docs/backlog/` (see `docs/backlog/overview.md`).
+- Documentation changes regenerate `llms.txt` / `llms-full.txt` in the same
+  change (see [docs/conventions.md](docs/conventions.md#docs-freshness)).
+
+## See also
+
+- [docs/architecture.md](docs/architecture.md) — components and boundaries
+- [docs/api.md](docs/api.md) — the gateway families the client may call
+- [CHANGELOG.md](CHANGELOG.md) — add a user-visible entry for behavior changes
+- [SECURITY.md](SECURITY.md) — the trust model your change must keep
 
 ---
 
@@ -1141,13 +1265,11 @@ older gateway the Board shows the *folder not available* panel.
 
 ### Changed
 
-- **A fresh gateway shows an empty Board, not a setup box (gateway mission
-  II, 2026-09-24).** The gateway now keeps its own backlog folder by default,
-  so the Board opens on **Your backlog is empty** with the folder path, a
-  Copy button and **Create your first item** (the New task modal). The
-  "Backlog browsing is not configured … set ABSTRACTGATEWAY_TRIAGE_REPO_ROOT"
-  callout is gone (`backlog_unconfigured.tsx` is replaced by
-  `backlog_folder.tsx`).
+- **A fresh gateway shows an empty Board, not a setup box.** The gateway
+  keeps its own backlog folder by default, so the Board opens on **Your
+  backlog is empty** with the folder path, a Copy button and **Create your
+  first item** (the New task modal). The "Backlog browsing is not
+  configured … set ABSTRACTGATEWAY_TRIAGE_REPO_ROOT" callout is gone.
 - **Folder not available** (a saved folder that was deleted, or a gateway
   older than the setting): the Board, Backlog and Executions pages show the
   folder and the gateway's reason; an admin gets **Use the gateway's own
@@ -1157,9 +1279,12 @@ older gateway the Board shows the *folder not available* panel.
   (launch flag / setting / environment (legacy) / default), renders the
   gateway's own label and help, adds **Use the gateway's own folder**, and
   reads a vanished folder as *not available* with its reason.
-- **No environment-variable instructions anywhere in the app** (operator
-  rule): the Executions, Execute dialog, UAT and Services hints now name the
-  setting and the `abstractgateway config set …` line instead.
+- **No environment-variable instructions in the app or its docs**: the
+  Executions, Execute dialog, UAT and Services hints name the gateway setting
+  and the `abstractgateway config set …` line instead.
+- **Migration:** a gateway configured through environment variables keeps
+  working; Settings shows those values as *environment (legacy)*, and saving
+  a value there replaces them.
 
 ## 0.2.0 — 2026-09-23 — first public release
 
