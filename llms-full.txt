@@ -1,7 +1,7 @@
 # AbstractContinuum — full documentation corpus
 
 > Aggregated from the core docs for LLM/tool consumption (package
-> `@abstractframework/continuum` 0.2.0). Canonical sources live in the
+> `@abstractframework/continuum` 0.3.0). Canonical sources live in the
 > repository; this file is regenerated whenever the docs change.
 
 ---
@@ -60,7 +60,9 @@ seam and the UI reads the executor identity from the gateway's exec config
 
 Requires Node.js ≥ 18 and a running Run Gateway
 ([AbstractGateway](https://github.com/lpalbou/AbstractGateway), default
-`http://127.0.0.1:8080`).
+`http://127.0.0.1:8080`). AbstractGateway 0.4.0 or newer is needed for the
+backlog folder panel and the Settings → Gateway administration controls; an
+older gateway shows the Board's *folder not available* panel instead.
 
 ```bash
 npx @abstractframework/continuum
@@ -131,9 +133,9 @@ MIT — see [LICENSE](LICENSE).
 
 - Node.js ≥ 18
 - A running Run Gateway (`abstractgateway`, default `http://127.0.0.1:8080`)
-  with the features you want enabled (see
-  [configuration.md](configuration.md) for the gateway env vars;
-  [api.md](api.md) lists what this app calls on it)
+  — 0.4.0 or newer for the backlog folder and gateway settings (see
+  [configuration.md](configuration.md#gateway-side-features) for the gateway
+  settings; [api.md](api.md) lists what this app calls on it)
 - Optional, for the Team page: an agora hub and a seat key (see
   [configuration.md](configuration.md#team-page-agora-hub))
 
@@ -164,6 +166,21 @@ npm run dev        # http://localhost:3003
 The dev server mounts the same session and hub proxies as production (a
 Vite plugin), so you sign in exactly the same way. For the production
 shape from source: `npm run build && npm start` (port 3002).
+
+## Your backlog
+
+A fresh gateway needs no setup: it keeps its own backlog in
+`<gateway data dir>/backlog/` (created with a starter overview and item
+template the first time you open the Board), so the Board opens on
+**Your backlog is empty** with the folder path and **Create your first item**.
+
+To work on a project's backlog instead (any folder that contains
+`docs/backlog/`), a gateway admin sets **Settings → Gateway administration →
+Backlog folder → Change…**, or runs `abstractgateway config set
+triage_repo_root /path/to/project` on the gateway's computer. Executing items
+also needs the exec runner: **Settings → Exec runner → Enable** (or
+`abstractgateway config set backlog_exec_runner on`). See
+[configuration.md](configuration.md#gateway-side-features).
 
 ## Your first execution
 
@@ -345,7 +362,7 @@ src/
     settings_page.tsx         connection status + AI and voice preferences
     voice_settings_panel.tsx  voice override controls
     exec_event.ts             exec-log event classification
-    backlog_unconfigured.tsx  rendering for a gateway without backlog browsing
+    backlog_folder.tsx        backlog folder state panel (empty / not available + admin actions)
     memo_markdown.tsx, mermaid_block.tsx   markdown + mermaid rendering
     modal.tsx, multi_select.tsx, error_boundary.tsx   shared widgets
 bin/cli.js                    static serve + session proxy + hub proxy mount
@@ -560,18 +577,27 @@ is present.
 
 ## Gateway-side features
 
-The pages light up according to what the connected gateway enables:
+The pages light up according to the connected gateway's settings. A fresh
+gateway needs none of them to show a working (empty) Board: it keeps its own
+backlog in `<gateway data dir>/backlog/`, created with a starter overview and
+item template on first use.
 
-| Gateway variable | Enables |
-| --- | --- |
-| `ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER=1` | The exec worker (Executions + backlog Processing views) |
-| `ABSTRACTGATEWAY_BACKLOG_EXECUTOR=codex_cli` | Executor selection (reported by `/backlog/exec/config`) |
-| `ABSTRACTGATEWAY_BACKLOG_CODEX_BIN` / `..._CODEX_MODEL` | Executor binary + model |
-| `ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1` | The Processes page (high trust — see [security.md](security.md)) |
-| `ABSTRACTGATEWAY_TRIAGE_REPO_ROOT` | Repo root for backlog/triage/process features |
+| Gateway setting | Enables | Change it |
+| --- | --- | --- |
+| `triage_repo_root` (Backlog folder) | Where the Board / Backlog / Executions read and write items: a folder containing `docs/backlog`. Default: the gateway's own folder | Settings → Gateway administration (*Change…*, *Use the gateway's own folder*); gateway console Apps → *Backlog settings*; `abstractgateway config set triage_repo_root PATH`; `abstractgateway serve --backlog-root PATH` for one run |
+| `backlog_exec_runner` | The exec worker (Executions + backlog Processing views) | Settings (*Enable*); `abstractgateway config set backlog_exec_runner on`; `serve --exec-runner on` |
+| `executor` | The agent that runs queued items (`codex`, `claude`, `cursor-agent`, `abstractcode`) | Settings (Executor); `abstractgateway config set executor codex` |
+| `process_manager` | The Services page (high trust — see [security.md](security.md)); process control also needs the backlog folder set to the framework checkout it manages | Settings (*Enable*); `abstractgateway config set process_manager on` |
 
-The Executions and Backlog pages surface actionable messages (with the
-required env) when a feature is disabled or the worker is down.
+Settings shows where each value comes from: *launch flag*, *setting*,
+*environment (legacy)* (a gateway set up before these settings existed; saving
+a value replaces it) or *default*. Only a gateway admin can change them; the
+gateway validates every change and its refusal is shown as is.
+
+When the backlog folder is not available (a saved folder that was deleted or
+unmounted), the Board, Backlog and Executions pages show the folder and the
+reason; an admin gets **Use the gateway's own folder** and **Choose a
+folder…**, everyone else is told to ask the gateway admin.
 
 ## Browser Settings page
 
@@ -638,8 +664,9 @@ for people with deploy rights.
 5. **Write-only env vars** — the gateway never returns managed env var
    values; the UI can set/unset but never read them back.
 6. **Feature gating** — the process manager and exec worker exist only when
-   the gateway operator enabled them (`ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER`,
-   `ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER`).
+   the gateway admin turned them on (the `process_manager` and
+   `backlog_exec_runner` settings, off by default; only an admin can change
+   them).
 7. **Content-Security-Policy on the app document** — the Team page renders
    untrusted content (hub messages, channel fs files, attachments) as
    markdown. The renderer emits only React elements (no raw-HTML pass, no
@@ -710,8 +737,9 @@ as the parser or board code that implements them.
 
 ## File layout and lifecycle
 
-Work items are markdown files under `docs/backlog/` in the repository the
-gateway serves (`ABSTRACTGATEWAY_TRIAGE_REPO_ROOT`):
+Work items are markdown files under `docs/backlog/` in the gateway's backlog
+folder (the `triage_repo_root` setting; by default the gateway's own
+`<data dir>/backlog/`):
 
 | Directory | Board home | Meaning |
 | --- | --- | --- |
@@ -847,10 +875,10 @@ result on the shared UAT stack and explicitly promote to prod. Inplace runs
 directly in the production workspace — faster, dangerous, labeled as such.
 
 **Why don't I see the Processes page content / why is Execute disabled?**
-Those features exist only when the gateway operator enabled them. The UI
-shows the exact env vars required (`ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER`,
-`ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER`, …); see
-[configuration.md](configuration.md).
+Those features exist only when the gateway admin turned them on: the process
+manager and the backlog exec runner are gateway settings (Settings → Gateway
+administration, or `abstractgateway config set process_manager on` /
+`backlog_exec_runner on`); see [configuration.md](configuration.md).
 
 **Can I read an environment variable's value from the ENV tab?**
 No, by design. Managed env vars are write-only: the gateway never returns
@@ -899,10 +927,11 @@ URL at sign-in. Pin the URL server-side
 ## Executions
 
 **Execute button says the runner is disabled / not running / codex missing.**
-The gateway's exec worker is off or misconfigured. The confirm dialog shows
-the exact env needed (`ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER=1`,
-`ABSTRACTGATEWAY_BACKLOG_EXECUTOR`, `..._CODEX_BIN`, `..._CODEX_MODEL`) and
-a copy button. Restart the gateway after setting them.
+The gateway's exec worker is off or misconfigured. A gateway admin enables it
+in Settings → Gateway administration (it applies at once), or on the gateway's
+computer with `abstractgateway config set backlog_exec_runner on` and
+`abstractgateway config set executor codex`; the agent program must be
+installed there.
 
 **A planned item disappeared.**
 It is executing: Planned hides items with an active request ("N planned
@@ -916,8 +945,8 @@ listed files manually.
 **UAT URLs do not respond after "Restart UAT".**
 The detail pane shows a probe warning when UAT processes fail their URL
 check. Open Processes → UAT and read the process logs; the process manager
-must be enabled for UAT deploys
-(`ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1`).
+must be enabled for UAT deploys (Settings → Process manager, or
+`abstractgateway config set process_manager on`).
 
 **Log tail says "(tail truncated)".**
 Live tails are bounded (160 KB). For finished requests, use the
@@ -933,9 +962,17 @@ page elsewhere, pass it explicitly. Email account features additionally
 depend on the gateway's email configuration.
 
 **Processes page says the manager is disabled.**
-Set `ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1` and
-`ABSTRACTGATEWAY_TRIAGE_REPO_ROOT` on the gateway host — and read
-[security.md](security.md) first: this enables remote service control.
+A gateway admin turns on Settings → Process manager (or
+`abstractgateway config set process_manager on`) and sets the backlog folder
+to the framework checkout it manages — read [security.md](security.md)
+first: this enables remote service control.
+
+**The Board says "This gateway's backlog folder is not available".**
+The gateway's saved backlog folder no longer exists (or is not a folder). An
+admin clicks **Use the gateway's own folder** (the gateway creates it) or
+**Choose a folder…** (a folder containing `docs/backlog`; the gateway
+explains a refusal). A fresh gateway never shows this: it starts on its own
+folder, and the Board shows **Your backlog is empty**.
 
 ## Team page
 
@@ -993,9 +1030,8 @@ Treat access to this app like SSH access to the deployment host:
   default; put your own authenticating reverse proxy in front for anything
   else);
 - give gateway user tokens only to people who should be able to redeploy;
-- keep the gateway's process manager disabled
-  (`ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER` unset) on gateways that should
-  not expose service control.
+- keep the gateway's process manager off (the `process_manager` setting,
+  off by default) on gateways that should not expose service control.
 
 ## Session model
 
@@ -1096,6 +1132,34 @@ npm run build      # production build must stay green
 # Changelog
 
 All notable, user-visible changes to AbstractContinuum.
+
+## 0.3.0 — 2026-09-24
+
+**Compatibility:** needs AbstractGateway 0.4.0 or newer
+(`GET /api/gateway/backlog/status` and the gateway settings door). Against an
+older gateway the Board shows the *folder not available* panel.
+
+### Changed
+
+- **A fresh gateway shows an empty Board, not a setup box (gateway mission
+  II, 2026-09-24).** The gateway now keeps its own backlog folder by default,
+  so the Board opens on **Your backlog is empty** with the folder path, a
+  Copy button and **Create your first item** (the New task modal). The
+  "Backlog browsing is not configured … set ABSTRACTGATEWAY_TRIAGE_REPO_ROOT"
+  callout is gone (`backlog_unconfigured.tsx` is replaced by
+  `backlog_folder.tsx`).
+- **Folder not available** (a saved folder that was deleted, or a gateway
+  older than the setting): the Board, Backlog and Executions pages show the
+  folder and the gateway's reason; an admin gets **Use the gateway's own
+  folder** and **Choose a folder…** (validated by the gateway, its refusal
+  shown as is); others are told to ask the gateway admin and where.
+- **Settings → Gateway administration** names each setting's source in words
+  (launch flag / setting / environment (legacy) / default), renders the
+  gateway's own label and help, adds **Use the gateway's own folder**, and
+  reads a vanished folder as *not available* with its reason.
+- **No environment-variable instructions anywhere in the app** (operator
+  rule): the Executions, Execute dialog, UAT and Services hints now name the
+  setting and the `abstractgateway config set …` line instead.
 
 ## 0.2.0 — 2026-09-23 — first public release
 

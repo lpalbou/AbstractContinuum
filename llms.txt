@@ -2,7 +2,7 @@
 
 > Continuous iterative development and deployment console for
 > AbstractFramework (npm: `@abstractframework/continuum`, CLI:
-> `abstractcontinuum`, version 0.2.0): a thin React client over a Run
+> `abstractcontinuum`, version 0.3.0): a thin React client over a Run
 > Gateway's development-lane APIs — kanban board, live execution pipeline
 > (executor-agnostic; Codex CLI today), backlog catalog, agora hub Team
 > page, report/email triage, and managed prod/UAT service control.
@@ -19,7 +19,7 @@ serves on `http://127.0.0.1:3002`.
 - [docs/getting-started.md](docs/getting-started.md): first run and first execution
 - [docs/architecture.md](docs/architecture.md): system shape diagram, exec pipeline state machine, module layout, executor seam
 - [docs/api.md](docs/api.md): consumed gateway API families, session endpoints, hub proxy endpoints
-- [docs/configuration.md](docs/configuration.md): server env vars, Team page hub settings, proxy knobs, gateway feature gates, browser settings
+- [docs/configuration.md](docs/configuration.md): server env vars, Team page hub settings, proxy knobs, gateway settings (backlog folder, exec runner, process manager), browser settings
 - [docs/security.md](docs/security.md): trust model, session/CSRF mechanics, hub seat model, execution safety (UAT vs inplace)
 - [docs/faq.md](docs/faq.md): observer vs continuum, executor agnosticism, write-only env vars
 - [docs/troubleshooting.md](docs/troubleshooting.md): sign-in, executions, inbox, processes, Team page, dev setup
