@@ -4,7 +4,7 @@
 
 - Node.js ≥ 18
 - A running Run Gateway (`abstractgateway`, default `http://127.0.0.1:8080`)
-  — 0.4.0 or newer for the backlog folder and gateway settings (see
+  — 0.4.1 or newer for the backlog folder and gateway settings (see
   [configuration.md](configuration.md#gateway-side-features) for the gateway
   settings; [api.md](api.md) lists what this app calls on it)
 - Optional, for the Team page: an agora hub and a seat key (see

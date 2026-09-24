@@ -4,7 +4,7 @@ All notable, user-visible changes to AbstractContinuum.
 
 ## 0.3.0 — 2026-09-24
 
-**Compatibility:** needs AbstractGateway 0.4.0 or newer
+**Compatibility:** needs AbstractGateway 0.4.1 or newer
 (`GET /api/gateway/backlog/status` and the gateway settings door). Against an
 older gateway the Board shows the *folder not available* panel.
 
