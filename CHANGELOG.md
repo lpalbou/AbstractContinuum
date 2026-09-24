@@ -2,6 +2,30 @@
 
 All notable, user-visible changes to AbstractContinuum.
 
+## Unreleased
+
+### Changed
+
+- **A fresh gateway shows an empty Board, not a setup box (gateway mission
+  II, 2026-09-24).** The gateway now keeps its own backlog folder by default,
+  so the Board opens on **Your backlog is empty** with the folder path, a
+  Copy button and **Create your first item** (the New task modal). The
+  "Backlog browsing is not configured … set ABSTRACTGATEWAY_TRIAGE_REPO_ROOT"
+  callout is gone (`backlog_unconfigured.tsx` is replaced by
+  `backlog_folder.tsx`).
+- **Folder not available** (a saved folder that was deleted, or a gateway
+  older than the setting): the Board, Backlog and Executions pages show the
+  folder and the gateway's reason; an admin gets **Use the gateway's own
+  folder** and **Choose a folder…** (validated by the gateway, its refusal
+  shown as is); others are told to ask the gateway admin and where.
+- **Settings → Gateway administration** names each setting's source in words
+  (launch flag / setting / environment (legacy) / default), renders the
+  gateway's own label and help, adds **Use the gateway's own folder**, and
+  reads a vanished folder as *not available* with its reason.
+- **No environment-variable instructions anywhere in the app** (operator
+  rule): the Executions, Execute dialog, UAT and Services hints now name the
+  setting and the `abstractgateway config set …` line instead.
+
 ## 0.2.0 — 2026-09-23 — first public release
 
 First release published to npm as `@abstractframework/continuum`. Run it

@@ -50,7 +50,9 @@ seam and the UI reads the executor identity from the gateway's exec config
 
 Requires Node.js ≥ 18 and a running Run Gateway
 ([AbstractGateway](https://github.com/lpalbou/AbstractGateway), default
-`http://127.0.0.1:8080`).
+`http://127.0.0.1:8080`). AbstractGateway 0.4.0 or newer is needed for the
+backlog folder panel and the Settings → Gateway administration controls; an
+older gateway shows the Board's *folder not available* panel instead.
 
 ```bash
 npx @abstractframework/continuum

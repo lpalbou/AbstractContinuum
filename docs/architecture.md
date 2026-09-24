@@ -151,7 +151,7 @@ src/
     settings_page.tsx         connection status + AI and voice preferences
     voice_settings_panel.tsx  voice override controls
     exec_event.ts             exec-log event classification
-    backlog_unconfigured.tsx  rendering for a gateway without backlog browsing
+    backlog_folder.tsx        backlog folder state panel (empty / not available + admin actions)
     memo_markdown.tsx, mermaid_block.tsx   markdown + mermaid rendering
     modal.tsx, multi_select.tsx, error_boundary.tsx   shared widgets
 bin/cli.js                    static serve + session proxy + hub proxy mount

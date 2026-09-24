@@ -18,10 +18,10 @@ result on the shared UAT stack and explicitly promote to prod. Inplace runs
 directly in the production workspace — faster, dangerous, labeled as such.
 
 **Why don't I see the Processes page content / why is Execute disabled?**
-Those features exist only when the gateway operator enabled them. The UI
-shows the exact env vars required (`ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER`,
-`ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER`, …); see
-[configuration.md](configuration.md).
+Those features exist only when the gateway admin turned them on: the process
+manager and the backlog exec runner are gateway settings (Settings → Gateway
+administration, or `abstractgateway config set process_manager on` /
+`backlog_exec_runner on`); see [configuration.md](configuration.md).
 
 **Can I read an environment variable's value from the ENV tab?**
 No, by design. Managed env vars are write-only: the gateway never returns

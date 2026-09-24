@@ -26,10 +26,11 @@ URL at sign-in. Pin the URL server-side
 ## Executions
 
 **Execute button says the runner is disabled / not running / codex missing.**
-The gateway's exec worker is off or misconfigured. The confirm dialog shows
-the exact env needed (`ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER=1`,
-`ABSTRACTGATEWAY_BACKLOG_EXECUTOR`, `..._CODEX_BIN`, `..._CODEX_MODEL`) and
-a copy button. Restart the gateway after setting them.
+The gateway's exec worker is off or misconfigured. A gateway admin enables it
+in Settings → Gateway administration (it applies at once), or on the gateway's
+computer with `abstractgateway config set backlog_exec_runner on` and
+`abstractgateway config set executor codex`; the agent program must be
+installed there.
 
 **A planned item disappeared.**
 It is executing: Planned hides items with an active request ("N planned
@@ -43,8 +44,8 @@ listed files manually.
 **UAT URLs do not respond after "Restart UAT".**
 The detail pane shows a probe warning when UAT processes fail their URL
 check. Open Processes → UAT and read the process logs; the process manager
-must be enabled for UAT deploys
-(`ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1`).
+must be enabled for UAT deploys (Settings → Process manager, or
+`abstractgateway config set process_manager on`).
 
 **Log tail says "(tail truncated)".**
 Live tails are bounded (160 KB). For finished requests, use the
@@ -60,9 +61,17 @@ page elsewhere, pass it explicitly. Email account features additionally
 depend on the gateway's email configuration.
 
 **Processes page says the manager is disabled.**
-Set `ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1` and
-`ABSTRACTGATEWAY_TRIAGE_REPO_ROOT` on the gateway host — and read
-[security.md](security.md) first: this enables remote service control.
+A gateway admin turns on Settings → Process manager (or
+`abstractgateway config set process_manager on`) and sets the backlog folder
+to the framework checkout it manages — read [security.md](security.md)
+first: this enables remote service control.
+
+**The Board says "This gateway's backlog folder is not available".**
+The gateway's saved backlog folder no longer exists (or is not a folder). An
+admin clicks **Use the gateway's own folder** (the gateway creates it) or
+**Choose a folder…** (a folder containing `docs/backlog`; the gateway
+explains a refusal). A fresh gateway never shows this: it starts on its own
+folder, and the Board shows **Your backlog is empty**.
 
 ## Team page
 

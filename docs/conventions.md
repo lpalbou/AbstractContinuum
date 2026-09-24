@@ -11,8 +11,9 @@ as the parser or board code that implements them.
 
 ## File layout and lifecycle
 
-Work items are markdown files under `docs/backlog/` in the repository the
-gateway serves (`ABSTRACTGATEWAY_TRIAGE_REPO_ROOT`):
+Work items are markdown files under `docs/backlog/` in the gateway's backlog
+folder (the `triage_repo_root` setting; by default the gateway's own
+`<data dir>/backlog/`):
 
 | Directory | Board home | Meaning |
 | --- | --- | --- |

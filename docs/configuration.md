@@ -43,18 +43,27 @@ is present.
 
 ## Gateway-side features
 
-The pages light up according to what the connected gateway enables:
+The pages light up according to the connected gateway's settings. A fresh
+gateway needs none of them to show a working (empty) Board: it keeps its own
+backlog in `<gateway data dir>/backlog/`, created with a starter overview and
+item template on first use.
 
-| Gateway variable | Enables |
-| --- | --- |
-| `ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER=1` | The exec worker (Executions + backlog Processing views) |
-| `ABSTRACTGATEWAY_BACKLOG_EXECUTOR=codex_cli` | Executor selection (reported by `/backlog/exec/config`) |
-| `ABSTRACTGATEWAY_BACKLOG_CODEX_BIN` / `..._CODEX_MODEL` | Executor binary + model |
-| `ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1` | The Processes page (high trust — see [security.md](security.md)) |
-| `ABSTRACTGATEWAY_TRIAGE_REPO_ROOT` | Repo root for backlog/triage/process features |
+| Gateway setting | Enables | Change it |
+| --- | --- | --- |
+| `triage_repo_root` (Backlog folder) | Where the Board / Backlog / Executions read and write items: a folder containing `docs/backlog`. Default: the gateway's own folder | Settings → Gateway administration (*Change…*, *Use the gateway's own folder*); gateway console Apps → *Backlog settings*; `abstractgateway config set triage_repo_root PATH`; `abstractgateway serve --backlog-root PATH` for one run |
+| `backlog_exec_runner` | The exec worker (Executions + backlog Processing views) | Settings (*Enable*); `abstractgateway config set backlog_exec_runner on`; `serve --exec-runner on` |
+| `executor` | The agent that runs queued items (`codex`, `claude`, `cursor-agent`, `abstractcode`) | Settings (Executor); `abstractgateway config set executor codex` |
+| `process_manager` | The Services page (high trust — see [security.md](security.md)); process control also needs the backlog folder set to the framework checkout it manages | Settings (*Enable*); `abstractgateway config set process_manager on` |
 
-The Executions and Backlog pages surface actionable messages (with the
-required env) when a feature is disabled or the worker is down.
+Settings shows where each value comes from: *launch flag*, *setting*,
+*environment (legacy)* (a gateway set up before these settings existed; saving
+a value replaces it) or *default*. Only a gateway admin can change them; the
+gateway validates every change and its refusal is shown as is.
+
+When the backlog folder is not available (a saved folder that was deleted or
+unmounted), the Board, Backlog and Executions pages show the folder and the
+reason; an admin gets **Use the gateway's own folder** and **Choose a
+folder…**, everyone else is told to ask the gateway admin.
 
 ## Browser Settings page
 

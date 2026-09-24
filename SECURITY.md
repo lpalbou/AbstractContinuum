@@ -23,9 +23,8 @@ Treat access to this app like SSH access to the deployment host:
   default; put your own authenticating reverse proxy in front for anything
   else);
 - give gateway user tokens only to people who should be able to redeploy;
-- keep the gateway's process manager disabled
-  (`ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER` unset) on gateways that should
-  not expose service control.
+- keep the gateway's process manager off (the `process_manager` setting,
+  off by default) on gateways that should not expose service control.
 
 ## Session model
 

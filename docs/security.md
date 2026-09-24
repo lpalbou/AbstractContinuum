@@ -37,8 +37,9 @@ for people with deploy rights.
 5. **Write-only env vars** — the gateway never returns managed env var
    values; the UI can set/unset but never read them back.
 6. **Feature gating** — the process manager and exec worker exist only when
-   the gateway operator enabled them (`ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER`,
-   `ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER`).
+   the gateway admin turned them on (the `process_manager` and
+   `backlog_exec_runner` settings, off by default; only an admin can change
+   them).
 7. **Content-Security-Policy on the app document** — the Team page renders
    untrusted content (hub messages, channel fs files, attachments) as
    markdown. The renderer emits only React elements (no raw-HTML pass, no
