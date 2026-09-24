@@ -27,7 +27,7 @@ function gatewaySessionDevProxy(): Plugin {
   });
   const hub_proxy = createHubProxy({
     hubUrl: String(process.env.ABSTRACTCONTINUUM_HUB_URL || process.env.AGORA_HUB_URL || "http://127.0.0.1:8765").trim().replace(/\/+$/, ""),
-    seat: String(process.env.ABSTRACTCONTINUUM_HUB_SEAT || "laurent").trim(),
+    seat: String(process.env.ABSTRACTCONTINUUM_HUB_SEAT || "operator").trim(),
     keysPath: String(process.env.ABSTRACTCONTINUUM_HUB_KEYS || join(homedir(), ".agora", "keys.json")),
   });
   return {

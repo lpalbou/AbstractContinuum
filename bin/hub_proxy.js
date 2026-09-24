@@ -11,7 +11,7 @@
  * Contract rules honored here (agency c1696):
  * - Only allowlisted paths forward — the proxy is a door, not a tunnel.
  * - GET /api/hub/meta names the seat so the UI can render authorship
- *   honestly ("posting as laurent").
+ *   honestly ("posting as <seat>").
  * - Ack/read_message are ordinary POSTs the UI calls on EXPLICIT read
  *   only (never on render) — enforced UI-side, but the proxy exposes
  *   them as distinct paths so an audit can see which fired.

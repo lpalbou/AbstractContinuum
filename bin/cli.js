@@ -37,9 +37,29 @@ through a same-origin session proxy. Configuration is environment-driven:
                                   default http://127.0.0.1:8080)
   ABSTRACTCONTINUUM_HUB_URL       agora hub for the Team page (fallback
                                   AGORA_HUB_URL, default http://127.0.0.1:8765)
-  ABSTRACTCONTINUUM_HUB_SEAT      hub seat the Team page acts as (default laurent)
+  ABSTRACTCONTINUUM_HUB_SEAT      hub seat the Team page acts as; set it to
+                                  your own seat (default operator)
   ABSTRACTCONTINUUM_HUB_KEYS      hub key store (default ~/.agora/keys.json)
   ABSTRACTCONTINUUM_HUB_KEY       hub API key (overrides the key store)
+  ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE
+                                  1 lets browsers on other machines use the
+                                  hub proxy (default off; only behind your
+                                  own access control)
+
+Sign-in proxy hardening (all default off):
+
+  ABSTRACTCONTINUUM_ALLOW_REMOTE_BROWSER_GATEWAY_CONFIG
+    (or ABSTRACTGATEWAY_ALLOW_REMOTE_BROWSER_GATEWAY_CONFIG)
+                                  let browsers on other machines change the
+                                  gateway URL at sign-in
+  ABSTRACTCONTINUUM_ALLOW_BROWSER_GATEWAY_URL_COOKIE
+                                  honor a browser-supplied gateway URL cookie
+                                  on non-loopback hosts
+  ABSTRACTCONTINUUM_TRUST_PROXY_HEADERS
+    (or ABSTRACTGATEWAY_TRUST_PROXY_HEADERS)
+                                  trust x-forwarded-host for the loopback
+                                  check (only behind a reverse proxy you
+                                  control)
 
 Documentation: https://github.com/lpalbou/AbstractContinuum#readme`);
   process.exit(0);
@@ -54,7 +74,7 @@ const PORT = process.env.PORT || 3002;
 const HOST = process.env.HOST || '127.0.0.1';
 const DEFAULT_GATEWAY_URL = String(process.env.ABSTRACTCONTINUUM_GATEWAY_URL || process.env.ABSTRACTGATEWAY_URL || 'http://127.0.0.1:8080').trim().replace(/\/+$/, '') || 'http://127.0.0.1:8080';
 const HUB_URL = String(process.env.ABSTRACTCONTINUUM_HUB_URL || process.env.AGORA_HUB_URL || 'http://127.0.0.1:8765').trim().replace(/\/+$/, '');
-const HUB_SEAT = String(process.env.ABSTRACTCONTINUUM_HUB_SEAT || 'laurent').trim();
+const HUB_SEAT = String(process.env.ABSTRACTCONTINUUM_HUB_SEAT || 'operator').trim();
 const HUB_KEYS_PATH = String(process.env.ABSTRACTCONTINUUM_HUB_KEYS || join(homedir(), '.agora', 'keys.json'));
 
 const MIME_TYPES = {

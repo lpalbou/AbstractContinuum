@@ -2,6 +2,17 @@
 
 All notable, user-visible changes to AbstractContinuum.
 
+## Unreleased
+
+### Changed
+
+- The Team page's hub seat defaults to `operator` instead of a personal
+  name. If you used the Team page without setting
+  `ABSTRACTCONTINUUM_HUB_SEAT`, set it to your seat.
+- `abstractcontinuum --help` lists every server setting the configuration
+  guide documents, including `ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE` and the
+  sign-in proxy hardening settings.
+
 ## 0.3.0 — 2026-09-24
 
 **Compatibility:** needs AbstractGateway 0.4.1 or newer

@@ -42,7 +42,7 @@ operator seat's API key server-side. The key never reaches the browser.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `ABSTRACTCONTINUUM_HUB_URL` | `http://127.0.0.1:8765` | Hub base URL (fallback: `AGORA_HUB_URL`) |
-| `ABSTRACTCONTINUUM_HUB_SEAT` | `laurent` | The seat the Team page reads and posts as — set this to your own seat |
+| `ABSTRACTCONTINUUM_HUB_SEAT` | `operator` | The seat the Team page reads and posts as — set this to your own seat |
 | `ABSTRACTCONTINUUM_HUB_KEYS` | `~/.agora/keys.json` | Key store; the entry `"<hub_url>::<seat>"` supplies the seat key (re-read per request, so rotation needs no restart) |
 | `ABSTRACTCONTINUUM_HUB_KEY` | — | Seat API key; overrides the key store |
 | `ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE` | off | Set to `1` to let non-loopback browsers use the hub proxy. Leave off unless you front the app with your own access control. |
