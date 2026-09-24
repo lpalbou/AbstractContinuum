@@ -62,11 +62,12 @@ function ReadinessChecklist(props: { readiness: Readiness | null; server_refused
 function WorkerUnavailableNotice(props: { exec_cfg: BacklogExecConfigResponse | null; with_setup?: boolean }): React.ReactElement {
   const { exec_cfg, with_setup } = props;
   // Settings-first (gateway c2194: the toggle reconciles the worker live,
-  // no restart); env is the fallback for gateways without the admin
-  // surface. Canonical executor ids, never the retired codex_cli aliases.
+  // no restart); the gateway's CLI is the terminal door to the same
+  // settings (never environment variables — operator rule). Canonical
+  // executor ids, never the retired codex_cli aliases.
   const setup_env = [
-    "ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER=1   # or: Settings → Gateway administration → Enable",
-    "ABSTRACTGATEWAY_BACKLOG_EXECUTOR=codex  # canonical: codex | claude | cursor-agent | abstractcode",
+    "abstractgateway config set backlog_exec_runner on   # or: Settings → Gateway administration → Enable",
+    "abstractgateway config set executor codex           # canonical: codex | claude | cursor-agent | abstractcode",
   ];
   return (
     <div style={{ marginTop: "10px" }}>
@@ -83,7 +84,7 @@ function WorkerUnavailableNotice(props: { exec_cfg: BacklogExecConfigResponse | 
       {with_setup ? (
         <details style={{ marginTop: "8px" }}>
           <summary className="muted" style={{ fontSize: "var(--font-size-sm)", cursor: "pointer" }}>
-            Setup without the admin surface (env + restart)
+            Setup from the gateway's computer (terminal)
           </summary>
           <div style={{ fontSize: "var(--font-size-sm)", marginTop: "8px" }}>
             <pre className="mono setup_callout_pre" style={{ marginTop: 0 }}>

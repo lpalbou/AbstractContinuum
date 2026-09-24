@@ -137,7 +137,8 @@ describe("ProcessesPage", () => {
     const gw = make_stub_gateway();
     gw.list_processes = vi.fn(async () => ({ ok: true, enabled: false, processes: [] }));
     render(<ProcessesPage gateway={gw} gateway_connected={true} />);
-    expect(await screen.findByText(/ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1/)).toBeTruthy();
+    expect(await screen.findByText(/abstractgateway config set process_manager on/)).toBeTruthy();
+    expect(document.body.textContent || "").not.toMatch(/ABSTRACTGATEWAY_/);
   });
 
   it("does not call the gateway when disconnected", async () => {

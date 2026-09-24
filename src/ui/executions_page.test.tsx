@@ -141,9 +141,11 @@ describe("ExecutionsPage", () => {
     render(<ExecutionsPage gateway={gw} gateway_connected={true} />);
 
     expect(await screen.findByText("No execution agent on this gateway")).toBeTruthy();
-    expect(screen.getByText(/ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER/)).toBeTruthy();
-    // The remediation names the executor env, not just the runner flag.
-    expect(screen.getByText(/ABSTRACTGATEWAY_BACKLOG_EXECUTOR/)).toBeTruthy();
+    // The terminal remediation is the gateway's settings CLI, never env vars
+    // (operator rule 2026-09-24) — and it names the executor, not just the runner.
+    expect(screen.getByText(/abstractgateway config set backlog_exec_runner on/)).toBeTruthy();
+    expect(screen.getByText(/abstractgateway config set executor codex/)).toBeTruthy();
+    expect(document.body.textContent || "").not.toMatch(/ABSTRACTGATEWAY_/);
     // The toolbar chip does not render an ok tone for this state.
     const chip = screen.getByText(/no execution agent/);
     expect(chip.className).not.toContain("ok");
@@ -171,8 +173,8 @@ describe("ExecutionsPage", () => {
 
     expect(await screen.findByText("No default executor selected")).toBeTruthy();
     expect(screen.getByText(/Codex CLI, Claude Code/)).toBeTruthy();
-    // Registry live ⇒ the env+restart recipe would contradict it.
-    expect(screen.queryByText(/ABSTRACTGATEWAY_BACKLOG_EXECUTOR/)).toBeNull();
+    // Registry live ⇒ the terminal recipe would contradict it.
+    expect(screen.queryByText(/abstractgateway config set executor/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Open Settings" }));
     expect(open_settings).toHaveBeenCalledTimes(1);
   });

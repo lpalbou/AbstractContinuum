@@ -11,7 +11,7 @@ import { Icon } from "@abstractframework/ui-kit";
 
 import type { BacklogItemSummary, GatewayClient } from "../../lib/gateway_client";
 import { type Readiness, readiness_from_dor_refusal, evaluate_readiness, parse_work_item_metadata, normalize_list_priority, summary_has_list_metadata } from "../board/board_model";
-import { BacklogUnconfiguredCallout, is_backlog_unconfigured } from "../backlog_unconfigured";
+import { BacklogUnavailablePanel, is_backlog_unavailable, use_backlog_status } from "../backlog_folder";
 import { WorkItemDrawer, type DrawerKind, type DrawerTarget } from "../board/work_item_drawer";
 import { AdvisorDrawer } from "./advisor_drawer";
 import { type AgentOverride, BatchExecuteModal, ExecuteConfirmModal, MergeMasterModal } from "./execute_modals";
@@ -178,7 +178,9 @@ export function BacklogBrowserPage(props: BacklogBrowserPageProps): React.ReactE
     [items, selected_filenames]
   );
 
-  const unconfigured = is_backlog_unconfigured(error);
+  const unconfigured = is_backlog_unavailable(error);
+  const [folder_nonce, set_folder_nonce] = useState(0);
+  const backlog_folder = use_backlog_status(gateway, can_use_gateway && unconfigured, folder_nonce);
 
   function open_drawer(it: BacklogItemSummary): void {
     set_drawer_target({ filename: String(it.filename || ""), kind, title: it.title || it.filename, initial_tab: "spec" });
@@ -403,7 +405,17 @@ export function BacklogBrowserPage(props: BacklogBrowserPageProps): React.ReactE
       </div>
 
       {unconfigured ? (
-        <BacklogUnconfiguredCallout surface="the backlog archive" />
+        <BacklogUnavailablePanel
+          gateway={gateway}
+          surface="the backlog archive"
+          status={backlog_folder.status}
+          legacy={backlog_folder.legacy}
+          error={error}
+          on_changed={() => {
+            set_folder_nonce((n) => n + 1);
+            void refresh();
+          }}
+        />
       ) : (
         <>
           <div className="page_toolbar">

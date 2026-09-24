@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { BacklogItemSummary, GatewayClient } from "../../lib/gateway_client";
-import { is_backlog_unconfigured } from "../backlog_unconfigured";
+import { is_backlog_unavailable } from "../backlog_folder";
 import { type BoardCard, type WorkItemMetadata, card_has_chip_meta, derive_board_cards, parse_work_item_metadata } from "./board_model";
 
 const METADATA_FETCH_LIMIT = 40; // per refresh, across columns
@@ -26,8 +26,11 @@ export function use_board_data(opts: { gateway: GatewayClient; can_use_gateway: 
   const [error, set_error] = useState("");
   /** Non-empty when the board renders on partial data (#FALLBACK label). */
   const [degraded, set_degraded] = useState("");
-  /** True when the gateway serves without a backlog root (setup callout). */
-  const [unconfigured, set_unconfigured] = useState(false);
+  /** The gateway's "backlog folder not available" 404 (null = available). */
+  const [unavailable, set_unavailable] = useState<unknown>(null);
+  /** Backlog items (proposed + planned files) in the last good load; null
+   *  until the first load answers (drives the empty state). */
+  const [item_count, set_item_count] = useState<number | null>(null);
   const [metadata, set_metadata] = useState<Record<string, WorkItemMetadata>>({});
   const metadata_ref = useRef<Record<string, WorkItemMetadata>>({});
   const inflight_ref = useRef(false);
@@ -68,10 +71,9 @@ export function use_board_data(opts: { gateway: GatewayClient; can_use_gateway: 
         const active_items_v = take(active_items_res, "busy set");
 
         // The one gateway posture that blanks the whole lane gets its own
-        // state: backlog browsing not configured (operator incident
-        // 2026-07-13 — a generic "all sources failed" reads as app breakage
-        // when the fix is one env var on the gateway host).
-        set_unconfigured(failure_reasons.some((r) => is_backlog_unconfigured(r)));
+        // state: the backlog folder is not available (a generic "all
+        // sources failed" reads as app breakage when the fix is one setting).
+        set_unavailable(failure_reasons.find((r) => is_backlog_unavailable(r)) ?? null);
 
         if (!proposed_v && !planned_v && !active_v && !terminal_v) {
           // Nothing usable — keep the previous board and surface the error.
@@ -99,6 +101,7 @@ export function use_board_data(opts: { gateway: GatewayClient; can_use_gateway: 
 
         const proposed = Array.isArray((proposed_v as any)?.items) ? (proposed_v as any).items : [];
         const planned = Array.isArray((planned_v as any)?.items) ? (planned_v as any).items : [];
+        set_item_count(proposed_v && planned_v ? proposed.length + planned.length : null);
         const next = derive_board_cards({
           proposed,
           planned,
@@ -186,5 +189,6 @@ export function use_board_data(opts: { gateway: GatewayClient; can_use_gateway: 
     return () => clearInterval(t);
   }, [can_use_gateway, refresh, gateway]);
 
-  return { cards, loading, error, degraded, unconfigured, metadata, refresh, refresh_item_metadata };
+  const unconfigured = unavailable !== null;
+  return { cards, loading, error, degraded, unconfigured, unavailable, item_count, metadata, refresh, refresh_item_metadata };
 }

@@ -301,13 +301,15 @@ export function ProcessesPage({
 
         {gateway_connected && tab !== "env" && enabled === false ? (
           <div className="page_hint mono">
-            To manage processes, set <span className="mono">ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1</span> and{" "}
-            <span className="mono">ABSTRACTGATEWAY_TRIAGE_REPO_ROOT</span> (your AbstractFramework checkout root) on the gateway host.
+            The process manager is off on this gateway. An admin turns it on in Settings → Gateway administration (or{" "}
+            <span className="mono">abstractgateway config set process_manager on</span>). Process control also needs the framework
+            checkout it manages: set the backlog folder to it (Settings → Backlog folder).
           </div>
         ) : null}
         {gateway_connected && tab === "env" && env_enabled === false ? (
           <div className="page_hint mono">
-            Set <span className="mono">ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1</span> on the gateway host.
+            The process manager is off on this gateway. An admin turns it on in Settings → Gateway administration (or{" "}
+            <span className="mono">abstractgateway config set process_manager on</span>).
           </div>
         ) : null}
         {tab !== "env" && error ? <div className="page_error mono">{error}</div> : null}

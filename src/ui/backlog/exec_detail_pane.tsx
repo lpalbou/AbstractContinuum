@@ -400,7 +400,8 @@ function QaDecisionSection(props: {
       ) : null}
       {exec_mode === "uat" && uat_deploy_status === "skipped" && uat_deploy_reason === "process_manager_disabled" ? (
         <div className="detail_warn">
-          UAT services were not started: process manager is disabled. Restart the gateway with <code>ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1</code>.
+          UAT services were not started: the process manager is off. An admin turns it on in Settings → Gateway administration (or{" "}
+          <code>abstractgateway config set process_manager on</code>).
         </div>
       ) : null}
       {uat_deploy_err ? (

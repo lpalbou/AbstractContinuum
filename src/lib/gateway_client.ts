@@ -34,6 +34,7 @@ import type {
   BacklogMergeResponse,
   BacklogMoveResponse,
   BacklogRef,
+  BacklogStatusResponse,
   BacklogTemplateResponse,
   BacklogUpdateResponse,
   DataHomesResponse,
@@ -549,6 +550,12 @@ export class GatewayClient {
     return await this._get_json("backlog_template", "/api/gateway/backlog/template");
   }
 
+  /** Backlog folder posture (gateway mission II). A 404 means the gateway
+   *  predates the endpoint — callers fall back to the 404-detail class. */
+  async backlog_status(): Promise<BacklogStatusResponse> {
+    return await this._get_json("backlog_status", "/api/gateway/backlog/status");
+  }
+
   async backlog_move(args: { from_kind: string; to_kind: string; filename: string }): Promise<BacklogMoveResponse> {
     const from_kind = String(args?.from_kind || "").trim();
     const to_kind = String(args?.to_kind || "").trim();
@@ -934,9 +941,10 @@ export class GatewayClient {
    *  change; live-verified 2026-07-13). Refusals are operator-readable
    *  4xx — render them verbatim. Returns the updated posture. */
   async admin_runtime_config_update(patch: {
-    process_manager?: boolean;
-    triage_repo_root?: string;
-    backlog_exec_runner?: boolean;
+    process_manager?: boolean | null;
+    /** A folder path; null clears the saved value (back to the default). */
+    triage_repo_root?: string | null;
+    backlog_exec_runner?: boolean | null;
     executor?: string;
   }): Promise<AdminRuntimeConfigResponse> {
     const r = await this._fetch("admin_runtime_config_update", "/api/gateway/admin/runtime-config", {

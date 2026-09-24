@@ -3,16 +3,18 @@
 // practice — operator ruling 2026-07-13).
 //
 // Administration model (operator directive 17:28): the gateway is the
-// GATEKEEPER — this pane renders the live posture and, once the gateway
-// ships its admin config surface (ask c1550), turns into request buttons
-// gated on the signed-in principal being gateway-admin. Until then the
-// posture is read-only with the exact env lines named.
+// GATEKEEPER — this pane renders the live posture and, for the gateway
+// admin, the controls of its settings door (POST /admin/runtime-config).
+// Each setting shows WHERE its value comes from (launch flag / saved
+// setting / environment (legacy) / default) — never an env-var recipe
+// (operator rule 2026-09-24: settings and --flags, not environment
+// variables).
 import React, { useEffect, useState } from "react";
 
 import { ProviderModelPicker, type GatewayConnectionState, type ProviderOption } from "@abstractframework/ui-kit";
 
 import { knob_bool, knob_string, type AdminRuntimeConfigResponse, type DataHomeRow, type GatewayClient } from "../lib/gateway_client";
-import { is_backlog_unconfigured } from "./backlog_unconfigured";
+import { is_backlog_unavailable } from "./backlog_folder";
 import { VoiceSettingsPanel } from "./voice_settings_panel";
 
 export type ContinuumSettings = {
@@ -158,7 +160,7 @@ function TriageRootEditor(props: { current: string; busy: boolean; on_apply: (va
         style={{ minWidth: 260 }}
         value={value}
         onChange={(e) => set_value(e.target.value)}
-        placeholder="/path/to/abstractframework"
+        placeholder="/path/to/a/folder/with/docs/backlog"
         disabled={props.busy}
       />
       <button
@@ -282,7 +284,10 @@ export function SettingsPage(props: {
           if (!stop) {
             set_admin_cfg(cfg);
             next.process_manager = knob_bool(cfg.process_manager);
-            next.backlog_root = knob_bool(cfg.triage_repo_root);
+            // A resolved folder that is not usable (a vanished saved path)
+            // reads as NOT available — `available` is served since mission II.
+            next.backlog_root =
+              cfg.triage_repo_root?.available !== undefined ? Boolean(cfg.triage_repo_root.available) : knob_bool(cfg.triage_repo_root);
             set_posture(next);
           }
           return;
@@ -302,7 +307,7 @@ export function SettingsPage(props: {
         await gateway.backlog_template();
         next.backlog_root = true;
       } catch (e) {
-        next.backlog_root = is_backlog_unconfigured(e) ? false : null;
+        next.backlog_root = is_backlog_unavailable(e) ? false : null;
       }
       if (!stop) set_posture(next);
     })();
@@ -372,13 +377,22 @@ export function SettingsPage(props: {
     return <span className={`chip mono ${state ? "ok" : "warn"}`}>{state ? on : off}</span>;
   }
 
-  /** Which rung of stored > env > default won (c1554 source chain). */
+  /** Which rung won: launch flag > saved setting > environment (legacy) >
+   *  default (gateway mission II). The environment rung is only REPORTED —
+   *  saving a value here replaces it. */
   function source_chip(source?: string): React.ReactElement | null {
     const s = String(source || "").trim();
     if (!s) return null;
+    const words: Record<string, [string, string, string]> = {
+      flag: ["launch flag", "info", "Set by a launch flag of the running gateway; a saved value applies once it restarts without the flag."],
+      stored: ["setting", "info", "Saved setting (Settings here, the gateway console, or `abstractgateway config set`)."],
+      env: ["environment (legacy)", "warn", "Set by the environment the gateway was started with. Save a value here to replace it."],
+      default: ["default", "muted", "Nothing saved: the gateway's default."],
+    };
+    const [label, tone, title] = words[s] || [s, "muted", ""];
     return (
-      <span className="chip mono muted" title="Config resolution: stored > env > default">
-        {s}
+      <span className={`chip mono ${tone}`} title={title} data-testid="source_chip">
+        {label}
       </span>
     );
   }
@@ -556,26 +570,47 @@ export function SettingsPage(props: {
                   const executors = Array.isArray(admin_cfg?.executors) ? admin_cfg.executors : [];
                   return (
                     <div>
-                      <div className="admin_row">
+                      <div className="admin_row" data-testid="admin_row_backlog_folder">
                         <div className="admin_row_top">
-                          <span className="admin_row_name">Backlog browsing</span>
-                          {posture_chip(posture.backlog_root, "configured", "not configured")}
+                          <span className="admin_row_name">Backlog folder</span>
+                          {posture_chip(posture.backlog_root, "available", "not available")}
                           {source_chip(admin_cfg?.triage_repo_root?.source)}
                           <div className="admin_row_action">
+                            {can_write &&
+                            admin_cfg?.triage_repo_root?.default_path &&
+                            knob_string(admin_cfg?.triage_repo_root) !== admin_cfg.triage_repo_root.default_path ? (
+                              <button
+                                className="btn"
+                                disabled={admin_busy}
+                                onClick={() => void admin_update({ triage_repo_root: admin_cfg?.triage_repo_root?.default_path || null })}
+                                title={admin_cfg.triage_repo_root.default_path}
+                              >
+                                Use the gateway's own folder
+                              </button>
+                            ) : null}
                             {can_write ? (
                               <TriageRootEditor current={knob_string(admin_cfg?.triage_repo_root)} busy={admin_busy} on_apply={(v) => void admin_update({ triage_repo_root: v })} />
                             ) : null}
                           </div>
                         </div>
                         <div className="admin_row_detail">
-                          The AbstractFramework checkout the backlog lives in — <code>ABSTRACTGATEWAY_TRIAGE_REPO_ROOT</code>
-                          {knob_string(admin_cfg?.triage_repo_root) ? <> (currently {knob_string(admin_cfg?.triage_repo_root)})</> : null}
+                          {admin_cfg?.triage_repo_root?.help ||
+                            "The folder whose docs/backlog holds the items the Board and Backlog pages show."}
+                          {knob_string(admin_cfg?.triage_repo_root) ? (
+                            <>
+                              {" "}
+                              In use: <code>{knob_string(admin_cfg?.triage_repo_root)}</code>
+                            </>
+                          ) : null}
+                          {admin_cfg?.triage_repo_root?.available === false && admin_cfg.triage_repo_root.reason ? (
+                            <> — not available: {admin_cfg.triage_repo_root.reason}</>
+                          ) : null}
                         </div>
                       </div>
 
                       <div className="admin_row">
                         <div className="admin_row_top">
-                          <span className="admin_row_name">Exec pipeline</span>
+                          <span className="admin_row_name">Exec runner</span>
                           {posture.exec_pipeline === null ? (
                             <span className="chip mono muted">unknown</span>
                           ) : (
@@ -595,7 +630,7 @@ export function SettingsPage(props: {
                           </div>
                         </div>
                         <div className="admin_row_detail">
-                          Runs queued executions — <code>ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER=1</code>
+                          {admin_cfg?.backlog_exec_runner?.help || "Runs the backlog items queued for execution on the gateway's computer."}
                           {posture.exec_detail ? <> — {posture.exec_detail}</> : null}
                         </div>
                       </div>
@@ -628,8 +663,7 @@ export function SettingsPage(props: {
                           </div>
                         </div>
                         <div className="admin_row_detail">
-                          The execution agent seam (registry-pluggable: codex today, claude-code/opencode/abstractcode as they land) —{" "}
-                          <code>ABSTRACTGATEWAY_BACKLOG_EXECUTOR</code>
+                          The agent that runs queued items (the gateway lists what is installed on its computer).
                         </div>
                       </div>
 
@@ -651,8 +685,7 @@ export function SettingsPage(props: {
                           </div>
                         </div>
                         <div className="admin_row_detail">
-                          Powers the Services page — <code>ABSTRACTGATEWAY_ENABLE_PROCESS_MANAGER=1</code>. High trust: whoever reaches Services
-                          can redeploy.
+                          {admin_cfg?.process_manager?.help || "Powers the Services page. High trust: whoever reaches Services can redeploy."}
                         </div>
                       </div>
                     </div>
@@ -664,11 +697,11 @@ export function SettingsPage(props: {
                       evidence of denial (older admin surface). */}
                   {admin_cfg
                     ? admin_cfg.writable === true
-                      ? "Changes persist gateway-side (stored beats env beats default) and are principal-stamped. Some knobs may need a gateway restart to take full effect — the posture above is what the gateway reports."
+                      ? "Changes are saved on the gateway and apply at once; a launch flag of the running gateway wins until it restarts without it. The same settings: gateway console (Apps → Backlog settings) or `abstractgateway config set <key> <value>` on the gateway's computer."
                       : admin_cfg.writable === false
                         ? "This gateway serves the admin config surface, but your principal is not authorized to change it (admin only)."
                         : "This gateway serves the admin config surface (write authority unknown — it predates the writable flag)."
-                    : "These are env-set on the gateway host today (restart to apply). Self-serve configuration from this pane — admin-only, authorized by the gateway — is requested from the gateway seat (commons c1550/c1554); the controls light up automatically when its surface ships."}
+                    : "This gateway does not serve its settings to Continuum (older build): update the gateway to change these from here."}
                 </div>
               </>
             )}

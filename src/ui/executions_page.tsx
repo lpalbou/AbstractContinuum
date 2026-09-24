@@ -11,7 +11,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Icon } from "@abstractframework/ui-kit";
 
 import type { BacklogExecRequestSummary, GatewayClient } from "../lib/gateway_client";
-import { BacklogUnconfiguredCallout, is_backlog_unconfigured } from "./backlog_unconfigured";
+import { BacklogUnavailablePanel, is_backlog_unavailable, use_backlog_status } from "./backlog_folder";
 import { ExecDetailPane } from "./backlog/exec_detail_pane";
 import { use_media_query } from "./backlog/hooks";
 import { exec_status_chip_class, exec_time_stats, format_duration_ms, short_id } from "./backlog/model";
@@ -151,7 +151,9 @@ export function ExecutionsPage(props: {
   // executor "none" rendered a green page over a gateway that can run
   // nothing — remediation then looked complete while Execute still refused).
   const pipeline_healthy = Boolean(cfg?.can_execute);
-  const unconfigured = is_backlog_unconfigured(pipeline.exec_error) || is_backlog_unconfigured(recent_error);
+  const unconfigured = is_backlog_unavailable(pipeline.exec_error) || is_backlog_unavailable(recent_error);
+  const [folder_nonce, set_folder_nonce] = useState(0);
+  const backlog_folder = use_backlog_status(gateway, gateway_connected && unconfigured, folder_nonce);
 
   const show_compact_list = !is_compact_layout || compact_pane === "list";
   const show_compact_detail = !is_compact_layout || compact_pane === "detail";
@@ -230,13 +232,14 @@ export function ExecutionsPage(props: {
                   : `The gateway's registry serves ${registry.length} executor${registry.length === 1 ? "" : "s"} (${shown}), but none is currently available — install an executor binary on the gateway host (PATH), then pick it in Settings.`;
               })()}
             </p>
-            {/* Env recipe when the admin surface has nothing usable to
+            {/* Terminal recipe when the admin surface has nothing usable to
                 offer: registry absent (older gateway) OR every agent
-                unavailable (the fix is host-side either way). */}
+                unavailable (the fix is host-side either way). Settings and
+                CLI flags only — never environment variables (operator rule). */}
             {(!registry?.length || !registry.some((x) => x.available !== false)) && (no_executor || !worker_on) ? (
               <pre className="mono setup_callout_pre">
                 {
-                  "ABSTRACTGATEWAY_BACKLOG_EXEC_RUNNER=1        # enables the exec worker\nABSTRACTGATEWAY_BACKLOG_EXECUTOR=codex        # canonical ids: codex | claude | cursor-agent | abstractcode\n# the agent binary must be on the gateway host PATH (abstractcode: importable)"
+                  "abstractgateway config set backlog_exec_runner on   # enables the exec worker\nabstractgateway config set executor codex            # canonical ids: codex | claude | cursor-agent | abstractcode\n# the agent program must be installed on the gateway's computer (on its PATH)"
                 }
               </pre>
             ) : null}
@@ -249,15 +252,25 @@ export function ExecutionsPage(props: {
             </div>
             <p className="callout_text muted">
               The gateway is the gatekeeper: admins enable the worker and pick the executor from Settings → Gateway administration — changes
-              apply live, no gateway restart (the worker reconciles in-process). Env + restart remains the fallback on gateways without the
-              admin surface.
+              apply live, no gateway restart (the worker reconciles in-process). On the gateway's computer the same settings are{" "}
+              <code>abstractgateway config set …</code>.
             </p>
           </div>
         </div>
       ) : null}
 
       {unconfigured ? (
-        <BacklogUnconfiguredCallout surface="the execution pipeline" />
+        <BacklogUnavailablePanel
+          gateway={gateway}
+          surface="the execution pipeline"
+          status={backlog_folder.status}
+          legacy={backlog_folder.legacy}
+          error={is_backlog_unavailable(pipeline.exec_error) ? pipeline.exec_error : recent_error}
+          on_changed={() => {
+            set_folder_nonce((n) => n + 1);
+            void pipeline.refresh_exec_list("processing");
+          }}
+        />
       ) : (
         <>
           <div className="stat_strip">

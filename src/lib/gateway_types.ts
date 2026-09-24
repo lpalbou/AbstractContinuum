@@ -160,6 +160,24 @@ export type BacklogContentResponse = { kind: string; filename: string; content: 
 
 export type BacklogTemplateResponse = { ok: boolean; relpath: string; sha256: string; content: string };
 
+/** GET /api/gateway/backlog/status (gateway mission II): where the backlog
+ *  lives and whether it is usable. `path`/`backlog_dir`/`default_path` are
+ *  served to admins only; `reason` is path-free and shown to everyone. */
+export type BacklogStatusResponse = {
+  available: boolean;
+  source: "flag" | "stored" | "env" | "default" | string;
+  reason?: string | null;
+  writable?: boolean;
+  key?: string;
+  path?: string;
+  backlog_dir?: string;
+  default_path?: string;
+  is_default?: boolean;
+  template_relpath?: string;
+  item_folders?: string[];
+  created?: string[];
+};
+
 export type BacklogMoveResponse = {
   ok: boolean;
   from_kind: string;
@@ -334,6 +352,16 @@ export type AdminConfigSource = "stored" | "env" | "default" | string;
  *  redact a path value to `{configured, source}` (c1569). */
 export type AdminConfigKnob = {
   value?: boolean | string | null;
+  /** Labels served by the gateway settings registry (mission II). */
+  label?: string;
+  help?: string;
+  cli?: string;
+  flag?: string;
+  /** Backlog folder only: usable now? (+ a path-free reason when not). */
+  available?: boolean;
+  reason?: string | null;
+  default_path?: string;
+  env_shadowed?: boolean;
   enabled?: boolean;
   path?: string | null;
   id?: string;

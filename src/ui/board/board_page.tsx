@@ -7,7 +7,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import type { GatewayClient } from "../../lib/gateway_client";
-import { BacklogUnconfiguredCallout } from "../backlog_unconfigured";
+import { BacklogEmptyState, BacklogUnavailablePanel, use_backlog_status } from "../backlog_folder";
 import { use_executor_registry, use_media_query } from "../backlog/hooks";
 import { type AgentOverride, ExecuteConfirmModal } from "../backlog/execute_modals";
 import { WORK_ITEM_TYPES, format_duration_ms, read_task_type, task_type_chip, task_type_title } from "../backlog/model";
@@ -48,6 +48,8 @@ export function BoardPage(props: {
   /** Board -> Team navigation (dm 110): open a channel scrolled to a
    *  citing message. */
   on_open_team?: (focus: TeamFocus) => void;
+  /** Opens the New task modal (the empty board's "Create your first item"). */
+  on_new_task?: () => void;
 }): React.ReactElement {
   const { gateway, gateway_connected, data_nonce, on_mutated, on_open_executions } = props;
   const default_mode = props.default_execution_mode === "inplace" ? "inplace" : "uat";
@@ -56,6 +58,12 @@ export function BoardPage(props: {
   const executor_registry = use_executor_registry(gateway, gateway_connected);
 
   const board = use_board_data({ gateway, can_use_gateway: gateway_connected, data_nonce });
+  // Where the backlog lives (gateway mission II): the unavailable panel and
+  // the empty state name the folder; refetched after a settings change.
+  const [folder_nonce, set_folder_nonce] = useState(0);
+  const backlog_folder = use_backlog_status(gateway, gateway_connected, data_nonce + folder_nonce);
+  const folder_unavailable = board.unconfigured || backlog_folder.status?.available === false;
+  const board_empty = !folder_unavailable && board.item_count === 0 && !board.error;
 
   // SEAT-WORK join (S3, Option A c3010): live hub pointer claims move
   // planned cards into In Progress with a "claimed by X" chip; claims
@@ -340,21 +348,34 @@ export function BoardPage(props: {
           Supervision
         </button>
         <div className="board_toolbar_spacer" />
-        {board.degraded && !board.unconfigured ? (
+        {board.degraded && !folder_unavailable ? (
           <span className="mono board_warn" title={board.degraded}>
             partial board
           </span>
         ) : null}
-        {board.error && !board.unconfigured ? <span className="mono board_error">{board.error}</span> : null}
+        {board.error && !folder_unavailable ? <span className="mono board_error">{board.error}</span> : null}
         {action_error ? <span className="mono board_error">{action_error}</span> : null}
         <button className={`btn btn_icon ${board.loading ? "is_loading" : ""}`} onClick={() => void board.refresh()} disabled={!gateway_connected || board.loading}>
           {board.loading ? "Refreshing…" : "Refresh"}
         </button>
       </div>
 
-      {board.unconfigured ? <BacklogUnconfiguredCallout surface="the board" /> : null}
+      {folder_unavailable ? (
+        <BacklogUnavailablePanel
+          gateway={gateway}
+          surface="the board"
+          status={backlog_folder.status}
+          legacy={backlog_folder.legacy}
+          error={board.unavailable}
+          on_changed={() => {
+            set_folder_nonce((n) => n + 1);
+            void board.refresh();
+          }}
+        />
+      ) : null}
+      {board_empty ? <BacklogEmptyState status={backlog_folder.status} on_create={props.on_new_task} /> : null}
 
-      {!board.unconfigured && (facet_labels.length || file_card_count) ? (
+      {!folder_unavailable && (facet_labels.length || file_card_count) ? (
         <div className="board_facets">
           <span className="mono muted board_facets_caption">labels:</span>
           {facet_labels.map(([label, count]) => (
@@ -383,7 +404,7 @@ export function BoardPage(props: {
         </div>
       ) : null}
 
-      <div className="board_columns" style={board.unconfigured ? { display: "none" } : undefined}>
+      <div className="board_columns" style={folder_unavailable ? { display: "none" } : undefined}>
         {BOARD_COLUMNS.map((col) => {
           const list = by_column.get(col.id) || [];
           const drop_kind = droppable[col.id];

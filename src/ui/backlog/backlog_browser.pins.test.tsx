@@ -176,13 +176,25 @@ describe("BacklogBrowserPage pins (archive redesign)", () => {
     );
   });
 
-  it("renders the setup callout when backlog browsing is not configured", async () => {
+  it("renders the folder-not-available panel (never an env-var recipe) when the gateway's backlog folder is unusable", async () => {
+    // Gateway mission II: a fresh gateway has its own folder, so this state
+    // is a vanished saved folder (or a gateway older than the setting).
     const gw = make_stub_gateway();
     gw.backlog_list = vi.fn(async () => {
-      throw new Error("backlog_list failed: Backlog browsing not configured on this gateway");
+      throw new Error("backlog_list failed: Backlog folder not available on this gateway: the folder does not exist (set by the saved setting).");
     });
+    gw.backlog_status = vi.fn(async () => ({
+      available: false,
+      source: "stored",
+      path: "/gone",
+      reason: "the folder does not exist (set by the saved setting)",
+      writable: true,
+      default_path: "/data/backlog",
+    }));
+    gw.admin_runtime_config_update = vi.fn(async () => ({}));
     render_page(gw);
-    expect(await screen.findByText(/Backlog browsing is not configured/)).toBeTruthy();
-    expect(screen.getByText(/ABSTRACTGATEWAY_TRIAGE_REPO_ROOT/)).toBeTruthy();
+    expect(await screen.findByText("This gateway's backlog folder is not available")).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Use the gateway's own folder" })).toBeTruthy();
+    expect(document.body.textContent || "").not.toMatch(/ABSTRACTGATEWAY_|setup required/);
   });
 });

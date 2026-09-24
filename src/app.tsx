@@ -391,6 +391,7 @@ export function App(): React.ReactElement {
                 set_team_focus(focus);
                 set_page("team");
               }}
+              on_new_task={() => set_new_task_open(true)}
             />
           ) : null}
 
