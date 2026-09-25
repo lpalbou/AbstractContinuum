@@ -77,6 +77,12 @@ gateway console's *Backlog settings*; see
 | `email_read_message(...)` | `GET /email/messages/{uid}` |
 | `email_send(...)` | `POST /email/send` |
 
+### About
+
+| Method | Endpoint |
+| --- | --- |
+| `gateway_about()` | `GET /about` — public; `{ abstractframework, abstractgateway, packages }`, read when the About dialog opens |
+
 ### Managed processes (high trust — see [security.md](security.md))
 
 | Method | Endpoint |

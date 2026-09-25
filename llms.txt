@@ -28,7 +28,7 @@ administration, or `abstractgateway config set`).
 - [docs/api.md](docs/api.md): consumed gateway API families (incl. backlog status and the runtime-config settings door), session endpoints, hub proxy endpoints
 - [docs/configuration.md](docs/configuration.md): server launch flags and settings file (legacy env fallback), Team page hub seat, sign-in proxy settings, gateway settings (backlog folder, exec runner, process manager), browser settings
 - [docs/security.md](docs/security.md): trust model, session/CSRF mechanics, hub seat model, execution safety (UAT vs inplace)
-- [docs/faq.md](docs/faq.md): required gateway version, observer vs continuum, executor choice, where the backlog lives, write-only env vars
+- [docs/faq.md](docs/faq.md): which version you are running (About), required gateway version, observer vs continuum, executor choice, where the backlog lives, write-only env vars
 - [docs/troubleshooting.md](docs/troubleshooting.md): sign-in, executions, backlog folder not available, inbox, services, Team page, dev setup
 
 ## Topic Deep Dives

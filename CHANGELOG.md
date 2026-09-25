@@ -4,6 +4,17 @@ All notable, user-visible changes to AbstractContinuum.
 
 ## Unreleased
 
+### Added
+
+- **About AbstractContinuum.** The (i) button in the top-right cluster opens
+  the AbstractFramework About dialog: the Continuum version you are running,
+  the author and licence, links to the website, source, documentation,
+  issue tracker and feedback, and the versions your gateway reports
+  (AbstractGateway, AbstractFramework and its packages). If the gateway
+  cannot say, the dialog shows why ("Gateway: unavailable (HTTP 401: …)").
+  Needs AbstractGateway with the public `GET /about` route for the gateway
+  rows.
+
 ## 0.3.1 — 2026-09-25
 
 **Compatibility:** same as 0.3.0 (AbstractGateway 0.4.1 or newer). No

@@ -560,6 +560,12 @@ gateway console's *Backlog settings*; see
 | `email_read_message(...)` | `GET /email/messages/{uid}` |
 | `email_send(...)` | `POST /email/send` |
 
+### About
+
+| Method | Endpoint |
+| --- | --- |
+| `gateway_about()` | `GET /about` — public; `{ abstractframework, abstractgateway, packages }`, read when the About dialog opens |
+
 ### Managed processes (high trust — see [security.md](security.md))
 
 | Method | Endpoint |
@@ -1058,6 +1064,11 @@ AbstractGateway 0.4.1 or newer. It serves the backlog folder state and the
 settings that Settings → Gateway administration edits; see
 [api.md](api.md).
 
+**Which version am I running?**
+Click the (i) About button in the top-right cluster. It shows the Continuum
+version, the versions your gateway reports, and links to the documentation
+and issue tracker.
+
 **Why is the Services page empty / why is Execute disabled?**
 Those features exist only when a gateway admin turns them on: the process
 manager and the exec runner are gateway settings (Settings → Gateway
@@ -1344,6 +1355,17 @@ npm run build      # production build must stay green
 All notable, user-visible changes to AbstractContinuum.
 
 ## Unreleased
+
+### Added
+
+- **About AbstractContinuum.** The (i) button in the top-right cluster opens
+  the AbstractFramework About dialog: the Continuum version you are running,
+  the author and licence, links to the website, source, documentation,
+  issue tracker and feedback, and the versions your gateway reports
+  (AbstractGateway, AbstractFramework and its packages). If the gateway
+  cannot say, the dialog shows why ("Gateway: unavailable (HTTP 401: …)").
+  Needs AbstractGateway with the public `GET /about` route for the gateway
+  rows.
 
 ## 0.3.1 — 2026-09-25
 

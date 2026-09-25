@@ -23,6 +23,11 @@ AbstractGateway 0.4.1 or newer. It serves the backlog folder state and the
 settings that Settings → Gateway administration edits; see
 [api.md](api.md).
 
+**Which version am I running?**
+Click the (i) About button in the top-right cluster. It shows the Continuum
+version, the versions your gateway reports, and links to the documentation
+and issue tracker.
+
 **Why is the Services page empty / why is Execute disabled?**
 Those features exist only when a gateway admin turns them on: the process
 manager and the exec runner are gateway settings (Settings → Gateway
