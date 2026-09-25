@@ -184,13 +184,14 @@ src/
     report_inbox.tsx          bug/feature reports + triage decisions
     email_inbox.tsx           email accounts/messages/send
     processes_page.tsx        managed process control + env vars (Services)
-    settings_page.tsx         connection, execution defaults, AI + voice preferences, Gateway administration
+    settings_page.tsx         connection, execution defaults, AI + voice preferences, hub seat, Gateway administration
     voice_settings_panel.tsx  voice override controls
     exec_event.ts             exec-log event classification
     backlog_folder.tsx        backlog folder state panel (empty / not available + admin actions)
     memo_markdown.tsx, mermaid_block.tsx   markdown + mermaid rendering
     modal.tsx, multi_select.tsx, error_boundary.tsx   shared widgets
-bin/cli.js                    static serve + session proxy + hub proxy mount
+bin/cli.js                    static serve + session proxy + hub proxy mount + `config` command
+bin/settings.js               server settings: flags, settings file, precedence, Settings route
 bin/hub_proxy.js              allowlisted agora hub proxy (HTTP + WebSocket)
 vendor/hub/                   vendored hub OpenAPI + golden conformance vectors
 ```
@@ -225,7 +226,7 @@ Design boundaries:
 ## Related
 
 - [api.md](api.md) — the exact endpoint families consumed
-- [configuration.md](configuration.md) — env vars, settings, proxy knobs
+- [configuration.md](configuration.md) — launch flags, settings file, gateway settings
 - [security.md](security.md) — trust model (process manager is high trust)
 - [conventions.md](conventions.md) — the work-item grammar the Board parses
 - [backlog/overview.md](backlog/overview.md) — work planning and history

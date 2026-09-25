@@ -50,7 +50,7 @@ The bundled server (`bin/cli.js`) uses the shared app-origin session proxy
 Secrets stay in the environment: this repository contains no credentials.
 
 Deployment defaults to note: the server binds loopback (`127.0.0.1`) by
-default — binding wider with `HOST` is an explicit choice; the Vite dev
+default — binding wider with `--host` is an explicit choice; the Vite dev
 server is deliberately open (`allowedHosts: true`) and is not a production
 surface. The Team page posts to the agora hub as one operator seat whose
 key is held server-side. See `docs/security.md` for the full model and residual risks.

@@ -72,14 +72,20 @@ Open `http://localhost:3002` and sign in with a gateway user and token (the
 connection badge at the bottom of the sidebar). The token is exchanged
 server-side for an HttpOnly session cookie and never stored in the browser.
 
-The server itself is configured with environment variables (full list in
+The server is configured with launch flags or saved settings (full list in
 [docs/configuration.md](docs/configuration.md), or `abstractcontinuum --help`):
 
-- `PORT` (default `3002`), `HOST` (default `127.0.0.1`)
-- `ABSTRACTCONTINUUM_GATEWAY_URL` (or `ABSTRACTGATEWAY_URL`) — the gateway
-  this deployment talks to (default `http://127.0.0.1:8080`)
-- `ABSTRACTCONTINUUM_HUB_URL` / `ABSTRACTCONTINUUM_HUB_SEAT` — the agora hub
-  and operator seat for the Team page
+```bash
+abstractcontinuum --port 3002 --gateway-url http://127.0.0.1:8080 --hub-seat alice
+abstractcontinuum config set hub_seat alice    # saved in ~/.abstractcontinuum/settings.json
+abstractcontinuum config get                   # every setting and where it comes from
+```
+
+- `--port` (default `3002`), `--host` (default `127.0.0.1`)
+- `--gateway-url` — the gateway this deployment talks to (default
+  `http://127.0.0.1:8080`)
+- `--hub-url` / `--hub-seat` / `--hub-token-file` — the agora hub, your seat
+  and its key for the Team page. The hub seat is also on the Settings page.
 
 A fresh gateway needs no backlog setup: it keeps its own backlog folder, and
 the Board opens on **Your backlog is empty** with **Create your first item**.
@@ -101,7 +107,7 @@ git clone https://github.com/lpalbou/AbstractUIC.git abstractuic
 git clone https://github.com/lpalbou/AbstractContinuum.git abstractcontinuum
 cd abstractcontinuum
 npm install
-npm run dev        # vite dev server on :3003 (proxies /api to :8080)
+npm run dev        # vite dev server on :3002 (proxies /api to the gateway)
 npm test           # vitest (unit + jsdom component tests)
 npm run build      # production build into dist/
 npm start          # serve dist/ + the app-origin gateway session proxy on :3002

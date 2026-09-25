@@ -123,9 +123,22 @@ gateway console's *Backlog settings*; see
 - `GET /api/hub/ws` (WebSocket upgrade) — live hub updates relayed with the
   seat key attached server-side
 
-Loopback peers only unless `ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE=1`; browser
-requests whose `Origin` does not match the host are rejected. The hub
+Loopback peers only unless Continuum runs with `--hub-allow-remote` (setting
+`hub_allow_remote`); browser requests whose `Origin` does not match the host
+are rejected. The hub
 contract the client is typed against is vendored in `vendor/hub/`.
+
+## Server settings endpoint (bundled server, Settings page)
+
+- `GET /api/continuum/settings` — `{settings, writable, settings_file}`:
+  every server setting as `{value, source}` (`source` is `flag`, `setting`,
+  `env` or `default`); the hub token only as `{set, source}`
+- `PUT /api/continuum/settings` — `{"hub_seat": "<seat>"}` saves the seat
+  to the settings file (`null` removes it); answers the fresh view. Other
+  settings are refused here (`abstractcontinuum config set`)
+
+Loopback peers and same-origin browser requests only; writes need
+`Content-Type: application/json`.
 
 ## Notes
 

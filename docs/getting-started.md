@@ -7,13 +7,22 @@
   default `http://127.0.0.1:8080`). [api.md](api.md) lists what this app
   calls on it.
 - Optional, for the Team page: an agora hub and a seat key (see
-  [configuration.md](configuration.md#team-page-agora-hub))
+  [configuration.md](configuration.md#team-page-agora-hub)). Set your seat
+  on **Settings → Team (agora hub) → Hub seat**, or with
+  `abstractcontinuum config set hub_seat <seat>`.
 
 ## First run
 
 ```bash
-ABSTRACTCONTINUUM_GATEWAY_URL=http://127.0.0.1:8080 npx @abstractframework/continuum
+npx @abstractframework/continuum --gateway-url http://127.0.0.1:8080
 ```
+
+`--gateway-url` is only needed when your gateway is not on the default
+`http://127.0.0.1:8080`. To keep a setting, save it instead of repeating the
+flag: `abstractcontinuum config set gateway_url http://my-gateway:8080`
+(`abstractcontinuum --help` lists every flag;
+[configuration.md](configuration.md#server-abstractcontinuum--npm-start--binclijs)
+has the details).
 
 Open `http://localhost:3002`, click the connection badge (bottom of the
 sidebar), and enter the gateway URL, user, and token in the connect dialog.
@@ -30,12 +39,14 @@ and the session proxy from `../abstractuic`), then:
 
 ```bash
 npm install
-npm run dev        # http://localhost:3003
+npm run dev        # http://localhost:3002
 ```
 
-The dev server mounts the same session and hub proxies as production (a
-Vite plugin), so you sign in exactly the same way. For the production
-shape from source: `npm run build && npm start` (port 3002).
+The dev server mounts the same session, hub and settings routes as
+production (a Vite plugin) and reads the same settings file, so you sign in
+exactly the same way. For the production shape from source:
+`npm run build && npm start` (port 3002; pass flags after `--`, for example
+`npm start -- --hub-seat alice`).
 
 ## Your backlog
 

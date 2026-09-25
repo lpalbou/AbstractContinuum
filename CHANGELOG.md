@@ -6,12 +6,27 @@ All notable, user-visible changes to AbstractContinuum.
 
 ### Changed
 
+- **Continuum's server is configured with launch flags or
+  `abstractcontinuum config`.** Every server setting has a flag (`--port`,
+  `--host`, `--gateway-url`, `--hub-url`, `--hub-seat`, `--hub-token-file`,
+  `--hub-allow-remote`, the sign-in proxy settings, …) and a saved setting
+  in `~/.abstractcontinuum/settings.json`, written with
+  `abstractcontinuum config set <setting> <value>` (`config get` shows every
+  value and where it comes from). The file is owner-only because it can
+  hold the hub token. Environment variables remain a legacy fallback.
+- **The hub seat is a setting on the Settings page** (Settings → Team
+  (agora hub) → Hub seat). It is saved on the Continuum server, survives
+  restarts and applies to the Team page at once. You can also run
+  `abstractcontinuum config set hub_seat <seat>`, or pass `--hub-seat` for
+  one run.
 - The Team page's hub seat defaults to `operator` instead of a personal
-  name. If you used the Team page without setting
-  `ABSTRACTCONTINUUM_HUB_SEAT`, set it to your seat.
-- `abstractcontinuum --help` lists every server setting the configuration
-  guide documents, including `ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE` and the
-  sign-in proxy hardening settings.
+  name. If you used the Team page without choosing a seat, set yours as
+  above.
+- `abstractcontinuum --help` lists every flag with its default and its
+  setting name.
+- `npm run dev` serves on port 3002 (Continuum's port on the stack map),
+  reads the same settings file, and proxies `/api` to the configured
+  gateway.
 
 ## 0.3.0 — 2026-09-24
 

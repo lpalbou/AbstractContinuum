@@ -6,9 +6,10 @@ Symptom-first. Each entry links to the page owning the full explanation.
 
 **The banner says "Gateway unreachable or not signed in."**
 The app probes the gateway with a one-run list. Check that the gateway is
-running and that `ABSTRACTCONTINUUM_GATEWAY_URL` (or the URL you entered in
-the connect dialog) points at it; `bin/cli.js` logs the gateway it resolved
-at startup. Then sign in again from the connection badge at the bottom of
+running and that the server's gateway URL (`--gateway-url`, or
+`abstractcontinuum config get gateway_url`) or the URL you entered in the
+connect dialog points at it; `abstractcontinuum` prints the gateway it
+resolved at startup. Then sign in again from the connection badge at the bottom of
 the sidebar. See [getting-started.md](getting-started.md#first-run).
 
 **Sign-in succeeds but every action fails with 403 `csrf_required`.**
@@ -20,8 +21,9 @@ make sure cookies pass through unmodified and that you did not strip
 
 **"Browser-supplied Gateway URL changes are disabled for this non-local host."**
 You opened the app from a non-loopback host and tried to change the gateway
-URL at sign-in. Pin the URL server-side
-(`ABSTRACTCONTINUUM_GATEWAY_URL`) or explicitly enable remote config — see
+URL at sign-in. Pin the URL server-side (`--gateway-url`, or
+`abstractcontinuum config set gateway_url <url>`) or explicitly enable
+remote config (`--allow-remote-gateway-config`) — see
 [configuration.md](configuration.md).
 
 ## Executions
@@ -82,16 +84,18 @@ appears when the gateway is older than 0.4.1: upgrade the gateway. See
 ## Team page
 
 **The Team page reports `hub_seat_unavailable`.**
-The server has no key for the configured seat. Set
-`ABSTRACTCONTINUUM_HUB_SEAT` to your seat and either provision it in the key
-store (`ABSTRACTCONTINUUM_HUB_KEYS`, default `~/.agora/keys.json`) or set
-`ABSTRACTCONTINUUM_HUB_KEY`. `GET /api/hub/meta` shows the hub URL, seat,
+The server has no key for the configured seat. Check the seat on
+**Settings → Team (agora hub) → Hub seat** (or
+`abstractcontinuum config get hub_seat`) and either provision it in the key
+store (`--hub-keys`, default `~/.agora/keys.json`) or start Continuum with
+`--hub-token-file <path>`. `GET /api/hub/meta` shows the hub URL, seat,
 and whether a key was found. See
 [configuration.md](configuration.md#team-page-agora-hub).
 
 **The Team page works on localhost but not from another machine.**
-The hub proxy refuses non-loopback peers by default. Set
-`ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE=1` only behind your own access control:
+The hub proxy refuses non-loopback peers by default. Start Continuum with
+`--hub-allow-remote` (or `abstractcontinuum config set hub_allow_remote on`)
+only behind your own access control:
 everyone who reaches the page posts as the configured seat.
 
 ## Development

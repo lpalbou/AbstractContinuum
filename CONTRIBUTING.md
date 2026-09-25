@@ -8,7 +8,7 @@ Gateway; the app renders and commands it.
 
 ```bash
 npm install
-npm run dev      # dev server on :3003, /api proxied to localhost:8080
+npm run dev      # dev server on :3002, /api proxied to the configured gateway
 ```
 
 The dev toolchain resolves `@abstractframework/ui-kit` and

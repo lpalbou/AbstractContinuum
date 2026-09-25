@@ -50,8 +50,8 @@ for people with deploy rights.
    `object-src 'none'` and `frame-ancestors 'none'` close embed vectors.
    Inline text previews are size-capped (256 KiB; larger files download)
    so pathological input cannot freeze the tab. Note: the Vite dev server
-   (port 3003, developer-only) does not send the CSP header — the operator
-   surface is always the prod server on :3002.
+   (`npm run dev`, developer-only) does not send the CSP header — the operator
+   surface is always the prod server (`npm start` / `abstractcontinuum`).
 
 ## Execution safety model
 
@@ -68,8 +68,8 @@ understand the risk.
   host (via redeploy of services whose code an execution can change).
   There is no per-page authorization: gateway access = full console.
 - The server binds loopback (`127.0.0.1`) by default; binding wider
-  (`HOST=0.0.0.0`) is an explicit deployment choice. The hub proxy also
-  refuses non-loopback peers unless `ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE=1`,
+  (`--host 0.0.0.0`) is an explicit deployment choice. The hub proxy also
+  refuses non-loopback peers unless Continuum runs with `--hub-allow-remote`,
   and rejects browser requests whose `Origin` does not match the host
   (WebSocket handshakes included). The Vite dev server is deliberately open
   (`allowedHosts: true`) and must never be the production surface.
