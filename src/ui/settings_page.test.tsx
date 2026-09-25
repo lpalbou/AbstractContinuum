@@ -233,3 +233,64 @@ describe("Settings — admin pane authority rendering", () => {
     await screen.findByText("gateway admin");
   });
 });
+
+describe("Settings — Hub seat (Continuum server setting)", () => {
+  function view(seat: string, source: string) {
+    return {
+      settings: { hub_seat: { value: seat, source }, hub_token: { set: false, source: "default" } },
+      writable: ["hub_seat"],
+      settings_file: "/home/u/.abstractcontinuum/settings.json",
+    };
+  }
+
+  it("shows the seat with its source and saves through the server", async () => {
+    const calls: Array<{ method: string; body: string }> = [];
+    const fetch_stub = vi.fn(async (url: string, init?: RequestInit) => {
+      expect(url).toBe("/api/continuum/settings");
+      calls.push({ method: String(init?.method || "GET"), body: String(init?.body || "") });
+      const payload = init?.method === "PUT" ? view(JSON.parse(String(init.body)).hub_seat, "setting") : view("operator", "env");
+      return new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetch_stub);
+    try {
+      render_page(stub_gateway());
+      const pane = await screen.findByTestId("admin_row_hub_seat");
+      expect(within(pane).getByTestId("hub_seat_value").textContent).toBe("operator");
+      expect(within(pane).getByTestId("hub_seat_source").textContent).toBe("environment (legacy)");
+      expect(pane.textContent).toContain("abstractcontinuum config set hub_seat");
+      expect(pane.textContent).not.toMatch(/ABSTRACTCONTINUUM_/);
+
+      fireEvent.change(within(pane).getByLabelText("Hub seat"), { target: { value: "laurent" } });
+      fireEvent.click(within(pane).getByText("Save"));
+      await waitFor(() => expect(within(pane).getByTestId("hub_seat_source").textContent).toBe("setting"));
+      expect(within(pane).getByTestId("hub_seat_value").textContent).toBe("laurent");
+      expect(calls.filter((c) => c.method === "PUT")).toEqual([{ method: "PUT", body: JSON.stringify({ hub_seat: "laurent" }) }]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("names the launch flag when it wins, and offers terminal routes when the server does not serve settings", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify(view("flagseat", "flag")), { status: 200 }))
+    );
+    try {
+      render_page(stub_gateway());
+      const pane = await screen.findByTestId("admin_row_hub_seat");
+      expect(within(pane).getByTestId("hub_seat_source").textContent).toBe("launch flag");
+      expect(pane.textContent).toMatch(/restarts without it/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    cleanup();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("<!doctype html>", { status: 200 })));
+    try {
+      render_page(stub_gateway());
+      const pane = await screen.findByTestId("hub_seat_pane");
+      await waitFor(() => expect(pane.textContent).toMatch(/--hub-seat <seat>/));
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});

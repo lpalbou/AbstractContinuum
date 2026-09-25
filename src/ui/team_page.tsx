@@ -2722,7 +2722,7 @@ export function TeamPage(props: {
           // Seat outside the pair (misconfig / legacy channel name): the
           // post still goes out ask-class but owed-by-nobody — say so
           // instead of silently degrading (adversarial find 6).
-          set_error(`#FALLBACK this dm's pair does not include seat '${seat}' — sent unaddressed (no to-me wake; check ABSTRACTCONTINUUM_HUB_SEAT).`);
+          set_error(`#FALLBACK this dm's pair does not include seat '${seat}' — sent unaddressed (no to-me wake; check the hub seat in Settings).`);
         }
         const payload = {
           body,
@@ -4194,7 +4194,7 @@ export function TeamPage(props: {
       {(health?.protocol && health.protocol !== PINNED_PROTOCOL) || health?.paused || error || vote_error || notice || (meta && !meta.seat_key_present) ? (
         <div className="team_statusstrip">
           {meta && !meta.seat_key_present ? (
-            <span className="chip mono warn" title="No hub key for the operator seat — read-only until the proxy can read it (ABSTRACTCONTINUUM_HUB_KEY or ~/.agora/keys.json).">
+            <span className="chip mono warn" title="No hub key for this seat — read-only until Continuum can read one (the seat's entry in ~/.agora/keys.json, or --hub-token-file at launch). The seat itself is set in Settings.">
               read-only (no seat key)
             </span>
           ) : null}

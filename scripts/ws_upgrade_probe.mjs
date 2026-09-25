@@ -19,13 +19,14 @@ const HOLE_PORT = 3211;
 const hole = net.createServer(() => {});
 await new Promise((r) => hole.listen(HOLE_PORT, "127.0.0.1", r));
 
-const child = spawn(process.execPath, ["bin/cli.js"], {
-  env: {
-    ...process.env,
-    PORT: String(PORT),
-    ABSTRACTCONTINUUM_HUB_URL: `http://127.0.0.1:${HOLE_PORT}`,
-    ABSTRACTCONTINUUM_HUB_KEY: "probe-key",
-  },
+const child = spawn(process.execPath, [
+  "bin/cli.js",
+  "--port", String(PORT),
+  "--hub-url", `http://127.0.0.1:${HOLE_PORT}`,
+  "--hub-token", "probe-key",
+  // A throwaway settings file: never the operator's own.
+  "--settings-file", "untracked/ws_upgrade_probe.settings.json",
+], {
   stdio: ["ignore", "pipe", "pipe"],
 });
 let child_err = "";

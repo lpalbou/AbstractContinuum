@@ -10,72 +10,159 @@
 
 import * as http from 'http';
 import { readFileSync, existsSync, statSync } from 'fs';
-import { homedir } from 'os';
 import { join, extname, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createGatewaySessionProxy } from '@abstractframework/app-server';
 import { createHubProxy } from './hub_proxy.js';
+import {
+  SETTINGS,
+  SOURCE_WORDS,
+  apply_session_proxy_gates,
+  createLiveSettings,
+  createSettingsRoute,
+  default_settings_path,
+  display_value,
+  expand_home,
+  parse_args,
+  read_settings_file,
+  resolve_settings,
+  setting_spec,
+  update_settings_file,
+} from './settings.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = join(__dirname, '..', 'dist');
 
-const argv = process.argv.slice(2);
-if (argv.includes('--version') || argv.includes('-v')) {
+function help_text() {
+  const lines = [];
+  const col = (left, right) => (left.length >= 30 ? `  ${left}\n${' '.repeat(32)}${right}` : `  ${left.padEnd(30)}${right}`);
+  lines.push('Usage:');
+  lines.push('  abstractcontinuum [options]                 start the console server');
+  lines.push('  abstractcontinuum config get [setting]      show settings and their sources');
+  lines.push('  abstractcontinuum config set <setting> <value>');
+  lines.push('  abstractcontinuum config set hub_token --from-file <path>');
+  lines.push('  abstractcontinuum config unset <setting>');
+  lines.push('  abstractcontinuum config path               print the settings file path');
+  lines.push('');
+  lines.push('Serves the AbstractContinuum console and proxies /api/* to a Run Gateway');
+  lines.push('through a same-origin session proxy.');
+  lines.push('');
+  lines.push('Options (each is also a saved setting; its name follows "setting"):');
+  for (const spec of SETTINGS) {
+    const left = spec.type === 'bool' ? spec.flag : `${spec.flag} ${spec.metavar}`;
+    const def = spec.type === 'bool' ? 'off' : spec.default === '' ? 'none' : String(spec.default);
+    lines.push(col(left, spec.help));
+    lines.push(`${' '.repeat(32)}default ${def}; setting ${spec.key}`);
+    if (spec.key === 'hub_token') {
+      lines.push(col('--hub-token-file <path>', 'read the hub token from a file (never printed)'));
+      lines.push(`${' '.repeat(32)}setting hub_token`);
+    }
+  }
+  lines.push(col('--settings-file <path>', 'settings file'));
+  lines.push(`${' '.repeat(32)}default ~/.abstractcontinuum/settings.json`);
+  lines.push(col('--help', 'show this help'));
+  lines.push(col('--version', 'print the version'));
+  lines.push('');
+  lines.push('On/off options take --option, --option=off or --no-option.');
+  lines.push('Precedence: launch flag > settings file > environment (legacy) > default.');
+  lines.push('The hub seat can also be set on the Settings page.');
+  lines.push('Legacy fallback: the environment variables listed in the configuration guide are');
+  lines.push('still read when neither a flag nor a setting is set.');
+  lines.push('');
+  lines.push('Documentation: https://github.com/lpalbou/AbstractContinuum#readme');
+  return lines.join('\n');
+}
+
+const parsed = parse_args(process.argv.slice(2));
+if (parsed.error) {
+  console.error(`abstractcontinuum: ${parsed.error}`);
+  process.exit(2);
+}
+if (parsed.command === 'version') {
   const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8'));
   console.log(pkg.version);
   process.exit(0);
 }
-if (argv.includes('--help') || argv.includes('-h')) {
-  console.log(`Usage: abstractcontinuum [--help] [--version]
-
-Serves the AbstractContinuum console and proxies /api/* to a Run Gateway
-through a same-origin session proxy. Configuration is environment-driven:
-
-  PORT                            HTTP port (default 3002)
-  HOST                            bind address (default 127.0.0.1)
-  ABSTRACTCONTINUUM_GATEWAY_URL   gateway URL (fallback ABSTRACTGATEWAY_URL,
-                                  default http://127.0.0.1:8080)
-  ABSTRACTCONTINUUM_HUB_URL       agora hub for the Team page (fallback
-                                  AGORA_HUB_URL, default http://127.0.0.1:8765)
-  ABSTRACTCONTINUUM_HUB_SEAT      hub seat the Team page acts as; set it to
-                                  your own seat (default operator)
-  ABSTRACTCONTINUUM_HUB_KEYS      hub key store (default ~/.agora/keys.json)
-  ABSTRACTCONTINUUM_HUB_KEY       hub API key (overrides the key store)
-  ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE
-                                  1 lets browsers on other machines use the
-                                  hub proxy (default off; only behind your
-                                  own access control)
-
-Sign-in proxy hardening (all default off):
-
-  ABSTRACTCONTINUUM_ALLOW_REMOTE_BROWSER_GATEWAY_CONFIG
-    (or ABSTRACTGATEWAY_ALLOW_REMOTE_BROWSER_GATEWAY_CONFIG)
-                                  let browsers on other machines change the
-                                  gateway URL at sign-in
-  ABSTRACTCONTINUUM_ALLOW_BROWSER_GATEWAY_URL_COOKIE
-                                  honor a browser-supplied gateway URL cookie
-                                  on non-loopback hosts
-  ABSTRACTCONTINUUM_TRUST_PROXY_HEADERS
-    (or ABSTRACTGATEWAY_TRUST_PROXY_HEADERS)
-                                  trust x-forwarded-host for the loopback
-                                  check (only behind a reverse proxy you
-                                  control)
-
-Documentation: https://github.com/lpalbou/AbstractContinuum#readme`);
+if (parsed.command === 'help') {
+  console.log(help_text());
   process.exit(0);
 }
 
-const PORT = process.env.PORT || 3002;
+const SETTINGS_PATH = parsed.settings_file || default_settings_path();
+
+if (parsed.command === 'config') {
+  process.exit(run_config(parsed));
+}
+
+/** `abstractcontinuum config get|set|unset|path` — same keys as the flags. */
+function run_config(p) {
+  const { action, key, value } = p.config;
+  try {
+    if (action === 'path') {
+      console.log(SETTINGS_PATH);
+      return 0;
+    }
+    if (action === 'set' || action === 'unset') {
+      let v = action === 'unset' ? null : value;
+      if (action === 'set' && p.from_file) {
+        v = readFileSync(p.from_file, 'utf8').trim();
+        if (!v) throw new Error(`${p.from_file} is empty`);
+      }
+      update_settings_file(SETTINGS_PATH, key, v);
+      const spec = setting_spec(key);
+      const shown = action === 'unset' ? '(removed)' : display_value(spec, read_settings_file(SETTINGS_PATH)[key]);
+      console.log(`${key} = ${shown}  (${SETTINGS_PATH})`);
+      return 0;
+    }
+    // get
+    const { settings, problems } = resolve_settings({ flags: p.flags, file: read_settings_file(SETTINGS_PATH), env: process.env });
+    for (const msg of problems) console.error(`warning: ${msg}`);
+    if (key) {
+      console.log(display_value(setting_spec(key), settings[key].value));
+      return 0;
+    }
+    const width = Math.max(...SETTINGS.map((s) => s.key.length)) + 2;
+    for (const spec of SETTINGS) {
+      const { value: v, source } = settings[spec.key];
+      console.log(`${spec.key.padEnd(width)}${display_value(spec, v)}  (${SOURCE_WORDS[source]})`);
+    }
+    console.log(`\nsettings file: ${SETTINGS_PATH}`);
+    return 0;
+  } catch (e) {
+    console.error(`abstractcontinuum config: ${e && e.message ? e.message : e}`);
+    return 1;
+  }
+}
+
+// A corrupt settings file stops the start (running on silent defaults
+// would, e.g., drop a saved seat without a word).
+try {
+  read_settings_file(SETTINGS_PATH);
+} catch (e) {
+  console.error(`abstractcontinuum: cannot read the settings file ${SETTINGS_PATH}: ${e && e.message ? e.message : e}`);
+  process.exit(2);
+}
+
+const settings = createLiveSettings({
+  flags: parsed.flags,
+  settingsPath: SETTINGS_PATH,
+  env: process.env,
+  onProblem: (msg) => console.error(`warning: ${msg}`),
+});
+const AT_START = settings.get();
+
+const PORT = AT_START.port.value;
 // Default bind is LOOPBACK (entity's c1768 SSRF finding against the shared
 // session proxy, plus a continuum-specific amplifier: this server also
 // mounts the hub proxy carrying the OPERATOR's seat key — a LAN peer
 // reaching the port could author hub messages as the operator). Wider
-// binds are an explicit deployment choice via HOST.
-const HOST = process.env.HOST || '127.0.0.1';
-const DEFAULT_GATEWAY_URL = String(process.env.ABSTRACTCONTINUUM_GATEWAY_URL || process.env.ABSTRACTGATEWAY_URL || 'http://127.0.0.1:8080').trim().replace(/\/+$/, '') || 'http://127.0.0.1:8080';
-const HUB_URL = String(process.env.ABSTRACTCONTINUUM_HUB_URL || process.env.AGORA_HUB_URL || 'http://127.0.0.1:8765').trim().replace(/\/+$/, '');
-const HUB_SEAT = String(process.env.ABSTRACTCONTINUUM_HUB_SEAT || 'operator').trim();
-const HUB_KEYS_PATH = String(process.env.ABSTRACTCONTINUUM_HUB_KEYS || join(homedir(), '.agora', 'keys.json'));
+// binds are an explicit deployment choice (--host).
+const HOST = AT_START.host.value;
+const DEFAULT_GATEWAY_URL = AT_START.gateway_url.value;
+
+// The session proxy reads its hardening gates from the environment only;
+// hand it the resolved values (flag > setting > environment > default).
+apply_session_proxy_gates(AT_START, process.env);
 
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -140,8 +227,8 @@ function serveFile(res, filePath) {
   }
 }
 
-// Cookies abstractcontinuum_gateway_*, header x-abstractcontinuum-csrf, and
-// the ABSTRACTCONTINUUM_* / ABSTRACTGATEWAY_* env gates all derive from appId.
+// Cookies abstractcontinuum_gateway_* and header x-abstractcontinuum-csrf
+// derive from appId.
 const gatewaySessionProxy = createGatewaySessionProxy({
   appId: 'abstractcontinuum',
   defaultGatewayUrl: DEFAULT_GATEWAY_URL,
@@ -150,7 +237,18 @@ const gatewaySessionProxy = createGatewaySessionProxy({
 // Team page transport: /api/hub/* forwards an allowlisted hub API subset
 // with the OPERATOR seat's key attached server-side (proposal c1692,
 // agency contract c1696 — authorship stays the operator's own).
-const hubProxy = createHubProxy({ hubUrl: HUB_URL, seat: HUB_SEAT, keysPath: HUB_KEYS_PATH });
+// Every hub setting is a getter: a seat saved on the Settings page or with
+// `abstractcontinuum config set` applies without a restart.
+const hubProxy = createHubProxy({
+  hubUrl: () => settings.value('hub_url'),
+  seat: () => settings.value('hub_seat'),
+  keysPath: () => expand_home(settings.value('hub_keys')),
+  token: () => settings.value('hub_token'),
+  allowRemote: () => settings.value('hub_allow_remote'),
+});
+
+// The Settings page's door to this server's own settings (hub seat).
+const settingsRoute = createSettingsRoute({ live: settings });
 
 const server = http.createServer((req, res) => {
   // Parse against a FIXED base: a malformed Host header (e.g. "a b") makes
@@ -166,6 +264,10 @@ const server = http.createServer((req, res) => {
   } catch {
     res.writeHead(400);
     res.end('Bad Request');
+    return;
+  }
+
+  if (settingsRoute.handle(req, res, pathname)) {
     return;
   }
 
@@ -215,10 +317,13 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 server.listen(PORT, HOST, () => {
+  const seat = AT_START.hub_seat;
   console.log(`
 AbstractContinuum is running.
-  Local:   http://localhost:${PORT}
-  Gateway: ${DEFAULT_GATEWAY_URL}
+  Local:    http://localhost:${PORT}
+  Gateway:  ${DEFAULT_GATEWAY_URL}
+  Hub seat: ${seat.value} (${SOURCE_WORDS[seat.source]})
+  Settings: ${SETTINGS_PATH}
 `);
 });
 

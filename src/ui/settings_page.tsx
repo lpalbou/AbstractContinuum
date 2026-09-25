@@ -13,6 +13,7 @@ import React, { useEffect, useState } from "react";
 
 import { ProviderModelPicker, type GatewayConnectionState, type ProviderOption } from "@abstractframework/ui-kit";
 
+import { get_server_settings, save_server_setting, type ServerSettingsView } from "../lib/continuum_settings";
 import { knob_bool, knob_string, type AdminRuntimeConfigResponse, type DataHomeRow, type GatewayClient } from "../lib/gateway_client";
 import { is_backlog_unavailable } from "./backlog_folder";
 import { VoiceSettingsPanel } from "./voice_settings_panel";
@@ -177,6 +178,129 @@ function TriageRootEditor(props: { current: string; busy: boolean; on_apply: (va
         Cancel
       </button>
     </span>
+  );
+}
+
+/** Where a Continuum server setting comes from (bin/settings.js:
+ *  launch flag > setting > environment (legacy) > default). */
+function server_source_chip(source?: string): React.ReactElement | null {
+  const s = String(source || "").trim();
+  if (!s) return null;
+  const words: Record<string, [string, string, string]> = {
+    flag: ["launch flag", "info", "Set by a launch flag of the running Continuum; a saved value applies once it restarts without the flag."],
+    setting: ["setting", "info", "Saved setting (here, or `abstractcontinuum config set`)."],
+    env: ["environment (legacy)", "warn", "Set by the environment Continuum was started with. Save a value here to replace it."],
+    default: ["default", "muted", "Nothing saved: Continuum's default."],
+  };
+  const [label, tone, title] = words[s] || [s, "muted", ""];
+  return (
+    <span className={`chip mono ${tone}`} title={title} data-testid="hub_seat_source">
+      {label}
+    </span>
+  );
+}
+
+/** Team page identity: the hub seat, stored by Continuum's own server
+ *  (settings file) so it survives restarts. Local only — the server
+ *  refuses other machines. */
+export function HubSeatPane(): React.ReactElement {
+  const [view, set_view] = useState<ServerSettingsView | null>(null);
+  const [load_error, set_load_error] = useState("");
+  const [draft, set_draft] = useState("");
+  const [busy, set_busy] = useState(false);
+  const [save_error, set_save_error] = useState("");
+
+  useEffect(() => {
+    let stop = false;
+    get_server_settings()
+      .then((v) => {
+        if (stop) return;
+        set_view(v);
+        set_draft(String(v.settings.hub_seat?.value ?? ""));
+      })
+      .catch((e) => {
+        if (!stop) set_load_error(String(e?.message || e));
+      });
+    return () => {
+      stop = true;
+    };
+  }, []);
+
+  async function save(value: string | null): Promise<void> {
+    set_busy(true);
+    set_save_error("");
+    try {
+      const v = await save_server_setting("hub_seat", value);
+      set_view(v);
+      set_draft(String(v.settings.hub_seat?.value ?? ""));
+    } catch (e: any) {
+      set_save_error(String(e?.message || e || "Save refused"));
+    } finally {
+      set_busy(false);
+    }
+  }
+
+  const seat = view?.settings.hub_seat;
+  const current = String(seat?.value ?? "");
+  const writable = Boolean(view?.writable?.includes("hub_seat"));
+  return (
+    <div className="pane" data-testid="hub_seat_pane">
+      <div className="pane_header">
+        <span className="pane_title">Team (agora hub)</span>
+        <span className="pane_subtitle">server-side — this Continuum</span>
+      </div>
+      <div className="pane_body">
+        {!view ? (
+          <div className="muted" style={{ fontSize: "var(--font-size-sm)" }}>
+            {load_error
+              ? `Continuum's server settings are not available here (${load_error}). Set the seat with \`abstractcontinuum config set hub_seat <seat>\` or start Continuum with --hub-seat <seat>.`
+              : "Loading…"}
+          </div>
+        ) : (
+          <div className="admin_row" data-testid="admin_row_hub_seat">
+            <div className="admin_row_top">
+              <span className="admin_row_name">Hub seat</span>
+              <span className="chip mono ok" data-testid="hub_seat_value">
+                {current}
+              </span>
+              {server_source_chip(seat?.source)}
+              <div className="admin_row_action">
+                {writable ? (
+                  <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <input
+                      className="mono"
+                      aria-label="Hub seat"
+                      value={draft}
+                      onChange={(e) => set_draft(e.target.value)}
+                      placeholder="your seat"
+                      disabled={busy}
+                    />
+                    <button className="btn primary" disabled={busy || !draft.trim() || (draft.trim() === current && seat?.source === "setting")} onClick={() => void save(draft.trim())}>
+                      Save
+                    </button>
+                    {seat?.source === "setting" ? (
+                      <button className="btn" disabled={busy} onClick={() => void save(null)}>
+                        Use default
+                      </button>
+                    ) : null}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            <div className="admin_row_detail">
+              The seat the Team page reads and posts as — set it to your own seat. Saved in <code>{view.settings_file}</code>; the same
+              setting: <code>abstractcontinuum config set hub_seat &lt;seat&gt;</code>, or <code>--hub-seat &lt;seat&gt;</code> for one run.
+              {seat?.source === "flag" ? " A launch flag sets the seat for this run; a saved value applies once Continuum restarts without it." : null}
+            </div>
+            {save_error ? (
+              <div className="page_error mono" style={{ marginTop: "6px" }}>
+                {save_error}
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -532,6 +656,8 @@ export function SettingsPage(props: {
         </div>
 
         <VoiceSettingsPanel gateway={gateway} gateway_connected={gateway_connected} />
+
+        <HubSeatPane />
 
         <div className="pane">
           <div className="pane_header">

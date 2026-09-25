@@ -46,24 +46,18 @@ function proxy_for_test() {
     hubUrl: "http://127.0.0.1:1",
     seat: "test-seat",
     keysPath: "/nonexistent/keys.json",
+    token: "test-key",
   });
 }
 
 async function run(method: string, pathname: string, headers?: Record<string, string>, body?: string, search = ""): Promise<Captured> {
   const proxy = proxy_for_test();
-  const prev = process.env.ABSTRACTCONTINUUM_HUB_KEY;
-  process.env.ABSTRACTCONTINUUM_HUB_KEY = "test-key";
-  try {
-    return await new Promise<Captured>((resolve) => {
-      // cli.js splits req.url into (pathname, search) before handle() — the
-      // allowlist matches the query-less pathname, the search only forwards.
-      const handled = proxy.handle(fake_req(method, pathname + search, headers, body), fake_res(resolve), pathname, search);
-      if (!handled) resolve({ status: -1, body: "unhandled" });
-    });
-  } finally {
-    if (prev === undefined) delete process.env.ABSTRACTCONTINUUM_HUB_KEY;
-    else process.env.ABSTRACTCONTINUUM_HUB_KEY = prev;
-  }
+  return await new Promise<Captured>((resolve) => {
+    // cli.js splits req.url into (pathname, search) before handle() — the
+    // allowlist matches the query-less pathname, the search only forwards.
+    const handled = proxy.handle(fake_req(method, pathname + search, headers, body), fake_res(resolve), pathname, search);
+    if (!handled) resolve({ status: -1, body: "unhandled" });
+  });
 }
 
 describe("hub proxy allowlist (decoded-path gate)", () => {

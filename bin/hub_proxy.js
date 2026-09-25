@@ -4,7 +4,7 @@
  *
  * Serves /api/hub/* by forwarding an ALLOWLISTED subset of the hub HTTP
  * API with the OPERATOR seat's key attached server-side. The key comes
- * from the operator's standard key store (~/.agora/keys.json) or env; it
+ * from the operator's standard key store (~/.agora/keys.json) or the hub_token setting; it
  * never appears in the browser, a repo, or a URL (the c1556 rule
  * generalized from charter reads to the whole chat surface).
  *
@@ -214,10 +214,10 @@ function origin_allowed(req) {
   return Boolean(host) && parsed.host.toLowerCase() === host;
 }
 
-function read_seat_key(keys_path, hub_url, seat) {
-  // Env override wins (deployments without the operator key store).
-  const env_key = String(process.env.ABSTRACTCONTINUUM_HUB_KEY || '').trim();
-  if (env_key) return env_key;
+function read_seat_key(keys_path, hub_url, seat, token) {
+  // An explicit token (--hub-token / --hub-token-file / the hub_token
+  // setting, resolved by bin/settings.js) wins over the key store.
+  if (token) return token;
   try {
     const store = JSON.parse(readFileSync(keys_path, 'utf8'));
     const entry = store[`${hub_url}::${seat}`];
@@ -229,14 +229,32 @@ function read_seat_key(keys_path, hub_url, seat) {
   }
 }
 
+/** A value or a getter: the server hands getters so a seat saved on the
+ *  Settings page (or with `abstractcontinuum config set`) applies without
+ *  a restart. */
+function live(v) {
+  return typeof v === 'function' ? v() : v;
+}
+
+/**
+ * opts: hubUrl, seat, keysPath, token (seat API key; overrides the key
+ * store), allowRemote (boolean) — each a value or a getter. Settings are
+ * resolved by bin/settings.js (flag > setting > environment > default);
+ * this module reads no environment of its own.
+ */
 export function createHubProxy(opts) {
-  const hub_url = String(opts.hubUrl || '').replace(/\/+$/, '');
-  const seat = String(opts.seat || '').trim();
-  const keys_path = String(opts.keysPath || '');
+  const cfg = () => ({
+    hub_url: String(live(opts.hubUrl) || '').replace(/\/+$/, ''),
+    seat: String(live(opts.seat) || '').trim(),
+    keys_path: String(live(opts.keysPath) || ''),
+    token: String(live(opts.token) || '').trim(),
+    allow_remote: live(opts.allowRemote) === true,
+  });
 
   /** Lazily re-read per request: key rotation must not need a restart. */
   function key() {
-    return read_seat_key(keys_path, hub_url, seat);
+    const c = cfg();
+    return read_seat_key(c.keys_path, c.hub_url, c.seat, c.token);
   }
 
   async function forward(req, res, hub_path, search) {
@@ -290,7 +308,8 @@ export function createHubProxy(opts) {
     const seat_key = key();
     if (!seat_key && !route.keyless) {
       res.writeHead(503, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'hub_seat_unavailable', detail: `No hub key for seat "${seat}" (${keys_path}); set ABSTRACTCONTINUUM_HUB_KEY or provision the seat.` }));
+      const c = cfg();
+      res.end(JSON.stringify({ error: 'hub_seat_unavailable', detail: `No hub key for seat "${c.seat}" in ${c.keys_path}. Provision the seat there, or start Continuum with --hub-token-file <path>.` }));
       return;
     }
 
@@ -344,7 +363,7 @@ export function createHubProxy(opts) {
         // metadata). Every other write: application/json.
         upstream_headers['Content-Type'] = route.upload ? String(req.headers['content-type'] || 'application/octet-stream') : 'application/json';
       }
-      const r = await fetch(`${hub_url}${hub_path}${search || ''}`, {
+      const r = await fetch(`${cfg().hub_url}${hub_path}${search || ''}`, {
         method: req.method,
         headers: upstream_headers,
         body: body && req.method !== 'GET' ? body : undefined,
@@ -415,7 +434,7 @@ export function createHubProxy(opts) {
         // as the operator seat (adversary P0).
         const peer = String(req.socket && req.socket.remoteAddress ? req.socket.remoteAddress : '');
         const loopback = peer === '127.0.0.1' || peer === '::1' || peer === '::ffff:127.0.0.1' || peer === '';
-        const allow_remote = String(process.env.ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE || '').trim() === '1';
+        const allow_remote = cfg().allow_remote;
         const seat_key = key();
         let WebSocketServer, WebSocket;
         try {
@@ -433,7 +452,7 @@ export function createHubProxy(opts) {
         // never negotiated (live find: browsers/ws clients offer it by
         // default and the pipe corrupts).
         if (!this._wss) this._wss = new WebSocketServer({ noServer: true, perMessageDeflate: false });
-        const hub_ws_url = hub_url.replace(/^http/, 'ws') + '/ws';
+        const hub_ws_url = cfg().hub_url.replace(/^http/, 'ws') + '/ws';
         const upstream = new WebSocket(hub_ws_url, {
           headers: { Authorization: `Bearer ${seat_key}` },
           perMessageDeflate: false,
@@ -521,10 +540,10 @@ export function createHubProxy(opts) {
       // this is defense-in-depth if HOST is widened deliberately.
       const peer = String(req.socket && req.socket.remoteAddress ? req.socket.remoteAddress : '');
       const loopback = peer === '127.0.0.1' || peer === '::1' || peer === '::ffff:127.0.0.1' || peer === '';
-      const allow_remote = String(process.env.ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE || '').trim() === '1';
+      const allow_remote = cfg().allow_remote;
       if (!loopback && !allow_remote) {
         res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'hub_proxy_non_loopback', detail: `Hub proxy refuses non-loopback peer ${peer} (it authors as the operator seat). Set ABSTRACTCONTINUUM_HUB_ALLOW_REMOTE=1 only behind a trusted front.` }));
+        res.end(JSON.stringify({ error: 'hub_proxy_non_loopback', detail: `Hub proxy refuses non-loopback peer ${peer} (it authors as the operator seat). Start Continuum with --hub-allow-remote only behind a trusted front.` }));
         return true;
       }
       // Cross-origin browser requests are refused even from loopback: the
@@ -538,7 +557,8 @@ export function createHubProxy(opts) {
 
       if (pathname === '/api/hub/meta') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true, hub_url, seat, seat_key_present: Boolean(key()) }));
+        const c = cfg();
+        res.end(JSON.stringify({ ok: true, hub_url: c.hub_url, seat: c.seat, seat_key_present: Boolean(key()) }));
         return true;
       }
       const hub_path = pathname.slice('/api/hub'.length);

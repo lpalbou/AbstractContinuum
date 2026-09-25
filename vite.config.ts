@@ -1,13 +1,26 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { existsSync } from "fs";
-import { homedir } from "os";
-import { dirname, join, resolve } from "path";
+import { dirname, resolve } from "path";
 import { createGatewaySessionProxy } from "@abstractframework/app-server";
 // Team page hub proxy (operator-seat transport) — same module the prod
 // server mounts, so dev and prod serve identical /api/hub/* behavior.
 // @ts-expect-error plain-JS module without types
 import { createHubProxy } from "./bin/hub_proxy.js";
+// Server settings — the SAME registry and precedence as bin/cli.js
+// (launch flag > settings file > environment (legacy) > default). Vite
+// takes no Continuum flags, so dev reads the settings file
+// (~/.abstractcontinuum/settings.json) and the legacy environment only.
+// @ts-expect-error plain-JS module without types
+import { apply_session_proxy_gates, createLiveSettings, createSettingsRoute, default_settings_path, expand_home } from "./bin/settings.js";
+
+const dev_settings = createLiveSettings({
+  flags: {},
+  settingsPath: default_settings_path(),
+  env: process.env,
+  onProblem: (msg: string) => console.warn(`[abstractcontinuum] ${msg}`),
+});
+const DEV_AT_START = dev_settings.get();
 
 // Dev-server twin of bin/cli.js: mount the SAME app-origin gateway session
 // proxy so sign-in works identically in dev and prod. Without this,
@@ -22,17 +35,23 @@ import { createHubProxy } from "./bin/hub_proxy.js";
 function gatewaySessionDevProxy(): Plugin {
   const proxy = createGatewaySessionProxy({
     appId: "abstractcontinuum",
-    defaultGatewayUrl:
-      String(process.env.ABSTRACTCONTINUUM_GATEWAY_URL || process.env.ABSTRACTGATEWAY_URL || "").trim() || "http://127.0.0.1:8080",
+    defaultGatewayUrl: DEV_AT_START.gateway_url.value,
   });
   const hub_proxy = createHubProxy({
-    hubUrl: String(process.env.ABSTRACTCONTINUUM_HUB_URL || process.env.AGORA_HUB_URL || "http://127.0.0.1:8765").trim().replace(/\/+$/, ""),
-    seat: String(process.env.ABSTRACTCONTINUUM_HUB_SEAT || "operator").trim(),
-    keysPath: String(process.env.ABSTRACTCONTINUUM_HUB_KEYS || join(homedir(), ".agora", "keys.json")),
+    hubUrl: () => dev_settings.value("hub_url"),
+    seat: () => dev_settings.value("hub_seat"),
+    keysPath: () => expand_home(dev_settings.value("hub_keys")),
+    token: () => dev_settings.value("hub_token"),
+    allowRemote: () => dev_settings.value("hub_allow_remote"),
   });
+  const settings_route = createSettingsRoute({ live: dev_settings });
   return {
     name: "abstractcontinuum-gateway-session-proxy",
     configureServer(server) {
+      // The session proxy reads its hardening gates from the environment
+      // per request; hand it the resolved values (dev server only — never
+      // at config load, which vitest shares).
+      apply_session_proxy_gates(DEV_AT_START, process.env);
       // Live hub WebSocket relay (mirrors bin/cli.js). Vite's own HMR
       // websocket rides a different path; only /api/hub/ws is claimed.
       server.httpServer?.on("upgrade", (req, socket, head) => {
@@ -49,6 +68,9 @@ function gatewaySessionDevProxy(): Plugin {
           search = u.search;
         } catch {
           next();
+          return;
+        }
+        if (settings_route.handle(req, res, pathname)) {
           return;
         }
         if (hub_proxy.handle(req, res, pathname, search)) {
@@ -110,6 +132,8 @@ export default defineConfig({
     extensions: [".mts", ".ts", ".tsx", ".mjs", ".js", ".jsx", ".json"],
   },
   server: {
+    // Continuum's port on the stack map (3002), from the same settings.
+    port: DEV_AT_START.port.value,
     host: "0.0.0.0",
     allowedHosts: true,
     strictPort: false,
@@ -121,7 +145,7 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: "http://localhost:8080",
+        target: DEV_AT_START.gateway_url.value,
         changeOrigin: true,
         // ws MUST stay off: with ws:true http-proxy registers its own
         // upgrade listener for every /api/* path and races the hub relay
