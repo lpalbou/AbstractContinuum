@@ -1,6 +1,6 @@
 {
   "name": "@abstractframework/continuum",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Continuous iterative development and deployment console for AbstractFramework - backlog browsing and codex execution, report/email inbox triage, and managed process control against a Run Gateway",
   "type": "module",
   "author": "Laurent-Philippe Albou",

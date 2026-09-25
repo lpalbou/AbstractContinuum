@@ -2,7 +2,7 @@
 
 > Continuous iterative development and deployment console for
 > AbstractFramework (npm: `@abstractframework/continuum`, CLI:
-> `abstractcontinuum`, version 0.3.0): a thin React client over a Run
+> `abstractcontinuum`, version 0.3.1): a thin React client over a Run
 > Gateway's development-lane APIs — kanban board, live execution pipeline
 > (executor chosen by a gateway setting: codex, claude, cursor-agent,
 > abstractcode), backlog catalog, agora hub Team

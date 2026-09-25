@@ -4,6 +4,15 @@ All notable, user-visible changes to AbstractContinuum.
 
 ## Unreleased
 
+## 0.3.1 — 2026-09-25
+
+**Compatibility:** same as 0.3.0 (AbstractGateway 0.4.1 or newer). No
+action is needed unless you relied on the Team page's old personal hub-seat
+default: set your seat once — on the Settings page (Settings → Team (agora
+hub) → Hub seat), with `abstractcontinuum config set hub_seat <seat>`, or
+with `--hub-seat <seat>` for one run. Environment variables you already use
+keep working as a legacy fallback.
+
 ### Changed
 
 - **Continuum's server is configured with launch flags or

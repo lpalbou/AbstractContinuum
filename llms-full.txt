@@ -1,7 +1,7 @@
 # AbstractContinuum — full documentation corpus
 
 > Aggregated from the core docs for LLM/tool consumption (package
-> `@abstractframework/continuum` 0.3.0). Canonical sources live in the
+> `@abstractframework/continuum` 0.3.1). Canonical sources live in the
 > repository; this file is regenerated whenever the docs change.
 
 ---
@@ -1344,6 +1344,15 @@ npm run build      # production build must stay green
 All notable, user-visible changes to AbstractContinuum.
 
 ## Unreleased
+
+## 0.3.1 — 2026-09-25
+
+**Compatibility:** same as 0.3.0 (AbstractGateway 0.4.1 or newer). No
+action is needed unless you relied on the Team page's old personal hub-seat
+default: set your seat once — on the Settings page (Settings → Team (agora
+hub) → Hub seat), with `abstractcontinuum config set hub_seat <seat>`, or
+with `--hub-seat <seat>` for one run. Environment variables you already use
+keep working as a legacy fallback.
 
 ### Changed
 
