@@ -18,12 +18,15 @@ import {
   AfTopBarActions,
   GatewayConnectModal,
   Icon,
+  appIdentity,
   type IconName,
   useAppearanceSettings,
   useGatewayConnection,
 } from "@abstractframework/ui-kit";
 import { AssistantPanel } from "@abstractframework/panel-chat";
 
+import { APP_VERSION } from "./app_version";
+import { GATEWAY_ABOUT_LOADING, load_gateway_about_rows, type AboutRow } from "./lib/gateway_about";
 import { GatewayClient } from "./lib/gateway_client";
 import { AgentsPage } from "./ui/agents_page";
 import { BacklogBrowserPage } from "./ui/backlog_browser";
@@ -223,6 +226,20 @@ export function App(): React.ReactElement {
   });
   const connection = conn.status;
 
+  // About (shared kit dialog): app identity from the framework descriptor;
+  // the gateway's versions are fetched each time the dialog opens, and a
+  // failure is shown as a row rather than hidden.
+  const about_identity = useMemo(() => appIdentity("abstractcontinuum", APP_VERSION), []);
+  const [gateway_about_rows, set_gateway_about_rows] = useState<AboutRow[]>(GATEWAY_ABOUT_LOADING);
+  const about_seq = useRef(0);
+  function refresh_gateway_about(): void {
+    const seq = ++about_seq.current;
+    set_gateway_about_rows(GATEWAY_ABOUT_LOADING);
+    void load_gateway_about_rows(gateway).then((rows) => {
+      if (seq === about_seq.current) set_gateway_about_rows(rows);
+    });
+  }
+
   // Two-strike disconnect (adversary F5): a SINGLE failed probe used to
   // flip `connected` false, which cascaded into the connect modal popping
   // open over whatever the operator was typing plus a layout-shifting
@@ -320,11 +337,12 @@ export function App(): React.ReactElement {
           <div className="shell_header_title">{NAV.find((n) => n.id === page)?.label || ""}</div>
           <div className="shell_header_actions">
             {/* The unified top-right cluster (operator directive 20:02,
-                uic c1648): assistant + appearance + app action + the
+                uic c1648): assistant + appearance + about + app action + the
                 three-phase connection pill. */}
             <AfTopBarActions
               assistant={{ open: assistant_open, onToggle: () => set_assistant_open((v) => !v) }}
               appearance={{ onOpen: () => set_appearance_open(true) }}
+              about={{ identity: about_identity, extraRows: gateway_about_rows, onOpen: refresh_gateway_about }}
               extraActions={
                 <button className="btn primary" onClick={() => set_new_task_open(true)} disabled={!connected}>
                   + New task

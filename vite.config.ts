@@ -1,6 +1,6 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { createGatewaySessionProxy } from "@abstractframework/app-server";
 // Team page hub proxy (operator-seat transport) — same module the prod
@@ -13,6 +13,17 @@ import { createHubProxy } from "./bin/hub_proxy.js";
 // (~/.abstractcontinuum/settings.json) and the legacy environment only.
 // @ts-expect-error plain-JS module without types
 import { apply_session_proxy_gates, createLiveSettings, createSettingsRoute, default_settings_path, expand_home } from "./bin/settings.js";
+
+// The app version shown in About, baked in at build time from package.json
+// (`__APP_VERSION__`, declared in src/build_constants.d.ts). Vitest loads this
+// same config, so tests see the real version too. A package.json without a
+// version fails the build instead of shipping an "unknown" version.
+const APP_VERSION: string = (() => {
+  const pkg = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf8"));
+  const version = typeof pkg?.version === "string" ? pkg.version.trim() : "";
+  if (!version) throw new Error("vite.config.ts: package.json has no version; About needs one");
+  return version;
+})();
 
 const dev_settings = createLiveSettings({
   flags: {},
@@ -118,6 +129,9 @@ function preferKitTypescriptSources(): Plugin {
 
 export default defineConfig({
   plugins: [preferKitTypescriptSources(), gatewaySessionDevProxy(), react()],
+  define: {
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+  },
   resolve: {
     alias: [
       { find: "@abstractframework/panel-chat", replacement: resolve(__dirname, "../abstractuic/panel-chat/src") },

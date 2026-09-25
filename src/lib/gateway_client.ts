@@ -1007,6 +1007,12 @@ export class GatewayClient {
 
   // -------------------------------------------------------- managed processes
 
+  /** Versions the gateway reports for the About dialog (public route, no
+   *  secrets or paths): `{ abstractframework, abstractgateway, packages }`. */
+  async gateway_about(): Promise<any> {
+    return await this._get_json("gateway_about", "/api/gateway/about");
+  }
+
   async list_processes(): Promise<ProcessListResponse> {
     return await this._get_json("list_processes", "/api/gateway/processes");
   }
