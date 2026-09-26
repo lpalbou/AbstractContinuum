@@ -29,7 +29,7 @@ export async function load_gateway_about_rows(client: { gateway_about(): Promise
   try {
     body = await client.gateway_about();
   } catch (err) {
-    return gatewayVersionRows({ error: gateway_about_error_reason(err) });
+    return gatewayVersionRows(null, gateway_about_error_reason(err));
   }
   return gatewayVersionRows(body);
 }

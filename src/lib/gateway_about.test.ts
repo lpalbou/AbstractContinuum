@@ -54,7 +54,7 @@ describe("load_gateway_about_rows", () => {
     await expect(load_gateway_about_rows(failing(new GatewayRequestError("gateway_about failed: Unauthorized", 401, null)))).resolves.toEqual([
       ["Gateway", "unavailable (HTTP 401: Unauthorized)"],
     ]);
-    expect(vi.mocked(gatewayVersionRows)).toHaveBeenCalledWith({ error: "HTTP 401: Unauthorized" });
+    expect(vi.mocked(gatewayVersionRows)).toHaveBeenCalledWith(null, "HTTP 401: Unauthorized");
     expect(gateway_about_error_reason(new GatewayRequestError("gateway_about failed: 502", 502, null))).toBe("HTTP 502");
   });
 
