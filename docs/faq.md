@@ -25,8 +25,13 @@ settings that Settings → Gateway administration edits; see
 
 **Which version am I running?**
 Click the (i) About button in the top-right cluster. It shows the Continuum
-version, the versions your gateway reports, and links to the documentation
-and issue tracker.
+version (fixed at build time from the package version), the author and
+licence, links to the website, source, documentation, issue tracker and
+feedback, and the versions your gateway reports, read from
+`GET /api/gateway/about` each time the dialog opens. While the answer is on
+its way the dialog shows "Gateway: checking…"; when the gateway cannot answer
+it shows "Gateway: unavailable (…)" with the reason, for example
+`HTTP 404`. See [troubleshooting.md](troubleshooting.md#sign-in--connectivity).
 
 **Why is the Services page empty / why is Execute disabled?**
 Those features exist only when a gateway admin turns them on: the process

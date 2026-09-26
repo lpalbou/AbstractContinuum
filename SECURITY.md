@@ -44,6 +44,13 @@ The bundled server (`bin/cli.js`) uses the shared app-origin session proxy
   JS-readable so the client can echo it).
 - The proxy strips client-supplied `Authorization` and cookies before
   forwarding to the gateway; the proxied session is the only credential.
+- With `@abstractframework/app-server` 0.1.10 or newer, every request the
+  proxy sends to the gateway carries `X-Forwarded-For` set to the address of
+  the browser's connection (browser-supplied `X-Forwarded-For`, `Forwarded`
+  and `X-Real-IP` headers are dropped) and the marker
+  `X-AbstractFramework-App-Proxy: abstractcontinuum`. The gateway uses them to
+  tell whether the browser runs on the gateway's own machine. A connection
+  whose address cannot be determined is refused with HTTP 400.
 - Browser-supplied gateway URLs are honored only from loopback hosts unless
   explicitly enabled (see `docs/configuration.md`).
 

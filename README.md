@@ -44,6 +44,9 @@ checklist (type, real summary, acceptance criteria, test commands — parsed
 from the spec, override always available and labeled); promoting from
 review shows the acceptance criteria as a **Definition of Done** checklist.
 
+The **(i) About** button in the top-right cluster shows the Continuum version
+and the versions your gateway reports; see [docs/faq.md](docs/faq.md).
+
 The observer app ([AbstractObserver](https://github.com/lpalbou/AbstractObserver))
 watches and discusses the running system; this app develops and deploys it.
 The pipeline is executor-agnostic: the gateway's `executor` setting picks

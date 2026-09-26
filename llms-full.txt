@@ -54,6 +54,9 @@ checklist (type, real summary, acceptance criteria, test commands — parsed
 from the spec, override always available and labeled); promoting from
 review shows the acceptance criteria as a **Definition of Done** checklist.
 
+The **(i) About** button in the top-right cluster shows the Continuum version
+and the versions your gateway reports; see [docs/faq.md](docs/faq.md).
+
 The observer app ([AbstractObserver](https://github.com/lpalbou/AbstractObserver))
 watches and discusses the running system; this app develops and deploys it.
 The pipeline is executor-agnostic: the gateway's `executor` setting picks
@@ -292,12 +295,13 @@ flowchart LR
         RP["/reports/*, /triage/*, /email/*"]
         PM["/processes/* (start/stop/redeploy, env)"]
         SH["/runs, /attachments, /audio, /voice,<br/>/entities, /bundles, /discovery (shared reads)"]
+        AB["/about (versions for the About dialog)"]
         WK[Exec worker<br/>executor: codex / claude /<br/>cursor-agent / abstractcode]
     end
 
     GC -- "/api/* + session cookies + CSRF" --> SP
     SE -- "POST /api/connection/gateway" --> SP
-    SP -- "x-abstractgateway-session" --> BS & AD & BK & EP & RP & PM & SH
+    SP -- "x-abstractgateway-session" --> BS & AD & BK & EP & RP & PM & SH & AB
     AD -. "backlog folder, exec runner,<br/>executor, process manager" .-> BK & WK & PM
     HC -- "/api/hub/* + /api/hub/ws" --> HP
     HP -- "allowlisted routes + Bearer seat key" --> HA
@@ -311,6 +315,11 @@ The session proxy signs in against the gateway, holds the session
 server-side, sets first-party cookies, and enforces CSRF on mutating
 requests. Tokens never reach browser storage. Every gateway path is reached
 as `/api/gateway/<path>` (for example `GET /api/gateway/backlog/status`).
+With `@abstractframework/app-server` 0.1.10 or newer, every request the proxy
+sends to the gateway also carries the browser's connection address
+(`X-Forwarded-For`) and the marker
+`X-AbstractFramework-App-Proxy: abstractcontinuum`; see
+[security.md](security.md#defense-layers).
 The Team page uses the same
 origin: `/api/hub/*` and the `/api/hub/ws` WebSocket are served by the hub
 proxy, which attaches the operator seat's key server-side.
@@ -838,7 +847,13 @@ for people with deploy rights.
 2. **App-origin session proxy** (`bin/cli.js`) — the browser never holds the
    gateway token. Sign-in happens server-side; the session id lives in an
    HttpOnly cookie scoped to this app's origin; the proxy strips any
-   client-supplied `Authorization`/cookie headers before forwarding.
+   client-supplied `Authorization`/cookie headers before forwarding. With
+   `@abstractframework/app-server` 0.1.10 or newer, the proxy also sets
+   `X-Forwarded-For` to the browser's connection address (never a
+   browser-supplied value) and adds
+   `X-AbstractFramework-App-Proxy: abstractcontinuum` to every gateway-bound
+   request, so the gateway can tell whether the browser runs on its own
+   machine; a connection with no known address is refused with 400.
 3. **CSRF** — mutating requests must echo the CSRF token from the
    non-HttpOnly `abstractcontinuum_gateway_csrf` cookie in
    `x-abstractcontinuum-csrf` (or canonical `x-abstract-csrf`); the proxy
@@ -1066,8 +1081,13 @@ settings that Settings → Gateway administration edits; see
 
 **Which version am I running?**
 Click the (i) About button in the top-right cluster. It shows the Continuum
-version, the versions your gateway reports, and links to the documentation
-and issue tracker.
+version (fixed at build time from the package version), the author and
+licence, links to the website, source, documentation, issue tracker and
+feedback, and the versions your gateway reports, read from
+`GET /api/gateway/about` each time the dialog opens. While the answer is on
+its way the dialog shows "Gateway: checking…"; when the gateway cannot answer
+it shows "Gateway: unavailable (…)" with the reason, for example
+`HTTP 404`. See [troubleshooting.md](troubleshooting.md#sign-in--connectivity).
 
 **Why is the Services page empty / why is Execute disabled?**
 Those features exist only when a gateway admin turns them on: the process
@@ -1128,6 +1148,13 @@ URL at sign-in. Pin the URL server-side (`--gateway-url`, or
 `abstractcontinuum config set gateway_url <url>`) or explicitly enable
 remote config (`--allow-remote-gateway-config`) — see
 [configuration.md](configuration.md).
+
+**About shows "Gateway: unavailable (…)".**
+The dialog could not read `GET /api/gateway/about`; the reason in brackets
+says why. `HTTP 404` means the gateway does not serve the About route: upgrade
+it to a version with `GET /about`. `HTTP 401` or a network error means the
+session or the gateway is gone: follow the "Gateway unreachable" entry above.
+The rest of the app is unaffected. See [faq.md](faq.md).
 
 ## Executions
 
@@ -1263,6 +1290,13 @@ The bundled server (`bin/cli.js`) uses the shared app-origin session proxy
   JS-readable so the client can echo it).
 - The proxy strips client-supplied `Authorization` and cookies before
   forwarding to the gateway; the proxied session is the only credential.
+- With `@abstractframework/app-server` 0.1.10 or newer, every request the
+  proxy sends to the gateway carries `X-Forwarded-For` set to the address of
+  the browser's connection (browser-supplied `X-Forwarded-For`, `Forwarded`
+  and `X-Real-IP` headers are dropped) and the marker
+  `X-AbstractFramework-App-Proxy: abstractcontinuum`. The gateway uses them to
+  tell whether the browser runs on the gateway's own machine. A connection
+  whose address cannot be determined is refused with HTTP 400.
 - Browser-supplied gateway URLs are honored only from loopback hosts unless
   explicitly enabled (see `docs/configuration.md`).
 
@@ -1366,6 +1400,19 @@ All notable, user-visible changes to AbstractContinuum.
   cannot say, the dialog shows why ("Gateway: unavailable (HTTP 401: …)").
   Needs AbstractGateway with the public `GET /about` route for the gateway
   rows.
+
+### Changed
+
+- `package.json` `homepage` points to https://abstractframework.ai and a
+  `bugs` URL is set, both from the shared AbstractFramework descriptor.
+
+### Security
+
+- With `@abstractframework/app-server` 0.1.10 or newer, the sign-in proxy
+  sends the browser's connection address as `X-Forwarded-For` (browser-supplied
+  forwarding headers are dropped) and the marker
+  `X-AbstractFramework-App-Proxy: abstractcontinuum` on every gateway-bound
+  request; a connection whose address is unknown is refused with HTTP 400.
 
 ## 0.3.1 — 2026-09-25
 

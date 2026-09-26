@@ -48,12 +48,13 @@ flowchart LR
         RP["/reports/*, /triage/*, /email/*"]
         PM["/processes/* (start/stop/redeploy, env)"]
         SH["/runs, /attachments, /audio, /voice,<br/>/entities, /bundles, /discovery (shared reads)"]
+        AB["/about (versions for the About dialog)"]
         WK[Exec worker<br/>executor: codex / claude /<br/>cursor-agent / abstractcode]
     end
 
     GC -- "/api/* + session cookies + CSRF" --> SP
     SE -- "POST /api/connection/gateway" --> SP
-    SP -- "x-abstractgateway-session" --> BS & AD & BK & EP & RP & PM & SH
+    SP -- "x-abstractgateway-session" --> BS & AD & BK & EP & RP & PM & SH & AB
     AD -. "backlog folder, exec runner,<br/>executor, process manager" .-> BK & WK & PM
     HC -- "/api/hub/* + /api/hub/ws" --> HP
     HP -- "allowlisted routes + Bearer seat key" --> HA
@@ -67,6 +68,11 @@ The session proxy signs in against the gateway, holds the session
 server-side, sets first-party cookies, and enforces CSRF on mutating
 requests. Tokens never reach browser storage. Every gateway path is reached
 as `/api/gateway/<path>` (for example `GET /api/gateway/backlog/status`).
+With `@abstractframework/app-server` 0.1.10 or newer, every request the proxy
+sends to the gateway also carries the browser's connection address
+(`X-Forwarded-For`) and the marker
+`X-AbstractFramework-App-Proxy: abstractcontinuum`; see
+[security.md](security.md#defense-layers).
 The Team page uses the same
 origin: `/api/hub/*` and the `/api/hub/ws` WebSocket are served by the hub
 proxy, which attaches the operator seat's key server-side.

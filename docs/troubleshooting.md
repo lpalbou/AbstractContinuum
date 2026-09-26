@@ -26,6 +26,13 @@ URL at sign-in. Pin the URL server-side (`--gateway-url`, or
 remote config (`--allow-remote-gateway-config`) — see
 [configuration.md](configuration.md).
 
+**About shows "Gateway: unavailable (…)".**
+The dialog could not read `GET /api/gateway/about`; the reason in brackets
+says why. `HTTP 404` means the gateway does not serve the About route: upgrade
+it to a version with `GET /about`. `HTTP 401` or a network error means the
+session or the gateway is gone: follow the "Gateway unreachable" entry above.
+The rest of the app is unaffected. See [faq.md](faq.md).
+
 ## Executions
 
 **Execute says the runner is disabled / not running / the executor is missing.**

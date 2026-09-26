@@ -16,8 +16,8 @@ your task below.
 | [configuration.md](configuration.md) | Server launch flags and settings file, sign-in proxy settings, Team page hub seat, gateway settings (backlog folder, exec runner, executor, process manager), browser settings |
 | [security.md](security.md) | Trust model — the process manager and promote-to-prod are high trust; read before deploying |
 | [conventions.md](conventions.md) | The board's work-item grammar: lifecycle, metadata lines, type enum, DoR/DoD, supervision labels — the canonical reference process skills teach from |
-| [faq.md](faq.md) | Recurring questions (observer vs continuum, executor agnosticism, UAT vs inplace, …) |
-| [troubleshooting.md](troubleshooting.md) | Symptom-oriented fixes for sign-in, executions, the backlog folder, inbox, services, the Team page, and dev setup |
+| [faq.md](faq.md) | Recurring questions (which version you run (About), observer vs continuum, executor agnosticism, UAT vs inplace, …) |
+| [troubleshooting.md](troubleshooting.md) | Symptom-oriented fixes for sign-in, the About dialog, executions, the backlog folder, inbox, services, the Team page, and dev setup |
 
 ## Design
 

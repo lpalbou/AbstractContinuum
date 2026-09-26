@@ -26,7 +26,13 @@ for people with deploy rights.
 2. **App-origin session proxy** (`bin/cli.js`) — the browser never holds the
    gateway token. Sign-in happens server-side; the session id lives in an
    HttpOnly cookie scoped to this app's origin; the proxy strips any
-   client-supplied `Authorization`/cookie headers before forwarding.
+   client-supplied `Authorization`/cookie headers before forwarding. With
+   `@abstractframework/app-server` 0.1.10 or newer, the proxy also sets
+   `X-Forwarded-For` to the browser's connection address (never a
+   browser-supplied value) and adds
+   `X-AbstractFramework-App-Proxy: abstractcontinuum` to every gateway-bound
+   request, so the gateway can tell whether the browser runs on its own
+   machine; a connection with no known address is refused with 400.
 3. **CSRF** — mutating requests must echo the CSRF token from the
    non-HttpOnly `abstractcontinuum_gateway_csrf` cookie in
    `x-abstractcontinuum-csrf` (or canonical `x-abstract-csrf`); the proxy

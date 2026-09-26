@@ -15,6 +15,19 @@ All notable, user-visible changes to AbstractContinuum.
   Needs AbstractGateway with the public `GET /about` route for the gateway
   rows.
 
+### Changed
+
+- `package.json` `homepage` points to https://abstractframework.ai and a
+  `bugs` URL is set, both from the shared AbstractFramework descriptor.
+
+### Security
+
+- With `@abstractframework/app-server` 0.1.10 or newer, the sign-in proxy
+  sends the browser's connection address as `X-Forwarded-For` (browser-supplied
+  forwarding headers are dropped) and the marker
+  `X-AbstractFramework-App-Proxy: abstractcontinuum` on every gateway-bound
+  request; a connection whose address is unknown is refused with HTTP 400.
+
 ## 0.3.1 — 2026-09-25
 
 **Compatibility:** same as 0.3.0 (AbstractGateway 0.4.1 or newer). No
