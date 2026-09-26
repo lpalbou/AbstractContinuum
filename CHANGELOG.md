@@ -2,7 +2,7 @@
 
 All notable, user-visible changes to AbstractContinuum.
 
-## Unreleased
+## 0.3.2 — 2026-09-26
 
 ### Added
 
@@ -17,6 +17,8 @@ All notable, user-visible changes to AbstractContinuum.
 
 ### Changed
 
+- Requires `@abstractframework/app-server` 0.1.10 or newer (was 0.1.9), so the
+  forwarding-header protection below is always present.
 - `package.json` `homepage` points to https://abstractframework.ai and a
   `bugs` URL is set, both from the shared AbstractFramework descriptor.
 
