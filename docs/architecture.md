@@ -192,7 +192,8 @@ src/
     hub_api_types.ts          types generated from vendor/hub/openapi.json
     hub_contract.ts           compile-time pins against the hub contract
     hub_ledger.ts             independent hub ledger verification
-    team_model.ts             Team page pure model (threads, filters, badges)
+    team_model.ts             Team page pure model (threads, filters, badges, LLM transcript)
+    history_window.ts         history window for LLM transcripts: newest whole messages up to 50k tokens (ADR-0026)
     work_id.ts                work-item id + rendered-state derivations
     entity_skills_model.ts    entity skills view model
     voice_settings.ts         per-browser voice overrides
@@ -216,6 +217,7 @@ src/
       execute_modals.tsx      execute / batch / merge confirms
       new_task_modal.tsx      creation flow (template, guided, assist)
       advisor_drawer.tsx      read-only backlog advisor (chat + voice)
+      advisor_attachments.ts  advisor attachments, inlined whole into the composer
     team_page.tsx             Team page (agora hub client)
     team_file_viewer.tsx      channel file viewer
     agents_page.tsx           executor roster, entities, track record

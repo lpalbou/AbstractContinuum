@@ -44,6 +44,19 @@ with AbstractGateway 0.4.1 or newer, as before. The server keeps listening on
 - Requires `@abstractframework/app-server` 0.1.11 or newer (the mount kit)
   and is built against `@abstractframework/ui-kit` 0.1.14 (`joinBaseUrl` /
   `GATEWAY_CONNECTION_PATH`).
+- **Team AI features read up to 50,000 tokens of the conversation (ADR-0026).**
+  *Summarize* and the channel assistant used to send at most 24,000 characters
+  of transcript: the oldest messages were dropped and any message longer than
+  12,000 characters was cut. The transcript is now the newest whole messages
+  up to 50,000 estimated tokens (the same history window as AbstractRuntime),
+  and no message is ever cut. The transcript's first line tells the model how
+  many messages it holds; when older messages are dropped, a labeled
+  `#TRUNCATION` line gives the count. The summary header and the assistant
+  drawer show what the model read, for example
+  "38 of 40 messages (2 oldest dropped by the 50,000-token history window)".
+- **Backlog advisor attachments are sent whole.** Attached files were limited
+  to the first 6 files and 20,000 characters each. Every picked file is now
+  inlined in full into the composer, where you can see it before you send.
 
 ### Security
 

@@ -9,6 +9,7 @@ import { Icon as UiIcon, useGatewayVoice } from "@abstractframework/ui-kit";
 
 import type { AttachmentRef, GatewayClient } from "../../lib/gateway_client";
 import { random_id } from "../../lib/ids";
+import { inline_attachments } from "./advisor_attachments";
 import { type BacklogTab, type BacklogTaskTypeFilter, session_memory_run_id } from "./model";
 
 export function AdvisorDrawer(props: {
@@ -166,26 +167,11 @@ export function AdvisorDrawer(props: {
     const list = Array.from(files || []);
     if (!list.length) return;
 
-    const chunks: string[] = [];
-    const picked: string[] = [];
-    const max_files = 6;
-    const max_chars_per_file = 20_000;
-    for (const f of list.slice(0, max_files)) {
-      const name = String(f?.name || "").trim() || "attachment";
-      picked.push(name);
-      try {
-        const raw = await f.text();
-        const text = raw.length > max_chars_per_file ? `${raw.slice(0, max_chars_per_file)}\n…(truncated)…\n` : raw;
-        chunks.push(`[attached file: ${name}]\n\n\`\`\`\n${text}\n\`\`\``);
-      } catch {
-        chunks.push(`[attached file: ${name}] (unreadable in browser)`);
-      }
-    }
+    const { picked, text: addition } = await inline_attachments(list);
 
     set_advisor_recent_attachments((prev) => [...picked, ...prev].slice(0, 12));
     set_advisor_input((prev) => {
       const base = String(prev || "").trim();
-      const addition = chunks.join("\n\n");
       return base ? `${base}\n\n${addition}` : addition;
     });
 

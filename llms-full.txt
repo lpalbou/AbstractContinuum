@@ -445,7 +445,8 @@ src/
     hub_api_types.ts          types generated from vendor/hub/openapi.json
     hub_contract.ts           compile-time pins against the hub contract
     hub_ledger.ts             independent hub ledger verification
-    team_model.ts             Team page pure model (threads, filters, badges)
+    team_model.ts             Team page pure model (threads, filters, badges, LLM transcript)
+    history_window.ts         history window for LLM transcripts: newest whole messages up to 50k tokens (ADR-0026)
     work_id.ts                work-item id + rendered-state derivations
     entity_skills_model.ts    entity skills view model
     voice_settings.ts         per-browser voice overrides
@@ -469,6 +470,7 @@ src/
       execute_modals.tsx      execute / batch / merge confirms
       new_task_modal.tsx      creation flow (template, guided, assist)
       advisor_drawer.tsx      read-only backlog advisor (chat + voice)
+      advisor_attachments.ts  advisor attachments, inlined whole into the composer
     team_page.tsx             Team page (agora hub client)
     team_file_viewer.tsx      channel file viewer
     agents_page.tsx           executor roster, entities, track record
@@ -1527,6 +1529,19 @@ with AbstractGateway 0.4.1 or newer, as before. The server keeps listening on
 - Requires `@abstractframework/app-server` 0.1.11 or newer (the mount kit)
   and is built against `@abstractframework/ui-kit` 0.1.14 (`joinBaseUrl` /
   `GATEWAY_CONNECTION_PATH`).
+- **Team AI features read up to 50,000 tokens of the conversation (ADR-0026).**
+  *Summarize* and the channel assistant used to send at most 24,000 characters
+  of transcript: the oldest messages were dropped and any message longer than
+  12,000 characters was cut. The transcript is now the newest whole messages
+  up to 50,000 estimated tokens (the same history window as AbstractRuntime),
+  and no message is ever cut. The transcript's first line tells the model how
+  many messages it holds; when older messages are dropped, a labeled
+  `#TRUNCATION` line gives the count. The summary header and the assistant
+  drawer show what the model read, for example
+  "38 of 40 messages (2 oldest dropped by the 50,000-token history window)".
+- **Backlog advisor attachments are sent whole.** Attached files were limited
+  to the first 6 files and 20,000 characters each. Every picked file is now
+  inlined in full into the composer, where you can see it before you send.
 
 ### Security
 

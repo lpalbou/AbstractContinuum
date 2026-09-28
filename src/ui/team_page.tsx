@@ -62,6 +62,7 @@ import {
   parse_member_list,
   sender_hue,
   serialize_transcript,
+  transcript_window_label,
   debt_seqs_by_channel,
   escalated_seqs_by_channel,
   unread_by_channel,
@@ -677,7 +678,7 @@ export function TeamPage(props: {
   const [chan_admin_busy, set_chan_admin_busy] = useState(false);
 
   // Per-thread LLM summaries (root id → state). Session-only.
-  const [summaries, set_summaries] = useState<Record<string, { busy: boolean; text: string; error: string; count: number }>>({});
+  const [summaries, set_summaries] = useState<Record<string, { busy: boolean; text: string; error: string; count: number; window?: string }>>({});
 
   // Right-edge drawers (operator dm 53): Assistant + Files live behind two
   // always-visible vertical trapeze tabs; one drawer open at a time. The
@@ -716,6 +717,8 @@ export function TeamPage(props: {
   const [ai_question, set_ai_question] = useState("");
   const [ai_busy, set_ai_busy] = useState(false);
   const [ai_error, set_ai_error] = useState("");
+  /** What the last channel ask read (history-window label). */
+  const [ai_window, set_ai_window] = useState("");
 
   const list_ref = useRef<HTMLDivElement | null>(null);
   const poll_count = useRef(0);
@@ -1131,6 +1134,7 @@ export function TeamPage(props: {
     // to land in the NEW channel's empty thread).
     set_ai_thread([]);
     set_ai_error("");
+    set_ai_window("");
     set_ai_busy(false);
     set_ai_question("");
     // Clear the previous channel's content immediately — stale-channel
@@ -2174,10 +2178,11 @@ export function TeamPage(props: {
     set_summaries((cur) => ({ ...cur, [id]: { busy: true, text: cur[id]?.text || "", error: "", count } }));
     try {
       const transcript = serialize_transcript([t.root, ...t.replies]);
-      const q = `Summarize this hub discussion thread in at most 5 short bullet points: the question or claim, the positions taken, decisions reached, and anything still open. Be concrete — name senders and receipts.\n\nTHREAD TRANSCRIPT:\n${transcript}`;
+      const q = `Summarize this hub discussion thread in at most 5 short bullet points: the question or claim, the positions taken, decisions reached, and anything still open. Be concrete — name senders and receipts.\n\nTHREAD TRANSCRIPT:\n${transcript.text}`;
       const text = await advisor(q, []);
       if (gen !== chan_gen.current) return; // stale channel — drop
-      set_summaries((cur) => ({ ...cur, [id]: { busy: false, text, error: "", count } }));
+      const window = transcript_window_label(transcript.report);
+      set_summaries((cur) => ({ ...cur, [id]: { busy: false, text, error: "", count, window } }));
     } catch (e: any) {
       if (gen !== chan_gen.current) return;
       set_summaries((cur) => ({ ...cur, [id]: { busy: false, text: "", error: String(e?.message || e || "summary failed"), count } }));
@@ -2193,10 +2198,12 @@ export function TeamPage(props: {
     set_ai_error("");
     set_ai_thread((cur) => [...cur, { role: "user", content: question }]);
     try {
-      // Fresh transcript each ask: the model sees the channel as it is NOW
-      // (bounded, oldest dropped with a labeled #TRUNCATION header).
+      // Fresh transcript each ask: the model sees the channel as it is NOW,
+      // through the history window (newest whole messages up to 50k tokens;
+      // the transcript's first line and the drawer both state what it read).
       const transcript = serialize_transcript(messages);
-      const q = `You are the operator's analyst for the agora hub channel #${selected}. Answer from the transcript below — strategies used, deviations, who owes what, timeline of decisions. Cite message seqs like #123. If the transcript does not contain the answer, say so plainly.\n\nCHANNEL TRANSCRIPT (window):\n${transcript}\n\nQUESTION: ${question}`;
+      set_ai_window(transcript_window_label(transcript.report));
+      const q = `You are the operator's analyst for the agora hub channel #${selected}. Answer from the transcript below — strategies used, deviations, who owes what, timeline of decisions. Cite message seqs like #123. If the transcript does not contain the answer, say so plainly.\n\nCHANNEL TRANSCRIPT (window):\n${transcript.text}\n\nQUESTION: ${question}`;
       const text = await advisor(q, ai_thread);
       if (gen !== chan_gen.current) return; // stale channel — drop
       set_ai_thread((cur) => [...cur, { role: "assistant", content: text }]);
@@ -4130,7 +4137,7 @@ export function TeamPage(props: {
           <div className="team_summary">
             <div className="team_summary_head">
               <span>
-                AI summary — {s.count} message{s.count === 1 ? "" : "s"}
+                AI summary — {s.window || `${s.count} message${s.count === 1 ? "" : "s"}`}
               </span>
               <button
                 className="team_row_expand"
@@ -5113,6 +5120,7 @@ export function TeamPage(props: {
                   <Markdown className="md_doc" text={neutralize_unsafe_embeds(t.content)} />
                 </div>
               ))}
+              {ai_thread.length && ai_window ? <div className="muted team_note">Last answer read {ai_window}.</div> : null}
               {ai_busy ? <div className="muted team_note">thinking…</div> : null}
               {ai_error ? <div className="page_error mono">{ai_error}</div> : null}
             </div>

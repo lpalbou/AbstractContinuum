@@ -1,8 +1,10 @@
 // Pure model for the Team page (operator redesign 2026-07-14): thread
-// grouping, category filters, channel badges, and the bounded transcript
-// serialization the LLM features feed on. No fetching here — the page
+// grouping, category filters, channel badges, and the transcript
+// serialization the LLM features feed on (history window: newest whole
+// messages up to 50k tokens). No fetching here — the page
 // owns transport, this file owns the logic (testable without a DOM).
 
+import { estimate_tokens, fold_history_window, HISTORY_REPLAY_MAX_TOKENS, type HistoryWindowReport } from "./history_window";
 import type { HubMessage } from "./hub_client";
 
 // ------------------------------------------------------------- threading
@@ -722,45 +724,55 @@ export function sender_hue(sender: string): number {
 
 // ------------------------------------------------- transcript for the LLM
 
-const TRANSCRIPT_CHAR_BUDGET = 24_000;
-
-/** Reserved for the #TRUNCATION header so the final string stays inside
- *  the budget even when truncation fires (adversary find: the header sat
- *  outside the accounting). */
-const TRUNCATION_HEADER_RESERVE = 160;
+/** One message as the model reads it: header line (seq, sender, status,
+ *  addressing, asks/answers) + title + the WHOLE body. */
+function transcript_entry(m: HubMessage): string {
+  const to = Array.isArray(m.to) && m.to.length ? ` to=[${m.to.join(",")}]` : "";
+  const asks = m.data?.asks?.length ? ` asks=${m.data.asks.map((a) => `${a.id}:"${a.text}"`).join("; ")}` : "";
+  const answers = m.data?.answers?.length ? ` answers=[${m.data.answers.join(",")}]` : "";
+  const reply = m.reply_to ? ` reply_to=${m.reply_to}` : "";
+  return `#${m.seq} [${m.sender}] (${m.status})${to}${reply}${asks}${answers}\n${m.title ? `title: ${m.title}\n` : ""}${String(m.body || "").trim()}`;
+}
 
 /**
- * Serialize messages for an LLM context, newest-last, bounded. When the
- * window exceeds the budget the OLDEST messages drop and the header says
- * so (#TRUNCATION — labeled, never silent). A single message larger than
- * half the budget is clamped in place with its own label — one giant
- * message can never blow the whole context (adversary find).
+ * Serialize messages for an LLM context, newest-last, through the history
+ * window (operator ruling 2026-09-28, ADR-0026): the newest WHOLE messages up
+ * to 50,000 estimated tokens (`history_window.ts`, the runtime's rule). No
+ * message is ever cut. The first line records the window (replayed N of M
+ * messages, ~tokens); when older messages were dropped a labeled #TRUNCATION
+ * line says how many. The report is returned too, for the UI.
  */
-export function serialize_transcript(messages: HubMessage[], opts?: { char_budget?: number }): string {
-  const budget = opts?.char_budget ?? TRANSCRIPT_CHAR_BUDGET;
-  const per_message_cap = Math.max(500, Math.floor(budget / 2));
+export function serialize_transcript(
+  messages: HubMessage[],
+  opts?: { max_tokens?: number }
+): { text: string; report: HistoryWindowReport } {
+  const max_tokens = opts?.max_tokens ?? HISTORY_REPLAY_MAX_TOKENS;
   const ordered = [...messages].sort((a, b) => (a.seq || 0) - (b.seq || 0));
-  const lines: string[] = [];
-  for (const m of ordered) {
-    const to = Array.isArray(m.to) && m.to.length ? ` to=[${m.to.join(",")}]` : "";
-    const asks = m.data?.asks?.length ? ` asks=${m.data.asks.map((a) => `${a.id}:"${a.text}"`).join("; ")}` : "";
-    const answers = m.data?.answers?.length ? ` answers=[${m.data.answers.join(",")}]` : "";
-    const reply = m.reply_to ? ` reply_to=${m.reply_to}` : "";
-    let line = `#${m.seq} [${m.sender}] (${m.status})${to}${reply}${asks}${answers}\n${m.title ? `title: ${m.title}\n` : ""}${String(m.body || "").trim()}`;
-    if (line.length > per_message_cap) {
-      line = line.slice(0, per_message_cap) + `\n[#TRUNCATION: message #${m.seq} clamped to fit the context budget]`;
-    }
-    lines.push(line);
+  const entries = ordered.map(transcript_entry);
+  const { kept, report } = fold_history_window(entries, estimate_tokens, max_tokens);
+  const lines = [
+    `TRANSCRIPT WINDOW: ${report.replayed_messages} of ${report.total_messages} message(s), ~${report.replayed_tokens} tokens ` +
+      `(the newest whole messages up to ${max_tokens} tokens).`,
+  ];
+  if (report.dropped_messages > 0) {
+    // #[WARNING:TRUNCATION] oldest whole messages dropped by the history window — stated, never silent
+    lines.push(
+      `#TRUNCATION: the ${report.dropped_messages} oldest message(s) (~${report.dropped_tokens} tokens) were dropped by the history ` +
+        `window (the newest whole messages up to ${max_tokens} tokens; abstractcontinuum team_model); this transcript starts mid-conversation.`
+    );
   }
-  let dropped = 0;
-  let total = lines.reduce((n, l) => n + l.length + 2, 0);
-  while (lines.length > 1 && total > budget - TRUNCATION_HEADER_RESERVE) {
-    const gone = lines.shift() as string;
-    total -= gone.length + 2;
-    dropped++;
-  }
-  const header = dropped > 0 ? `#TRUNCATION: the ${dropped} oldest message(s) were dropped to fit the context budget.\n\n` : "";
-  return header + lines.join("\n\n");
+  return { text: `${lines.join("\n")}\n\n${kept.join("\n\n")}`, report };
+}
+
+/** Short UI label for a transcript window: "12 messages", or
+ *  "38 of 40 messages (2 oldest dropped by the 50,000-token history window)". */
+export function transcript_window_label(report: HistoryWindowReport): string {
+  const noun = (n: number) => `message${n === 1 ? "" : "s"}`;
+  if (report.dropped_messages <= 0) return `${report.replayed_messages} ${noun(report.replayed_messages)}`;
+  return (
+    `${report.replayed_messages} of ${report.total_messages} ${noun(report.total_messages)} ` +
+    `(${report.dropped_messages} oldest dropped by the ${report.max_tokens.toLocaleString("en-US")}-token history window)`
+  );
 }
 
 /** Per-message rating tally (agora-0122, hub-served row decoration). */

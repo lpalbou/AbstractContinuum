@@ -31,6 +31,7 @@ import {
   parse_member_list,
   sender_hue,
   serialize_transcript,
+  transcript_window_label,
   unread_by_channel,
   unread_seqs_by_channel,
 } from "./team_model";
@@ -203,9 +204,9 @@ describe("badges + hue", () => {
   });
 });
 
-describe("serialize_transcript", () => {
+describe("serialize_transcript (history window: newest whole messages up to 50k tokens, ADR-0026)", () => {
   it("keeps seq order and carries asks/answers/to metadata", () => {
-    const out = serialize_transcript([
+    const { text: out } = serialize_transcript([
       msg(2, { title: "t2", data: { answers: ["1"] }, reply_to: "m1", status: "reply" }),
       msg(1, { title: "t1", status: "open", to: ["gateway"], data: { asks: [{ id: "1", text: "confirm?" }] } }),
     ]);
@@ -216,21 +217,56 @@ describe("serialize_transcript", () => {
     expect(out).not.toContain("#TRUNCATION");
   });
 
-  it("drops the OLDEST messages under budget pressure with a labeled #TRUNCATION header, inside the budget", () => {
-    const ms = Array.from({ length: 10 }, (_, i) => msg(i + 1, { body: "x".repeat(500) }));
-    const budget = 1600;
-    const out = serialize_transcript(ms, { char_budget: budget });
-    expect(out).toContain("#TRUNCATION");
-    expect(out).not.toContain("#1 [");
-    expect(out).toContain("#10 [");
-    // The header is counted against the budget, not stacked on top.
-    expect(out.length).toBeLessThanOrEqual(budget);
+  it("records the window on the first line even when nothing is dropped", () => {
+    const { text, report } = serialize_transcript([msg(1), msg(2), msg(3)]);
+    expect(text.split("\n")[0]).toMatch(/^TRANSCRIPT WINDOW: 3 of 3 message\(s\), ~\d+ tokens \(the newest whole messages up to 50000 tokens\)\.$/);
+    expect(report).toMatchObject({ total_messages: 3, replayed_messages: 3, dropped_messages: 0, max_tokens: 50_000 });
   });
 
-  it("clamps a single message larger than the budget in place, labeled (one giant message cannot blow the context)", () => {
-    const out = serialize_transcript([msg(1, { body: "y".repeat(100_000) })], { char_budget: 2000 });
-    expect(out.length).toBeLessThan(3000);
-    expect(out).toContain("[#TRUNCATION: message #1 clamped");
+  it("sends a transcript far past the old 24,000-char budget whole when it fits 50k tokens", () => {
+    // 60 messages x 1,500 chars = ~90,000 chars (~22,500 tokens): the old cap
+    // dropped more than half of them.
+    const ms = Array.from({ length: 60 }, (_, i) => msg(i + 1, { body: `m${i + 1} ` + "x".repeat(1500) }));
+    const { text, report } = serialize_transcript(ms);
+    expect(text).not.toContain("#TRUNCATION");
+    expect(text).toContain("#1 [");
+    expect(text).toContain("#60 [");
+    expect(report.dropped_messages).toBe(0);
+    expect(text.length).toBeGreaterThan(90_000);
+  });
+
+  it("never clamps a single message: a 100,000-char body arrives whole", () => {
+    const body = "y".repeat(100_000);
+    const { text, report } = serialize_transcript([msg(1, { body })]);
+    expect(text).toContain(body);
+    expect(text).not.toContain("clamped");
+    expect(report.oversize_message_kept).toBe(false); // 25,000 tokens fits the window
+  });
+
+  it("drops the OLDEST whole messages past 50k tokens, with a labeled #TRUNCATION line and the counts", () => {
+    // 30 messages x ~8,000 chars (~2,000 tokens each) = ~60,000 tokens.
+    const ms = Array.from({ length: 30 }, (_, i) => msg(i + 1, { body: "z".repeat(8000) }));
+    const { text, report } = serialize_transcript(ms);
+    expect(report.dropped_messages).toBeGreaterThan(0);
+    expect(report.replayed_messages + report.dropped_messages).toBe(30);
+    expect(report.replayed_tokens).toBeLessThanOrEqual(50_000);
+    expect(text).toContain(`#TRUNCATION: the ${report.dropped_messages} oldest message(s)`);
+    expect(text).toContain(`TRANSCRIPT WINDOW: ${report.replayed_messages} of 30 message(s)`);
+    expect(text).not.toContain("#1 [");
+    expect(text).toContain("#30 [");
+    // Every replayed message is whole.
+    const bodies = text.split("\n").filter((l) => /^z+$/.test(l));
+    expect(bodies.length).toBe(report.replayed_messages);
+    expect(bodies.every((b) => b.length === 8000)).toBe(true);
+  });
+
+  it("transcript_window_label states what the model read", () => {
+    expect(transcript_window_label(serialize_transcript([msg(1)]).report)).toBe("1 message");
+    const ms = Array.from({ length: 30 }, (_, i) => msg(i + 1, { body: "z".repeat(8000) }));
+    const { report } = serialize_transcript(ms);
+    expect(transcript_window_label(report)).toBe(
+      `${report.replayed_messages} of 30 messages (${report.dropped_messages} oldest dropped by the 50,000-token history window)`
+    );
   });
 });
 
