@@ -107,8 +107,10 @@ gateway console's *Backlog settings*; see
 
 ## Session endpoints (bundled server)
 
-`bin/cli.js` (via `@abstractframework/app-server`, appId
-`abstractcontinuum`):
+`bin/server.js` (via `@abstractframework/app-server`, appId
+`abstractcontinuum`; every response carries
+`X-AbstractFramework-App: continuum; mount=1`, and behind the gateway every
+path below is under `/apps/continuum/`):
 
 - `GET /api/connection/gateway` — session status (`{ok, gateway_url, has_session, gateway}`)
 - `POST /api/connection/gateway` — sign in `{gateway_url?, gateway_user_id, gateway_token, persist?}`
@@ -129,21 +131,27 @@ gateway console's *Backlog settings*; see
 - `GET /api/hub/ws` (WebSocket upgrade) — live hub updates relayed with the
   seat key attached server-side
 
-Loopback peers only unless Continuum runs with `--hub-allow-remote` (setting
-`hub_allow_remote`); browser requests whose `Origin` does not match the host
-are rejected. The hub
+Browsers on this computer only unless Continuum runs with
+`--hub-allow-remote` (setting `hub_allow_remote`). Behind the gateway the
+browser's address is the one the gateway forwards, so a browser on another
+machine is refused (`403 hub_proxy_non_loopback`) even though the
+connection comes from the gateway. Browser requests whose `Origin` does not
+match the host the browser addressed are rejected; the WebSocket answers
+`403` for both, `400` for a malformed forwarded header. The hub
 contract the client is typed against is vendored in `vendor/hub/`.
 
 ## Server settings endpoint (bundled server, Settings page)
 
 - `GET /api/continuum/settings` — `{settings, writable, settings_file}`:
   every server setting as `{value, source}` (`source` is `flag`, `setting`,
-  `env` or `default`); the hub token only as `{set, source}`
+  `env`, `pointer` — the gateway installed on this computer — or
+  `default`); the hub token only as `{set, source}`
 - `PUT /api/continuum/settings` — `{"hub_seat": "<seat>"}` saves the seat
   to the settings file (`null` removes it); answers the fresh view. Other
   settings are refused here (`abstractcontinuum config set`)
 
-Loopback peers and same-origin browser requests only; writes need
+Browsers on this computer (the forwarded address behind the gateway) and
+same-origin browser requests only; writes need
 `Content-Type: application/json`.
 
 ## Notes

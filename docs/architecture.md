@@ -77,6 +77,40 @@ The Team page uses the same
 origin: `/api/hub/*` and the `/api/hub/ws` WebSocket are served by the hub
 proxy, which attaches the operator seat's key server-side.
 
+## Serving under the gateway (`/apps/continuum/`)
+
+The same server runs at `/` on its own port and behind the gateway's
+`/apps/continuum/`. It follows the `@abstractframework/app-server` mount
+contract.
+
+```mermaid
+flowchart LR
+    B[Browser] -- "/apps/continuum/…<br/>(gateway session cookie)" --> G[AbstractGateway<br/>app proxy]
+    G -- "path without /apps/continuum<br/>X-Forwarded-Prefix / -For / -Host / -Proto" --> S["bin/server.js<br/>(127.0.0.1)"]
+    S -- "X-AbstractFramework-App: continuum; mount=1" --> G
+    S --> RG[bin/request_gate.js<br/>browser address + Origin check]
+    RG --> HP[hub proxy + /api/hub/ws]
+    RG --> SR[Settings route]
+    S --> SP[session proxy<br/>cookies Path=/apps/continuum/]
+```
+
+- **Identity.** Every response, the WebSocket `101` included, carries
+  `X-AbstractFramework-App: continuum; mount=1`; the gateway relays only an
+  app that announces it.
+- **Base path.** The page is served with `<base href="/apps/continuum/">`
+  (or `/` standalone) and `base_path` in `window.__ABSTRACT_UI_CONFIG__`.
+  The build uses relative asset URLs (Vite `base: "./"`), every request the
+  UI makes is relative (`api/gateway/…`, `api/hub/…`,
+  `api/continuum/settings`, the relay at `api/hub/ws` resolved against
+  `document.baseURI`), and `npm run build` fails on any root-absolute
+  same-origin URL in `dist/` (`scripts/check_relative_urls.mjs`). The CSP
+  admits the one injected configuration script by its hash.
+- **Who is asking.** `bin/request_gate.js` asks the kit's
+  `requestContext(req)`: the socket peer, or, from a loopback peer (the
+  gateway), the browser address it forwarded. The Origin check compares the
+  browser's `Origin` with the host the browser addressed (the forwarded host
+  behind the gateway). A malformed forwarded header is refused with `400`.
+
 ## Gateway settings and the backlog folder
 
 The gateway, not this app, owns the settings that decide which pages have
@@ -196,9 +230,12 @@ src/
     backlog_folder.tsx        backlog folder state panel (empty / not available + admin actions)
     memo_markdown.tsx, mermaid_block.tsx   markdown + mermaid rendering
     modal.tsx, multi_select.tsx, error_boundary.tsx   shared widgets
-bin/cli.js                    static serve + session proxy + hub proxy mount + `config` command
-bin/settings.js               server settings: flags, settings file, precedence, Settings route
+bin/cli.js                    launch flags, `config` command, starts the server
+bin/server.js                 static serve (base href + CSP) + session proxy + hub proxy + Settings route, mountable at /apps/continuum/
+bin/request_gate.js           "browser on this computer?" + Origin check (kit requestContext)
+bin/settings.js               server settings: flags, settings file, precedence (+ gateway pointer), Settings route
 bin/hub_proxy.js              allowlisted agora hub proxy (HTTP + WebSocket)
+scripts/check_relative_urls.mjs  fails on a root-absolute same-origin URL in src/ or dist/
 vendor/hub/                   vendored hub OpenAPI + golden conformance vectors
 ```
 

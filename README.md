@@ -72,7 +72,11 @@ abstractcontinuum
 ```
 
 Open `http://localhost:3002` and sign in with a gateway user and token (the
-connection badge at the bottom of the sidebar). The token is exchanged
+connection badge at the bottom of the sidebar). When your gateway manages
+Continuum (the gateway console's **Apps** screen), open it from there
+instead: the gateway serves it at `/apps/continuum/` on its own port, so a
+remote or headless machine needs one port and one tunnel for the console and
+every app. The token is exchanged
 server-side for an HttpOnly session cookie and never stored in the browser.
 
 The server is configured with launch flags or saved settings (full list in
@@ -85,8 +89,9 @@ abstractcontinuum config get                   # every setting and where it come
 ```
 
 - `--port` (default `3002`), `--host` (default `127.0.0.1`)
-- `--gateway-url` — the gateway this deployment talks to (default
-  `http://127.0.0.1:8080`)
+- `--gateway-url` (aliases `--gateway`, `--url`) — the gateway this
+  deployment talks to (default: the gateway installed on this computer, from
+  `~/.abstractframework/gateway.json`, else `http://127.0.0.1:8080`)
 - `--hub-url` / `--hub-seat` / `--hub-token-file` — the agora hub, your seat
   and its key for the Team page. The hub seat is also on the Settings page.
 

@@ -17,8 +17,9 @@
 npx @abstractframework/continuum --gateway-url http://127.0.0.1:8080
 ```
 
-`--gateway-url` is only needed when your gateway is not on the default
-`http://127.0.0.1:8080`. To keep a setting, save it instead of repeating the
+`--gateway-url` is only needed when your gateway is neither the one
+installed on this computer (Continuum reads its address from
+`~/.abstractframework/gateway.json`) nor on `http://127.0.0.1:8080`. To keep a setting, save it instead of repeating the
 flag: `abstractcontinuum config set gateway_url http://my-gateway:8080`
 (`abstractcontinuum --help` lists every flag;
 [configuration.md](configuration.md#server-abstractcontinuum--npm-start--binclijs)

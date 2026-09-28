@@ -25,7 +25,7 @@ for people with deploy rights.
    gateway principal; the app is a client, never a bypass.
 2. **App-origin session proxy** (`bin/cli.js`) — the browser never holds the
    gateway token. Sign-in happens server-side; the session id lives in an
-   HttpOnly cookie scoped to this app's origin; the proxy strips any
+   HttpOnly cookie scoped to this app's origin and path (`/apps/continuum/` behind the gateway); the proxy strips any
    client-supplied `Authorization`/cookie headers before forwarding. With
    `@abstractframework/app-server` 0.1.10 or newer, the proxy also sets
    `X-Forwarded-For` to the browser's connection address (never a
@@ -38,21 +38,28 @@ for people with deploy rights.
    `x-abstractcontinuum-csrf` (or canonical `x-abstract-csrf`); the proxy
    rejects mismatches with 403.
 4. **Gateway URL pinning** — browsers cannot redirect the proxy to another
-   gateway unless the request comes from loopback or an operator explicitly
-   enabled remote config (see [configuration.md](configuration.md)).
-5. **Write-only env vars** — the gateway never returns managed env var
+   gateway unless the browser runs on this computer or an operator
+   explicitly enabled remote config (see [configuration.md](configuration.md)).
+5. **Local-only routes judge the browser** — the hub proxy (which authors as
+   the operator seat), its WebSocket relay and the Settings route answer a
+   browser on this computer only. Behind the gateway's `/apps/continuum/`
+   every connection comes from the gateway, so the decision uses the
+   browser address the gateway forwards; forwarded headers are believed only
+   from a loopback peer, and a malformed one is refused.
+6. **Write-only env vars** — the gateway never returns managed env var
    values; the UI can set/unset but never read them back.
-6. **Feature gating** — the process manager and exec worker exist only when
+7. **Feature gating** — the process manager and exec worker exist only when
    the gateway admin turned them on (the `process_manager` and
    `backlog_exec_runner` settings, off by default; only a gateway admin can
    change them, from Settings → Gateway administration or
    `abstractgateway config set`).
-7. **Content-Security-Policy on the app document** — the Team page renders
+8. **Content-Security-Policy on the app document** — the Team page renders
    untrusted content (hub messages, channel fs files, attachments) as
    markdown. The renderer emits only React elements (no raw-HTML pass, no
    `javascript:` links), and the prod server adds a CSP backstop:
    `img-src 'self' data:` blocks remote-image beacons from untrusted
-   markdown, `script-src 'self'` blocks any script injection class,
+   markdown, `script-src 'self'` plus the hash of the one configuration
+   script the server injects blocks any script injection class,
    `object-src 'none'` and `frame-ancestors 'none'` close embed vectors.
    Inline text previews are size-capped (256 KiB; larger files download)
    so pathological input cannot freeze the tab. Note: the Vite dev server

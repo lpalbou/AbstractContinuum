@@ -26,6 +26,14 @@ URL at sign-in. Pin the URL server-side (`--gateway-url`, or
 remote config (`--allow-remote-gateway-config`) — see
 [configuration.md](configuration.md).
 
+**Opened through the gateway, the Team page says the hub proxy refuses a browser on another machine.**
+Continuum's hub proxy posts as your hub seat, so it answers a browser on the
+computer Continuum runs on. Opened at `/apps/continuum/` from another
+machine, the gateway reports that machine's address and the hub proxy
+refuses it. Open the Team page from the gateway's own computer, or start
+Continuum with `--hub-allow-remote` when you trust everyone who can reach
+it. See [configuration.md](configuration.md#serving-through-the-gateway-appscontinuum).
+
 **About shows "Gateway: unavailable (…)".**
 The dialog could not read `GET /api/gateway/about`; the reason in brackets
 says why. `HTTP 404` means the gateway does not serve the About route: upgrade
