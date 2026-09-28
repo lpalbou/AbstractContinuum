@@ -14,6 +14,10 @@
 // from the abstractcontinuum_gateway_csrf cookie. A non-empty base_url +
 // bearer token switches to direct mode (dev against a bare gateway).
 
+// Gateway API paths are RELATIVE ("api/gateway/…"): with an empty base
+// they resolve against the document's <base href> — `/` on the app's own
+// port, `/apps/continuum/` behind the gateway. The kit's one join helper.
+import { joinBaseUrl } from "@abstractframework/ui-kit";
 import type {
   AdminExecutorsResponse,
   AdminRuntimeConfigResponse,
@@ -71,11 +75,6 @@ const APP_CSRF_HEADER = "x-abstractcontinuum-csrf";
 // reverse proxy in front of several Abstract apps can standardize on one.
 const CANONICAL_CSRF_HEADER = "x-abstract-csrf";
 
-function _join(base_url: string, path: string): string {
-  const base = (base_url || "").trim().replace(/\/+$/, "");
-  if (!base) return path;
-  return `${base}${path}`;
-}
 
 function _auth_headers(token?: string): Record<string, string> {
   const t = (token || "").trim();
@@ -181,7 +180,7 @@ export class GatewayClient {
   // ---------------------------------------------------------------- transport
 
   private async _fetch(label: string, path: string, init?: RequestInit): Promise<Response> {
-    const r = await fetch(_join(this._cfg.base_url, path), {
+    const r = await fetch(joinBaseUrl(this._cfg.base_url, path), {
       ...init,
       headers: {
         ...(init?.headers as Record<string, string> | undefined),
@@ -252,7 +251,7 @@ export class GatewayClient {
     const session_id = String(opts?.session_id || "").trim();
     if (session_id) qs.set("session_id", session_id);
     if (opts?.root_only === true) qs.set("root_only", "true");
-    return await this._get_json("list_runs", `/api/gateway/runs?${qs.toString()}`);
+    return await this._get_json("list_runs", `api/gateway/runs?${qs.toString()}`);
   }
 
   /** Download one run artifact's bytes (exec log artifacts, TTS audio). */
@@ -265,7 +264,7 @@ export class GatewayClient {
     const qs = access ? `?access=${encodeURIComponent(access)}` : "";
     const r = await this._fetch(
       "download_run_artifact_content",
-      `/api/gateway/runs/${encodeURIComponent(rid)}/artifacts/${encodeURIComponent(aid)}/content${qs}`
+      `api/gateway/runs/${encodeURIComponent(rid)}/artifacts/${encodeURIComponent(aid)}/content${qs}`
     );
     return await r.blob();
   }
@@ -286,7 +285,7 @@ export class GatewayClient {
     if (filename) form.append("filename", filename);
     if (content_type) form.append("content_type", content_type);
 
-    const body = await this._post_form("attachments_upload", "/api/gateway/attachments/upload", form);
+    const body = await this._post_form("attachments_upload", "api/gateway/attachments/upload", form);
     const attachment = body?.attachment;
     if (!attachment || typeof attachment !== "object") throw new Error("attachments_upload: missing attachment");
     const aid = String((attachment as any).$artifact || "").trim();
@@ -311,7 +310,7 @@ export class GatewayClient {
     const req_id = String(req?.request_id || "").trim();
     if (req_id) body.request_id = req_id;
 
-    const out: any = await this._post_json("audio_transcribe", `/api/gateway/runs/${encodeURIComponent(rid)}/audio/transcribe`, body);
+    const out: any = await this._post_json("audio_transcribe", `api/gateway/runs/${encodeURIComponent(rid)}/audio/transcribe`, body);
     return {
       ok: Boolean(out?.ok),
       run_id: String(out?.run_id || ""),
@@ -337,7 +336,7 @@ export class GatewayClient {
     const req_id = String(req?.request_id || "").trim();
     if (req_id) body.request_id = req_id;
 
-    const out: any = await this._post_json("voice_tts", `/api/gateway/runs/${encodeURIComponent(rid)}/voice/tts`, body);
+    const out: any = await this._post_json("voice_tts", `api/gateway/runs/${encodeURIComponent(rid)}/voice/tts`, body);
     return {
       ok: Boolean(out?.ok),
       run_id: String(out?.run_id || ""),
@@ -357,7 +356,7 @@ export class GatewayClient {
    *  options}]}); the caller resolves the row. Never throws through —
    *  callers degrade to "gateway resolves it" when unavailable. */
   async capability_defaults(): Promise<any> {
-    return await this._get_json("capability_defaults", "/api/gateway/config/capability-defaults");
+    return await this._get_json("capability_defaults", "api/gateway/config/capability-defaults");
   }
 
   /** TTS voice catalog (gateway GET /voice/voices, hub-side discovery): the
@@ -372,7 +371,7 @@ export class GatewayClient {
     if (p) qs.set("provider", p);
     if (m) qs.set("model", m);
     if (opts?.providers_only) qs.set("providers_only", "true");
-    return await this._get_json("voice_voices", `/api/gateway/voice/voices?${qs.toString()}`);
+    return await this._get_json("voice_voices", `api/gateway/voice/voices?${qs.toString()}`);
   }
 
   /** Transport parameters for the kit's streamTtsJsonl over the gateway
@@ -387,7 +386,7 @@ export class GatewayClient {
     const rid = String(run_id || "").trim();
     if (!rid) throw new Error("voice_stream_transport: run_id is required");
     return {
-      path: _join(this._cfg.base_url, `/api/gateway/runs/${encodeURIComponent(rid)}/voice/tts/stream`),
+      path: joinBaseUrl(this._cfg.base_url, `api/gateway/runs/${encodeURIComponent(rid)}/voice/tts/stream`),
       body: { text: String(req?.text || ""), format: "wav", ...voice_synthesis_body(req) },
       headers: _auth_headers(this._cfg.auth_token),
     };
@@ -396,23 +395,23 @@ export class GatewayClient {
   // ---------------------------------------------------------- report inbox
 
   async list_bug_reports(): Promise<ReportInboxListResponse> {
-    return await this._get_json("list_bug_reports", "/api/gateway/reports/bugs");
+    return await this._get_json("list_bug_reports", "api/gateway/reports/bugs");
   }
 
   async list_feature_requests(): Promise<ReportInboxListResponse> {
-    return await this._get_json("list_feature_requests", "/api/gateway/reports/features");
+    return await this._get_json("list_feature_requests", "api/gateway/reports/features");
   }
 
   async get_bug_report_content(filename: string): Promise<ReportContentResponse> {
     const name = String(filename || "").trim();
     if (!name) throw new Error("get_bug_report_content: filename is required");
-    return await this._get_json("get_bug_report_content", `/api/gateway/reports/bugs/${encodeURIComponent(name)}/content`);
+    return await this._get_json("get_bug_report_content", `api/gateway/reports/bugs/${encodeURIComponent(name)}/content`);
   }
 
   async get_feature_request_content(filename: string): Promise<ReportContentResponse> {
     const name = String(filename || "").trim();
     if (!name) throw new Error("get_feature_request_content: filename is required");
-    return await this._get_json("get_feature_request_content", `/api/gateway/reports/features/${encodeURIComponent(name)}/content`);
+    return await this._get_json("get_feature_request_content", `api/gateway/reports/features/${encodeURIComponent(name)}/content`);
   }
 
   async bug_report_create(req: {
@@ -429,7 +428,7 @@ export class GatewayClient {
     template?: string | null;
     context?: any;
   }): Promise<any> {
-    return await this._post_json("bug_report_create", "/api/gateway/bugs/report", _report_create_body(req, "bug_report_create"));
+    return await this._post_json("bug_report_create", "api/gateway/bugs/report", _report_create_body(req, "bug_report_create"));
   }
 
   async feature_report_create(req: {
@@ -446,13 +445,13 @@ export class GatewayClient {
     template?: string | null;
     context?: any;
   }): Promise<any> {
-    return await this._post_json("feature_report_create", "/api/gateway/features/report", _report_create_body(req, "feature_report_create"));
+    return await this._post_json("feature_report_create", "api/gateway/features/report", _report_create_body(req, "feature_report_create"));
   }
 
   // ------------------------------------------------------------------- email
 
   async email_list_accounts(): Promise<EmailAccountsResponse> {
-    return await this._get_json("email_list_accounts", "/api/gateway/email/accounts");
+    return await this._get_json("email_list_accounts", "api/gateway/email/accounts");
   }
 
   async email_list_messages(opts?: {
@@ -472,7 +471,7 @@ export class GatewayClient {
     const status = String(opts?.status || "").trim();
     if (status) qs.set("status", status);
     qs.set("limit", String(typeof opts?.limit === "number" && Number.isFinite(opts.limit) ? Number(opts.limit) : 20));
-    return await this._get_json("email_list_messages", `/api/gateway/email/messages?${qs.toString()}`);
+    return await this._get_json("email_list_messages", `api/gateway/email/messages?${qs.toString()}`);
   }
 
   async email_read_message(uid: string, opts?: { account?: string; mailbox?: string; max_body_chars?: number }): Promise<EmailReadResponse> {
@@ -485,13 +484,13 @@ export class GatewayClient {
     if (mailbox) qs.set("mailbox", mailbox);
     const max_body_chars = typeof opts?.max_body_chars === "number" && Number.isFinite(opts.max_body_chars) ? Number(opts.max_body_chars) : 20000;
     qs.set("max_body_chars", String(max_body_chars));
-    return await this._get_json("email_read_message", `/api/gateway/email/messages/${encodeURIComponent(id)}?${qs.toString()}`);
+    return await this._get_json("email_read_message", `api/gateway/email/messages/${encodeURIComponent(id)}?${qs.toString()}`);
   }
 
   async email_send(req: EmailSendRequest): Promise<EmailSendResponse> {
     const subject = String(req?.subject || "").trim();
     if (!subject) throw new Error("email_send: subject is required");
-    return await this._post_json("email_send", "/api/gateway/email/send", req || {});
+    return await this._post_json("email_send", "api/gateway/email/send", req || {});
   }
 
   // ------------------------------------------------------------------ triage
@@ -500,7 +499,7 @@ export class GatewayClient {
     const body: any = {};
     if (typeof opts?.write_drafts === "boolean") body.write_drafts = Boolean(opts.write_drafts);
     if (typeof opts?.enable_llm === "boolean") body.enable_llm = Boolean(opts.enable_llm);
-    return await this._post_json("triage_run", "/api/gateway/triage/run", body);
+    return await this._post_json("triage_run", "api/gateway/triage/run", body);
   }
 
   async list_triage_decisions(opts?: { status?: string; limit?: number }): Promise<TriageDecisionListResponse> {
@@ -508,7 +507,7 @@ export class GatewayClient {
     const status = String(opts?.status || "").trim();
     if (status) qs.set("status", status);
     qs.set("limit", String(typeof opts?.limit === "number" && Number.isFinite(opts.limit) ? Number(opts.limit) : 200));
-    return await this._get_json("list_triage_decisions", `/api/gateway/triage/decisions?${qs.toString()}`);
+    return await this._get_json("list_triage_decisions", `api/gateway/triage/decisions?${qs.toString()}`);
   }
 
   async apply_triage_decision(
@@ -524,7 +523,7 @@ export class GatewayClient {
       const d = args?.defer_days;
       if (typeof d === "number" && Number.isFinite(d) && d > 0) body.defer_days = Number(d);
     }
-    return await this._post_json("apply_triage_decision", `/api/gateway/triage/decisions/${encodeURIComponent(did)}/apply`, body);
+    return await this._post_json("apply_triage_decision", `api/gateway/triage/decisions/${encodeURIComponent(did)}/apply`, body);
   }
 
   // ------------------------------------------------------------ backlog CRUD
@@ -532,7 +531,7 @@ export class GatewayClient {
   async backlog_list(kind: "planned" | "completed" | "proposed" | "recurrent" | "deprecated" | "trash"): Promise<BacklogListResponse> {
     const k = String(kind || "").trim();
     if (!k) throw new Error("backlog_list: kind is required");
-    return await this._get_json("backlog_list", `/api/gateway/backlog/${encodeURIComponent(k)}`);
+    return await this._get_json("backlog_list", `api/gateway/backlog/${encodeURIComponent(k)}`);
   }
 
   async backlog_content(
@@ -543,17 +542,17 @@ export class GatewayClient {
     const name = String(filename || "").trim();
     if (!k) throw new Error("backlog_content: kind is required");
     if (!name) throw new Error("backlog_content: filename is required");
-    return await this._get_json("backlog_content", `/api/gateway/backlog/${encodeURIComponent(k)}/${encodeURIComponent(name)}/content`);
+    return await this._get_json("backlog_content", `api/gateway/backlog/${encodeURIComponent(k)}/${encodeURIComponent(name)}/content`);
   }
 
   async backlog_template(): Promise<BacklogTemplateResponse> {
-    return await this._get_json("backlog_template", "/api/gateway/backlog/template");
+    return await this._get_json("backlog_template", "api/gateway/backlog/template");
   }
 
   /** Backlog folder posture (gateway mission II). A 404 means the gateway
    *  predates the endpoint — callers fall back to the 404-detail class. */
   async backlog_status(): Promise<BacklogStatusResponse> {
-    return await this._get_json("backlog_status", "/api/gateway/backlog/status");
+    return await this._get_json("backlog_status", "api/gateway/backlog/status");
   }
 
   async backlog_move(args: { from_kind: string; to_kind: string; filename: string }): Promise<BacklogMoveResponse> {
@@ -563,7 +562,7 @@ export class GatewayClient {
     if (!from_kind) throw new Error("backlog_move: from_kind is required");
     if (!to_kind) throw new Error("backlog_move: to_kind is required");
     if (!filename) throw new Error("backlog_move: filename is required");
-    return await this._post_json("backlog_move", "/api/gateway/backlog/move", { from_kind, to_kind, filename });
+    return await this._post_json("backlog_move", "api/gateway/backlog/move", { from_kind, to_kind, filename });
   }
 
   async backlog_update(args: { kind: string; filename: string; content: string; expected_sha256?: string | null }): Promise<BacklogUpdateResponse> {
@@ -576,7 +575,7 @@ export class GatewayClient {
     if (expected_sha256) body.expected_sha256 = expected_sha256;
     return await this._post_json(
       "backlog_update",
-      `/api/gateway/backlog/${encodeURIComponent(kind)}/${encodeURIComponent(filename)}/update`,
+      `api/gateway/backlog/${encodeURIComponent(kind)}/${encodeURIComponent(filename)}/update`,
       body
     );
   }
@@ -602,7 +601,7 @@ export class GatewayClient {
     if (summary) body.summary = summary;
     const content = args?.content == null ? "" : String(args?.content ?? "");
     if (content.trim()) body.content = content;
-    return await this._post_json("backlog_create", "/api/gateway/backlog/create", body);
+    return await this._post_json("backlog_create", "api/gateway/backlog/create", body);
   }
 
   async backlog_merge(args: {
@@ -631,7 +630,7 @@ export class GatewayClient {
     if (task_type) body.task_type = task_type;
     const summary = String(args?.summary || "").trim();
     if (summary) body.summary = summary;
-    return await this._post_json("backlog_merge", "/api/gateway/backlog/merge", body);
+    return await this._post_json("backlog_merge", "api/gateway/backlog/merge", body);
   }
 
   async backlog_upload_attachment(args: { kind: string; filename: string; file: File; overwrite?: boolean }): Promise<BacklogAttachmentUploadResponse> {
@@ -646,7 +645,7 @@ export class GatewayClient {
     fd.set("file", file, file.name || "attachment");
     return await this._post_form(
       "backlog_upload_attachment",
-      `/api/gateway/backlog/${encodeURIComponent(kind)}/${encodeURIComponent(filename)}/attachments/upload`,
+      `api/gateway/backlog/${encodeURIComponent(kind)}/${encodeURIComponent(filename)}/attachments/upload`,
       fd
     );
   }
@@ -685,7 +684,7 @@ export class GatewayClient {
     if (model) body.model = model;
     const thinking = String(args?.thinking || "").trim();
     if (thinking) body.thinking = thinking;
-    return await this._post_json("backlog_assist", "/api/gateway/backlog/assist", body);
+    return await this._post_json("backlog_assist", "api/gateway/backlog/assist", body);
   }
 
   async backlog_maintain(args: {
@@ -716,7 +715,7 @@ export class GatewayClient {
     if (provider) body.provider = provider;
     const model = String(args?.model || "").trim();
     if (model) body.model = model;
-    return await this._post_json("backlog_maintain", "/api/gateway/backlog/maintain", body);
+    return await this._post_json("backlog_maintain", "api/gateway/backlog/maintain", body);
   }
 
   async backlog_advisor(args: {
@@ -744,7 +743,7 @@ export class GatewayClient {
     if (focus_kind) body.focus_kind = focus_kind;
     const focus_type = String(args?.focus_type || "").trim();
     if (focus_type) body.focus_type = focus_type;
-    return await this._post_json("backlog_advisor", "/api/gateway/backlog/advisor", body);
+    return await this._post_json("backlog_advisor", "api/gateway/backlog/advisor", body);
   }
 
   // ----------------------------------------------------------- exec pipeline
@@ -787,7 +786,7 @@ export class GatewayClient {
     if (args?.override === true) qs.set("override", "true");
     const r = await this._fetch(
       "backlog_execute",
-      `/api/gateway/backlog/${encodeURIComponent(kind)}/${encodeURIComponent(filename)}/execute${qs.toString() ? `?${qs.toString()}` : ""}`,
+      `api/gateway/backlog/${encodeURIComponent(kind)}/${encodeURIComponent(filename)}/execute${qs.toString() ? `?${qs.toString()}` : ""}`,
       { method: "POST" }
     );
     return await r.json();
@@ -817,11 +816,11 @@ export class GatewayClient {
     if (target_reasoning_effort) body.target_reasoning_effort = target_reasoning_effort;
     if (args?.dor === "check") body.dor = "check";
     if (args?.override === true) body.override = true;
-    return await this._post_json("backlog_execute_batch", "/api/gateway/backlog/execute_batch", body);
+    return await this._post_json("backlog_execute_batch", "api/gateway/backlog/execute_batch", body);
   }
 
   async backlog_exec_config(): Promise<BacklogExecConfigResponse> {
-    return await this._get_json("backlog_exec_config", "/api/gateway/backlog/exec/config");
+    return await this._get_json("backlog_exec_config", "api/gateway/backlog/exec/config");
   }
 
   async backlog_exec_requests(opts?: { status?: string; limit?: number }): Promise<BacklogExecRequestListResponse> {
@@ -829,7 +828,7 @@ export class GatewayClient {
     const status = String(opts?.status || "").trim();
     if (status) qs.set("status", status);
     qs.set("limit", String(typeof opts?.limit === "number" && Number.isFinite(opts.limit) ? Number(opts.limit) : 200));
-    return await this._get_json("backlog_exec_requests", `/api/gateway/backlog/exec/requests?${qs.toString()}`);
+    return await this._get_json("backlog_exec_requests", `api/gateway/backlog/exec/requests?${qs.toString()}`);
   }
 
   async backlog_exec_request(request_id: string, opts?: { include_prompt?: boolean }): Promise<BacklogExecRequestDetailResponse> {
@@ -837,7 +836,7 @@ export class GatewayClient {
     if (!rid) throw new Error("backlog_exec_request: request_id is required");
     const qs = new URLSearchParams();
     if (opts?.include_prompt === true) qs.set("include_prompt", "true");
-    return await this._get_json("backlog_exec_request", `/api/gateway/backlog/exec/requests/${encodeURIComponent(rid)}?${qs.toString()}`);
+    return await this._get_json("backlog_exec_request", `api/gateway/backlog/exec/requests/${encodeURIComponent(rid)}?${qs.toString()}`);
   }
 
   async backlog_exec_feedback(args: { request_id: string; feedback: string }): Promise<BacklogExecRequestDetailResponse> {
@@ -845,7 +844,7 @@ export class GatewayClient {
     if (!rid) throw new Error("backlog_exec_feedback: request_id is required");
     const feedback = String(args?.feedback ?? "");
     if (!feedback.trim()) throw new Error("backlog_exec_feedback: feedback is required");
-    return await this._post_json("backlog_exec_feedback", `/api/gateway/backlog/exec/requests/${encodeURIComponent(rid)}/feedback`, { feedback });
+    return await this._post_json("backlog_exec_feedback", `api/gateway/backlog/exec/requests/${encodeURIComponent(rid)}/feedback`, { feedback });
   }
 
   async backlog_exec_promote(args: { request_id: string; redeploy?: boolean }): Promise<BacklogExecRequestDetailResponse> {
@@ -853,13 +852,13 @@ export class GatewayClient {
     if (!rid) throw new Error("backlog_exec_promote: request_id is required");
     const body: any = {};
     if (args?.redeploy === true) body.redeploy = true;
-    return await this._post_json("backlog_exec_promote", `/api/gateway/backlog/exec/requests/${encodeURIComponent(rid)}/promote`, body);
+    return await this._post_json("backlog_exec_promote", `api/gateway/backlog/exec/requests/${encodeURIComponent(rid)}/promote`, body);
   }
 
   async backlog_exec_deploy_uat(args: { request_id: string }): Promise<BacklogExecRequestDetailResponse> {
     const rid = String(args?.request_id || "").trim();
     if (!rid) throw new Error("backlog_exec_deploy_uat: request_id is required");
-    return await this._post_json("backlog_exec_deploy_uat", `/api/gateway/backlog/exec/requests/${encodeURIComponent(rid)}/uat/deploy`, {});
+    return await this._post_json("backlog_exec_deploy_uat", `api/gateway/backlog/exec/requests/${encodeURIComponent(rid)}/uat/deploy`, {});
   }
 
   async backlog_exec_log_tail(args: { request_id: string; name?: string; max_bytes?: number; after_bytes?: number }): Promise<BacklogExecLogTailResponse> {
@@ -875,7 +874,7 @@ export class GatewayClient {
     // reset=true means the cursor is past EOF (rotation) — start over.
     const after_bytes = typeof args?.after_bytes === "number" && Number.isFinite(args.after_bytes) ? Math.max(0, Math.floor(args.after_bytes)) : null;
     if (after_bytes !== null) qs.set("after_bytes", String(after_bytes));
-    return await this._get_json("backlog_exec_log_tail", `/api/gateway/backlog/exec/requests/${encodeURIComponent(rid)}/logs/tail?${qs.toString()}`);
+    return await this._get_json("backlog_exec_log_tail", `api/gateway/backlog/exec/requests/${encodeURIComponent(rid)}/logs/tail?${qs.toString()}`);
   }
 
   async backlog_exec_active_items(opts?: { status?: string; limit?: number }): Promise<BacklogExecActiveItemsResponse> {
@@ -883,14 +882,14 @@ export class GatewayClient {
     const status = String(opts?.status || "").trim();
     if (status) qs.set("status", status);
     qs.set("limit", String(typeof opts?.limit === "number" && Number.isFinite(opts.limit) ? Number(opts.limit) : 600));
-    return await this._get_json("backlog_exec_active_items", `/api/gateway/backlog/exec/active_items?${qs.toString()}`);
+    return await this._get_json("backlog_exec_active_items", `api/gateway/backlog/exec/active_items?${qs.toString()}`);
   }
 
   // ------------------------------------------------- discovery + entities
 
   /** Providers configured on the gateway (discovery lane). */
   async discovery_providers(): Promise<DiscoveryProvidersResponse> {
-    const r = await this._fetch("discovery_providers", "/api/gateway/discovery/providers");
+    const r = await this._fetch("discovery_providers", "api/gateway/discovery/providers");
     return (await r.json()) as DiscoveryProvidersResponse;
   }
 
@@ -902,7 +901,7 @@ export class GatewayClient {
   async discovery_model_capabilities(model_name: string): Promise<{ model?: string; capabilities?: Record<string, any>; error?: string }> {
     const name = String(model_name || "").trim();
     if (!name) throw new Error("discovery_model_capabilities: model_name is required");
-    const r = await this._fetch("discovery_model_capabilities", `/api/gateway/discovery/models/capabilities?model_name=${encodeURIComponent(name)}`);
+    const r = await this._fetch("discovery_model_capabilities", `api/gateway/discovery/models/capabilities?model_name=${encodeURIComponent(name)}`);
     return await r.json();
   }
 
@@ -910,13 +909,13 @@ export class GatewayClient {
   async discovery_provider_models(provider: string): Promise<DiscoveryProviderModelsResponse> {
     const name = String(provider || "").trim();
     if (!name) throw new Error("discovery_provider_models: provider is required");
-    const r = await this._fetch("discovery_provider_models", `/api/gateway/discovery/providers/${encodeURIComponent(name)}/models`);
+    const r = await this._fetch("discovery_provider_models", `api/gateway/discovery/providers/${encodeURIComponent(name)}/models`);
     return (await r.json()) as DiscoveryProviderModelsResponse;
   }
 
   /** Summoned entities hosted on this gateway (workforce roster). */
   async list_entities(): Promise<EntityListResponse> {
-    const r = await this._fetch("list_entities", "/api/gateway/entities");
+    const r = await this._fetch("list_entities", "api/gateway/entities");
     return (await r.json()) as EntityListResponse;
   }
 
@@ -927,13 +926,13 @@ export class GatewayClient {
 
   /** Authoritative runtime-config posture with per-knob source chain. */
   async admin_runtime_config(): Promise<AdminRuntimeConfigResponse> {
-    const r = await this._fetch("admin_runtime_config", "/api/gateway/admin/runtime-config");
+    const r = await this._fetch("admin_runtime_config", "api/gateway/admin/runtime-config");
     return (await r.json()) as AdminRuntimeConfigResponse;
   }
 
   /** Executor registry (pluggable executors: codex/claude-code/…). */
   async admin_executors(): Promise<AdminExecutorsResponse> {
-    const r = await this._fetch("admin_executors", "/api/gateway/admin/executors");
+    const r = await this._fetch("admin_executors", "api/gateway/admin/executors");
     return (await r.json()) as AdminExecutorsResponse;
   }
 
@@ -947,7 +946,7 @@ export class GatewayClient {
     backlog_exec_runner?: boolean | null;
     executor?: string;
   }): Promise<AdminRuntimeConfigResponse> {
-    const r = await this._fetch("admin_runtime_config_update", "/api/gateway/admin/runtime-config", {
+    const r = await this._fetch("admin_runtime_config_update", "api/gateway/admin/runtime-config", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch || {}),
@@ -960,7 +959,7 @@ export class GatewayClient {
    *  operator-readable 4xx (asleep entity, held lease, non-admin) —
    *  render them verbatim; the gateway is the authority. */
   async entity_state(name: string, args: { state: "awake" | "asleep"; reason?: string }): Promise<any> {
-    const r = await this._fetch("entity_state", `/api/gateway/entities/${encodeURIComponent(name)}/state`, {
+    const r = await this._fetch("entity_state", `api/gateway/entities/${encodeURIComponent(name)}/state`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(args),
@@ -972,7 +971,7 @@ export class GatewayClient {
    *  payload (gateway c3038 dispatch; SERVER truth — the console renders,
    *  never re-derives the trust gate). */
   async entity_skills(name: string): Promise<{ selection?: any; resolved?: any; matrix?: unknown }> {
-    const r = await this._fetch("entity_skills", `/api/gateway/entities/${encodeURIComponent(name)}/skills`);
+    const r = await this._fetch("entity_skills", `api/gateway/entities/${encodeURIComponent(name)}/skills`);
     return await r.json();
   }
 
@@ -980,7 +979,7 @@ export class GatewayClient {
    *  list; empty deselects everything). Response = the resolved view, so
    *  a typo'd name or blocked skill is visible the moment it is written. */
   async put_entity_skills(name: string, skills: Array<{ name: string; phases?: string[] }>): Promise<{ selection?: any; resolved?: any; matrix?: unknown }> {
-    const r = await this._fetch("put_entity_skills", `/api/gateway/entities/${encodeURIComponent(name)}/skills`, {
+    const r = await this._fetch("put_entity_skills", `api/gateway/entities/${encodeURIComponent(name)}/skills`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ skills }),
@@ -994,14 +993,14 @@ export class GatewayClient {
    *  /api/gateway/workflows 404'd and silently fell back to the text
    *  input — operator caught it 21:43). */
   async list_bundles(): Promise<any> {
-    const r = await this._fetch("list_bundles", "/api/gateway/bundles");
+    const r = await this._fetch("list_bundles", "api/gateway/bundles");
     return await r.json();
   }
 
   /** Registered data homes (read-only telemetry slice, c1580 ask 3 /
    *  c1729 claim; purge stays the gateway console's surface). */
   async admin_data_homes(): Promise<DataHomesResponse> {
-    const r = await this._fetch("admin_data_homes", "/api/gateway/admin/data-homes");
+    const r = await this._fetch("admin_data_homes", "api/gateway/admin/data-homes");
     return (await r.json()) as DataHomesResponse;
   }
 
@@ -1010,15 +1009,15 @@ export class GatewayClient {
   /** Versions the gateway reports for the About dialog (public route, no
    *  secrets or paths): `{ abstractframework, abstractgateway, packages }`. */
   async gateway_about(): Promise<any> {
-    return await this._get_json("gateway_about", "/api/gateway/about");
+    return await this._get_json("gateway_about", "api/gateway/about");
   }
 
   async list_processes(): Promise<ProcessListResponse> {
-    return await this._get_json("list_processes", "/api/gateway/processes");
+    return await this._get_json("list_processes", "api/gateway/processes");
   }
 
   async list_process_env_vars(): Promise<ManagedEnvVarListResponse> {
-    return await this._get_json("list_process_env_vars", "/api/gateway/processes/env");
+    return await this._get_json("list_process_env_vars", "api/gateway/processes/env");
   }
 
   async update_process_env_vars(args: { set?: Record<string, string>; unset?: string[] }): Promise<ManagedEnvVarListResponse> {
@@ -1027,27 +1026,27 @@ export class GatewayClient {
     const unset0 = Array.isArray(args?.unset) ? args?.unset : [];
     if (set0 && Object.keys(set0).length) req_body.set = set0;
     if (unset0 && unset0.length) req_body.unset = unset0;
-    return await this._post_json("update_process_env_vars", "/api/gateway/processes/env", req_body);
+    return await this._post_json("update_process_env_vars", "api/gateway/processes/env", req_body);
   }
 
   async start_process(process_id: string): Promise<ProcessActionResponse> {
     const pid = String(process_id || "").trim();
-    return await this._post_json("start_process", `/api/gateway/processes/${encodeURIComponent(pid)}/start`);
+    return await this._post_json("start_process", `api/gateway/processes/${encodeURIComponent(pid)}/start`);
   }
 
   async stop_process(process_id: string): Promise<ProcessActionResponse> {
     const pid = String(process_id || "").trim();
-    return await this._post_json("stop_process", `/api/gateway/processes/${encodeURIComponent(pid)}/stop`);
+    return await this._post_json("stop_process", `api/gateway/processes/${encodeURIComponent(pid)}/stop`);
   }
 
   async restart_process(process_id: string): Promise<ProcessActionResponse> {
     const pid = String(process_id || "").trim();
-    return await this._post_json("restart_process", `/api/gateway/processes/${encodeURIComponent(pid)}/restart`);
+    return await this._post_json("restart_process", `api/gateway/processes/${encodeURIComponent(pid)}/restart`);
   }
 
   async redeploy_process(process_id: string): Promise<ProcessActionResponse> {
     const pid = String(process_id || "").trim();
-    return await this._post_json("redeploy_process", `/api/gateway/processes/${encodeURIComponent(pid)}/redeploy`);
+    return await this._post_json("redeploy_process", `api/gateway/processes/${encodeURIComponent(pid)}/redeploy`);
   }
 
   async process_log_tail(process_id: string, opts?: { max_bytes?: number }): Promise<ProcessLogTailResponse> {
@@ -1055,7 +1054,7 @@ export class GatewayClient {
     const max_bytes = typeof opts?.max_bytes === "number" ? Math.max(1024, Math.min(400000, Math.floor(opts.max_bytes))) : 80000;
     return await this._get_json(
       "process_log_tail",
-      `/api/gateway/processes/${encodeURIComponent(pid)}/logs/tail?max_bytes=${encodeURIComponent(String(max_bytes))}`
+      `api/gateway/processes/${encodeURIComponent(pid)}/logs/tail?max_bytes=${encodeURIComponent(String(max_bytes))}`
     );
   }
 }

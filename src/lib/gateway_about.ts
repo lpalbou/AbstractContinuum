@@ -12,7 +12,7 @@ export type { AboutRow };
 
 export const GATEWAY_ABOUT_LOADING: AboutRow[] = [["Gateway", "checking…"]];
 
-/** Why `/api/gateway/about` could not be read: the HTTP status and detail,
+/** Why `api/gateway/about` could not be read: the HTTP status and detail,
  *  or the network error's message. */
 export function gateway_about_error_reason(err: unknown): string {
   if (err instanceof GatewayRequestError) {

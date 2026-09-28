@@ -54,7 +54,7 @@ file that is not valid JSON stops the start with a message naming it.
 | --- | --- | --- | --- | --- |
 | `--port <n>` | `port` | `3002` | HTTP port | `PORT` |
 | `--host <address>` | `host` | `127.0.0.1` | Bind address (loopback by default; use `0.0.0.0` only behind your own access control) | `HOST` |
-| `--gateway-url <url>` | `gateway_url` | `http://127.0.0.1:8080` | Gateway this deployment talks to | `ABSTRACTCONTINUUM_GATEWAY_URL`, `ABSTRACTGATEWAY_URL` |
+| `--gateway-url <url>` (aliases `--gateway`, `--url`) | `gateway_url` | the gateway installed on this computer (`~/.abstractframework/gateway.json`), else `http://127.0.0.1:8080` | Gateway this deployment talks to | `ABSTRACTCONTINUUM_GATEWAY_URL`, `ABSTRACTGATEWAY_URL` |
 | `--hub-url <url>` | `hub_url` | `http://127.0.0.1:8765` | Agora hub for the Team page | `ABSTRACTCONTINUUM_HUB_URL`, `AGORA_HUB_URL` |
 | `--hub-seat <seat>` | `hub_seat` | `operator` | The seat the Team page reads and posts as — set it to your own seat (also on the Settings page) | `ABSTRACTCONTINUUM_HUB_SEAT` |
 | `--hub-token <token>`, `--hub-token-file <path>` | `hub_token` | none | Seat API key; overrides the key store. Prefer the file form: a flag value is visible in the process list | `ABSTRACTCONTINUUM_HUB_KEY` |
@@ -73,6 +73,34 @@ The last column is for existing setups only: those variables are still
 read when neither a flag nor a setting gives the value, and Settings and
 `config get` report them as *environment (legacy)*. Saving a setting
 replaces them.
+
+When no flag, setting or environment variable names a gateway, Continuum
+uses the gateway installed on this computer: `abstractgateway serve` and the
+AbstractFramework installer record its address in
+`~/.abstractframework/gateway.json`, and `config get` reports the value as
+*the gateway installed on this computer*. A running Continuum re-reads that
+file when the gateway refuses a connection, so it follows a gateway that
+moved to another port. A gateway URL you chose (flag, setting, environment)
+never moves.
+
+### Serving through the gateway (`/apps/continuum/`)
+
+A gateway that manages Continuum serves it at `/apps/continuum/` on the
+gateway's own address; the gateway starts Continuum on `127.0.0.1` with
+`--port`, `--host` and `--gateway-url` and relays every request, the Team
+page's WebSocket included. Nothing needs configuring: the same build serves
+at `/` on Continuum's own port and at `/apps/continuum/` through the
+gateway.
+
+- The page, its assets and every request it makes use addresses relative
+  to the page, so they stay under `/apps/continuum/`.
+- Continuum's cookies carry `Path=/apps/continuum/`.
+- The checks that only a browser on this computer passes (the hub proxy,
+  the Settings route, a browser-chosen gateway URL) judge the browser's
+  address as the gateway reports it. A browser on another machine that
+  opens Continuum through the gateway can use the gateway-backed pages;
+  the Team page's hub proxy refuses it unless you start Continuum with
+  `--hub-allow-remote`.
 
 ## Team page (agora hub)
 

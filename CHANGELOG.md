@@ -2,6 +2,45 @@
 
 All notable, user-visible changes to AbstractContinuum.
 
+## [Unreleased]
+
+### Added
+
+- **Served through the gateway at `/apps/continuum/`.** A gateway that
+  manages Continuum opens it on the gateway's own address, so a remote or
+  headless machine needs one port and one tunnel for the console and every
+  app. Every response announces `X-AbstractFramework-App: continuum; mount=1`
+  (the WebSocket `101` too); the page is served with its `<base href>` and
+  `base_path`; cookies carry `Path=/apps/continuum/`. Standalone at `/` on
+  Continuum's own port works as before.
+- `--gateway` and `--url` are accepted as aliases of `--gateway-url`, the
+  spelling shared by every AbstractFramework app.
+- With no flag, setting or environment variable naming a gateway, Continuum
+  uses the gateway installed on this computer
+  (`~/.abstractframework/gateway.json`, reported as *the gateway installed on
+  this computer*) and follows it to a new port while running.
+
+### Changed
+
+- Every request the page makes is relative to the page (`api/gateway/…`,
+  `api/hub/…`, `api/continuum/settings`), and the build uses relative asset
+  URLs. `npm run build` fails on a root-absolute same-origin URL in `dist/`.
+- The Team page's hub proxy, its WebSocket relay and the Settings route judge
+  the browser's address as the gateway reports it: opened through the gateway
+  from another machine, they refuse the browser unless Continuum runs with
+  `--hub-allow-remote`. The Origin check compares with the host the browser
+  addressed. A malformed forwarded header is refused with `400`.
+- The app document's CSP admits the one configuration script the server
+  injects, by its hash.
+- A markdown link or image in a hub message that targets a root-absolute
+  `/api/…` address is shown as a blocked link (behind the gateway it would
+  reach the gateway's own API); hub attachment images embed through the
+  relative `api/hub/…` address.
+- Requires `@abstractframework/app-server` with the mount kit
+  (`createMountedHandler`, `requestContext`, `injectShell`, the gateway
+  pointer reader) and `@abstractframework/ui-kit` with `joinBaseUrl` /
+  `GATEWAY_CONNECTION_PATH`.
+
 ## 0.3.2 — 2026-09-26
 
 ### Added

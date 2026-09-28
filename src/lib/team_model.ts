@@ -380,7 +380,8 @@ export function extract_fs_paths(text: string): string[] {
     // before the match — cheap context check on the source string.
     const at = m.index === undefined ? -1 : m.index;
     const before = at >= 0 ? String(text).slice(Math.max(0, at - 12), at + 1) : "";
-    if (before.includes("://") || before.includes("/api/")) continue;
+    // (a context test on the message text, not a URL this app builds)
+    if (before.includes("://") || /\/api\//.test(before)) continue;
     if (!out.includes(p)) out.push(p);
     if (out.length >= FS_PATH_CAP) break;
   }
@@ -581,7 +582,7 @@ function rewrite_hub_url(url: string, hub_base: string): string {
   if (!url.startsWith(base + "/")) return url;
   const path = url.slice(base.length);
   const m = path.match(/^\/channels\/([^/]+)\/attachments\/([A-Za-z0-9_.-]+)$/);
-  if (m) return `/api/hub/channels/${m[1]}/attachments/${m[2]}`;
+  if (m) return `api/hub/channels/${m[1]}/attachments/${m[2]}`;
   return url;
 }
 
@@ -639,7 +640,9 @@ export function autolink_body(text: string, opts?: { hub_base?: string; app_orig
           }
           const resolved = rewrite_hub_url(trimmed, hub_base);
           const is_image = IMAGE_EXT_RE.test(pathname);
-          const is_internal = resolved.startsWith("/") || (app_origin !== "" && resolved.startsWith(app_origin + "/"));
+          // Internal = rewritten onto this app's proxy path (relative), or
+          // already on the app's own origin.
+          const is_internal = resolved !== trimmed || (app_origin !== "" && resolved.startsWith(app_origin + "/"));
           if (is_image && is_internal) return `![image](${resolved})${tail}`;
           return `[${trimmed}](${resolved})${tail}`;
         })
@@ -653,13 +656,13 @@ export function autolink_body(text: string, opts?: { hub_base?: string; app_orig
 
 /** The ONLY same-origin path a message is allowed to EMBED or LINK: a hub
  *  attachment blob (content-addressed, side-effect-free GET). */
-const SAFE_ATTACHMENT_RE = /^\/api\/hub\/channels\/[^/]+\/attachments\/[A-Za-z0-9_-]+$/;
+const SAFE_ATTACHMENT_RE = /^api\/hub\/channels\/[^/]+\/attachments\/[A-Za-z0-9_-]+$/;
 
 /** A same-origin proxy path that is NOT a safe attachment. These reach the
  *  hub through the operator's seat key, and some are SIDE-EFFECTING GETs —
  *  `GET /channels/{c}/messages/{id}` is the hub's read_message (records a
  *  read, unpins criticals). CSP is `img-src 'self'`, so the kit rendering
- *  `![x](/api/hub/.../messages/id)` from an untrusted message body emits an
+ *  `![x](api/hub/.../messages/id)` from an untrusted message body emits an
  *  <img> that fires that GET the instant the operator VIEWS the message —
  *  a zero-click read-receipt forgery on his seat (verified live).
  *
@@ -671,8 +674,16 @@ const SAFE_ATTACHMENT_RE = /^\/api\/hub\/channels\/[^/]+\/attachments\/[A-Za-z0-
  *  after the check. SAFE_ATTACHMENT_RE is anchored + strict-charset so it
  *  already rejects both, but we assert them explicitly as a named guard. */
 function is_dangerous_same_origin(url: string): boolean {
-  const u = url.trim();
-  if (!u.startsWith("/api/")) return false; // external is CSP-bounded; relative /api is the vector
+  const raw = url.trim();
+  // Same-origin spellings of an API route: relative ("api/…", "./api/…",
+  // resolved under the app's base) and root-absolute (a leading "/" before api/…: the host
+  // root — behind the gateway, the gateway's own API). Both are the vector;
+  // external URLs are CSP-bounded.
+  const u = raw.replace(/^\.\//, "").replace(/^\//, "");
+  if (!u.startsWith("api/")) return false;
+  // Root-absolute escapes the app's base (behind the gateway it names the
+  // gateway's own API): never an embed this app produces.
+  if (raw.startsWith("/")) return true;
   if (/\s/.test(u) || u.includes("..")) return true; // browser-normalizes into another route
   return !SAFE_ATTACHMENT_RE.test(u);
 }
@@ -690,7 +701,7 @@ function is_dangerous_same_origin(url: string): boolean {
  *  kit still emitted and the browser then normalized into a live route
  *  (adversary b22b19ed P1). Matching the renderer's boundary closes it. */
 export function neutralize_unsafe_embeds(text: string): string {
-  if (!text || !text.includes("/api/")) return text;
+  if (!text || !text.includes("api/")) return text;
   const MD_LINK_OR_IMG = /(!?)\[([^\]]*)\]\(([^)]+)\)/g;
   return text.replace(MD_LINK_OR_IMG, (whole, _bang, alt, url) => {
     if (!is_dangerous_same_origin(String(url))) return whole;

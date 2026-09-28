@@ -82,7 +82,11 @@ abstractcontinuum
 ```
 
 Open `http://localhost:3002` and sign in with a gateway user and token (the
-connection badge at the bottom of the sidebar). The token is exchanged
+connection badge at the bottom of the sidebar). When your gateway manages
+Continuum (the gateway console's **Apps** screen), open it from there
+instead: the gateway serves it at `/apps/continuum/` on its own port, so a
+remote or headless machine needs one port and one tunnel for the console and
+every app. The token is exchanged
 server-side for an HttpOnly session cookie and never stored in the browser.
 
 The server is configured with launch flags or saved settings (full list in
@@ -95,8 +99,9 @@ abstractcontinuum config get                   # every setting and where it come
 ```
 
 - `--port` (default `3002`), `--host` (default `127.0.0.1`)
-- `--gateway-url` — the gateway this deployment talks to (default
-  `http://127.0.0.1:8080`)
+- `--gateway-url` (aliases `--gateway`, `--url`) — the gateway this
+  deployment talks to (default: the gateway installed on this computer, from
+  `~/.abstractframework/gateway.json`, else `http://127.0.0.1:8080`)
 - `--hub-url` / `--hub-seat` / `--hub-token-file` — the agora hub, your seat
   and its key for the Team page. The hub seat is also on the Settings page.
 
@@ -168,8 +173,9 @@ MIT — see [LICENSE](LICENSE).
 npx @abstractframework/continuum --gateway-url http://127.0.0.1:8080
 ```
 
-`--gateway-url` is only needed when your gateway is not on the default
-`http://127.0.0.1:8080`. To keep a setting, save it instead of repeating the
+`--gateway-url` is only needed when your gateway is neither the one
+installed on this computer (Continuum reads its address from
+`~/.abstractframework/gateway.json`) nor on `http://127.0.0.1:8080`. To keep a setting, save it instead of repeating the
 flag: `abstractcontinuum config set gateway_url http://my-gateway:8080`
 (`abstractcontinuum --help` lists every flag;
 [configuration.md](configuration.md#server-abstractcontinuum--npm-start--binclijs)
@@ -324,6 +330,40 @@ The Team page uses the same
 origin: `/api/hub/*` and the `/api/hub/ws` WebSocket are served by the hub
 proxy, which attaches the operator seat's key server-side.
 
+## Serving under the gateway (`/apps/continuum/`)
+
+The same server runs at `/` on its own port and behind the gateway's
+`/apps/continuum/`. It follows the `@abstractframework/app-server` mount
+contract.
+
+```mermaid
+flowchart LR
+    B[Browser] -- "/apps/continuum/…<br/>(gateway session cookie)" --> G[AbstractGateway<br/>app proxy]
+    G -- "path without /apps/continuum<br/>X-Forwarded-Prefix / -For / -Host / -Proto" --> S["bin/server.js<br/>(127.0.0.1)"]
+    S -- "X-AbstractFramework-App: continuum; mount=1" --> G
+    S --> RG[bin/request_gate.js<br/>browser address + Origin check]
+    RG --> HP[hub proxy + /api/hub/ws]
+    RG --> SR[Settings route]
+    S --> SP[session proxy<br/>cookies Path=/apps/continuum/]
+```
+
+- **Identity.** Every response, the WebSocket `101` included, carries
+  `X-AbstractFramework-App: continuum; mount=1`; the gateway relays only an
+  app that announces it.
+- **Base path.** The page is served with `<base href="/apps/continuum/">`
+  (or `/` standalone) and `base_path` in `window.__ABSTRACT_UI_CONFIG__`.
+  The build uses relative asset URLs (Vite `base: "./"`), every request the
+  UI makes is relative (`api/gateway/…`, `api/hub/…`,
+  `api/continuum/settings`, the relay at `api/hub/ws` resolved against
+  `document.baseURI`), and `npm run build` fails on any root-absolute
+  same-origin URL in `dist/` (`scripts/check_relative_urls.mjs`). The CSP
+  admits the one injected configuration script by its hash.
+- **Who is asking.** `bin/request_gate.js` asks the kit's
+  `requestContext(req)`: the socket peer, or, from a loopback peer (the
+  gateway), the browser address it forwarded. The Origin check compares the
+  browser's `Origin` with the host the browser addressed (the forwarded host
+  behind the gateway). A malformed forwarded header is refused with `400`.
+
 ## Gateway settings and the backlog folder
 
 The gateway, not this app, owns the settings that decide which pages have
@@ -443,9 +483,12 @@ src/
     backlog_folder.tsx        backlog folder state panel (empty / not available + admin actions)
     memo_markdown.tsx, mermaid_block.tsx   markdown + mermaid rendering
     modal.tsx, multi_select.tsx, error_boundary.tsx   shared widgets
-bin/cli.js                    static serve + session proxy + hub proxy mount + `config` command
-bin/settings.js               server settings: flags, settings file, precedence, Settings route
+bin/cli.js                    launch flags, `config` command, starts the server
+bin/server.js                 static serve (base href + CSP) + session proxy + hub proxy + Settings route, mountable at /apps/continuum/
+bin/request_gate.js           "browser on this computer?" + Origin check (kit requestContext)
+bin/settings.js               server settings: flags, settings file, precedence (+ gateway pointer), Settings route
 bin/hub_proxy.js              allowlisted agora hub proxy (HTTP + WebSocket)
+scripts/check_relative_urls.mjs  fails on a root-absolute same-origin URL in src/ or dist/
 vendor/hub/                   vendored hub OpenAPI + golden conformance vectors
 ```
 
@@ -599,8 +642,10 @@ gateway console's *Backlog settings*; see
 
 ## Session endpoints (bundled server)
 
-`bin/cli.js` (via `@abstractframework/app-server`, appId
-`abstractcontinuum`):
+`bin/server.js` (via `@abstractframework/app-server`, appId
+`abstractcontinuum`; every response carries
+`X-AbstractFramework-App: continuum; mount=1`, and behind the gateway every
+path below is under `/apps/continuum/`):
 
 - `GET /api/connection/gateway` — session status (`{ok, gateway_url, has_session, gateway}`)
 - `POST /api/connection/gateway` — sign in `{gateway_url?, gateway_user_id, gateway_token, persist?}`
@@ -621,21 +666,27 @@ gateway console's *Backlog settings*; see
 - `GET /api/hub/ws` (WebSocket upgrade) — live hub updates relayed with the
   seat key attached server-side
 
-Loopback peers only unless Continuum runs with `--hub-allow-remote` (setting
-`hub_allow_remote`); browser requests whose `Origin` does not match the host
-are rejected. The hub
+Browsers on this computer only unless Continuum runs with
+`--hub-allow-remote` (setting `hub_allow_remote`). Behind the gateway the
+browser's address is the one the gateway forwards, so a browser on another
+machine is refused (`403 hub_proxy_non_loopback`) even though the
+connection comes from the gateway. Browser requests whose `Origin` does not
+match the host the browser addressed are rejected; the WebSocket answers
+`403` for both, `400` for a malformed forwarded header. The hub
 contract the client is typed against is vendored in `vendor/hub/`.
 
 ## Server settings endpoint (bundled server, Settings page)
 
 - `GET /api/continuum/settings` — `{settings, writable, settings_file}`:
   every server setting as `{value, source}` (`source` is `flag`, `setting`,
-  `env` or `default`); the hub token only as `{set, source}`
+  `env`, `pointer` — the gateway installed on this computer — or
+  `default`); the hub token only as `{set, source}`
 - `PUT /api/continuum/settings` — `{"hub_seat": "<seat>"}` saves the seat
   to the settings file (`null` removes it); answers the fresh view. Other
   settings are refused here (`abstractcontinuum config set`)
 
-Loopback peers and same-origin browser requests only; writes need
+Browsers on this computer (the forwarded address behind the gateway) and
+same-origin browser requests only; writes need
 `Content-Type: application/json`.
 
 ## Notes
@@ -712,7 +763,7 @@ file that is not valid JSON stops the start with a message naming it.
 | --- | --- | --- | --- | --- |
 | `--port <n>` | `port` | `3002` | HTTP port | `PORT` |
 | `--host <address>` | `host` | `127.0.0.1` | Bind address (loopback by default; use `0.0.0.0` only behind your own access control) | `HOST` |
-| `--gateway-url <url>` | `gateway_url` | `http://127.0.0.1:8080` | Gateway this deployment talks to | `ABSTRACTCONTINUUM_GATEWAY_URL`, `ABSTRACTGATEWAY_URL` |
+| `--gateway-url <url>` (aliases `--gateway`, `--url`) | `gateway_url` | the gateway installed on this computer (`~/.abstractframework/gateway.json`), else `http://127.0.0.1:8080` | Gateway this deployment talks to | `ABSTRACTCONTINUUM_GATEWAY_URL`, `ABSTRACTGATEWAY_URL` |
 | `--hub-url <url>` | `hub_url` | `http://127.0.0.1:8765` | Agora hub for the Team page | `ABSTRACTCONTINUUM_HUB_URL`, `AGORA_HUB_URL` |
 | `--hub-seat <seat>` | `hub_seat` | `operator` | The seat the Team page reads and posts as — set it to your own seat (also on the Settings page) | `ABSTRACTCONTINUUM_HUB_SEAT` |
 | `--hub-token <token>`, `--hub-token-file <path>` | `hub_token` | none | Seat API key; overrides the key store. Prefer the file form: a flag value is visible in the process list | `ABSTRACTCONTINUUM_HUB_KEY` |
@@ -731,6 +782,34 @@ The last column is for existing setups only: those variables are still
 read when neither a flag nor a setting gives the value, and Settings and
 `config get` report them as *environment (legacy)*. Saving a setting
 replaces them.
+
+When no flag, setting or environment variable names a gateway, Continuum
+uses the gateway installed on this computer: `abstractgateway serve` and the
+AbstractFramework installer record its address in
+`~/.abstractframework/gateway.json`, and `config get` reports the value as
+*the gateway installed on this computer*. A running Continuum re-reads that
+file when the gateway refuses a connection, so it follows a gateway that
+moved to another port. A gateway URL you chose (flag, setting, environment)
+never moves.
+
+### Serving through the gateway (`/apps/continuum/`)
+
+A gateway that manages Continuum serves it at `/apps/continuum/` on the
+gateway's own address; the gateway starts Continuum on `127.0.0.1` with
+`--port`, `--host` and `--gateway-url` and relays every request, the Team
+page's WebSocket included. Nothing needs configuring: the same build serves
+at `/` on Continuum's own port and at `/apps/continuum/` through the
+gateway.
+
+- The page, its assets and every request it makes use addresses relative
+  to the page, so they stay under `/apps/continuum/`.
+- Continuum's cookies carry `Path=/apps/continuum/`.
+- The checks that only a browser on this computer passes (the hub proxy,
+  the Settings route, a browser-chosen gateway URL) judge the browser's
+  address as the gateway reports it. A browser on another machine that
+  opens Continuum through the gateway can use the gateway-backed pages;
+  the Team page's hub proxy refuses it unless you start Continuum with
+  `--hub-allow-remote`.
 
 ## Team page (agora hub)
 
@@ -846,7 +925,7 @@ for people with deploy rights.
    gateway principal; the app is a client, never a bypass.
 2. **App-origin session proxy** (`bin/cli.js`) — the browser never holds the
    gateway token. Sign-in happens server-side; the session id lives in an
-   HttpOnly cookie scoped to this app's origin; the proxy strips any
+   HttpOnly cookie scoped to this app's origin and path (`/apps/continuum/` behind the gateway); the proxy strips any
    client-supplied `Authorization`/cookie headers before forwarding. With
    `@abstractframework/app-server` 0.1.10 or newer, the proxy also sets
    `X-Forwarded-For` to the browser's connection address (never a
@@ -859,21 +938,28 @@ for people with deploy rights.
    `x-abstractcontinuum-csrf` (or canonical `x-abstract-csrf`); the proxy
    rejects mismatches with 403.
 4. **Gateway URL pinning** — browsers cannot redirect the proxy to another
-   gateway unless the request comes from loopback or an operator explicitly
-   enabled remote config (see [configuration.md](configuration.md)).
-5. **Write-only env vars** — the gateway never returns managed env var
+   gateway unless the browser runs on this computer or an operator
+   explicitly enabled remote config (see [configuration.md](configuration.md)).
+5. **Local-only routes judge the browser** — the hub proxy (which authors as
+   the operator seat), its WebSocket relay and the Settings route answer a
+   browser on this computer only. Behind the gateway's `/apps/continuum/`
+   every connection comes from the gateway, so the decision uses the
+   browser address the gateway forwards; forwarded headers are believed only
+   from a loopback peer, and a malformed one is refused.
+6. **Write-only env vars** — the gateway never returns managed env var
    values; the UI can set/unset but never read them back.
-6. **Feature gating** — the process manager and exec worker exist only when
+7. **Feature gating** — the process manager and exec worker exist only when
    the gateway admin turned them on (the `process_manager` and
    `backlog_exec_runner` settings, off by default; only a gateway admin can
    change them, from Settings → Gateway administration or
    `abstractgateway config set`).
-7. **Content-Security-Policy on the app document** — the Team page renders
+8. **Content-Security-Policy on the app document** — the Team page renders
    untrusted content (hub messages, channel fs files, attachments) as
    markdown. The renderer emits only React elements (no raw-HTML pass, no
    `javascript:` links), and the prod server adds a CSP backstop:
    `img-src 'self' data:` blocks remote-image beacons from untrusted
-   markdown, `script-src 'self'` blocks any script injection class,
+   markdown, `script-src 'self'` plus the hash of the one configuration
+   script the server injects blocks any script injection class,
    `object-src 'none'` and `frame-ancestors 'none'` close embed vectors.
    Inline text previews are size-capped (256 KiB; larger files download)
    so pathological input cannot freeze the tab. Note: the Vite dev server
@@ -1149,6 +1235,14 @@ URL at sign-in. Pin the URL server-side (`--gateway-url`, or
 remote config (`--allow-remote-gateway-config`) — see
 [configuration.md](configuration.md).
 
+**Opened through the gateway, the Team page says the hub proxy refuses a browser on another machine.**
+Continuum's hub proxy posts as your hub seat, so it answers a browser on the
+computer Continuum runs on. Opened at `/apps/continuum/` from another
+machine, the gateway reports that machine's address and the hub proxy
+refuses it. Open the Team page from the gateway's own computer, or start
+Continuum with `--hub-allow-remote` when you trust everyone who can reach
+it. See [configuration.md](configuration.md#serving-through-the-gateway-appscontinuum).
+
 **About shows "Gateway: unavailable (…)".**
 The dialog could not read `GET /api/gateway/about`; the reason in brackets
 says why. `HTTP 404` means the gateway does not serve the About route: upgrade
@@ -1387,6 +1481,45 @@ npm run build      # production build must stay green
 # Changelog
 
 All notable, user-visible changes to AbstractContinuum.
+
+## [Unreleased]
+
+### Added
+
+- **Served through the gateway at `/apps/continuum/`.** A gateway that
+  manages Continuum opens it on the gateway's own address, so a remote or
+  headless machine needs one port and one tunnel for the console and every
+  app. Every response announces `X-AbstractFramework-App: continuum; mount=1`
+  (the WebSocket `101` too); the page is served with its `<base href>` and
+  `base_path`; cookies carry `Path=/apps/continuum/`. Standalone at `/` on
+  Continuum's own port works as before.
+- `--gateway` and `--url` are accepted as aliases of `--gateway-url`, the
+  spelling shared by every AbstractFramework app.
+- With no flag, setting or environment variable naming a gateway, Continuum
+  uses the gateway installed on this computer
+  (`~/.abstractframework/gateway.json`, reported as *the gateway installed on
+  this computer*) and follows it to a new port while running.
+
+### Changed
+
+- Every request the page makes is relative to the page (`api/gateway/…`,
+  `api/hub/…`, `api/continuum/settings`), and the build uses relative asset
+  URLs. `npm run build` fails on a root-absolute same-origin URL in `dist/`.
+- The Team page's hub proxy, its WebSocket relay and the Settings route judge
+  the browser's address as the gateway reports it: opened through the gateway
+  from another machine, they refuse the browser unless Continuum runs with
+  `--hub-allow-remote`. The Origin check compares with the host the browser
+  addressed. A malformed forwarded header is refused with `400`.
+- The app document's CSP admits the one configuration script the server
+  injects, by its hash.
+- A markdown link or image in a hub message that targets a root-absolute
+  `/api/…` address is shown as a blocked link (behind the gateway it would
+  reach the gateway's own API); hub attachment images embed through the
+  relative `api/hub/…` address.
+- Requires `@abstractframework/app-server` with the mount kit
+  (`createMountedHandler`, `requestContext`, `injectShell`, the gateway
+  pointer reader) and `@abstractframework/ui-kit` with `joinBaseUrl` /
+  `GATEWAY_CONNECTION_PATH`.
 
 ## 0.3.2 — 2026-09-26
 

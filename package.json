@@ -35,7 +35,7 @@
   ],
   "scripts": {
     "dev": "vite --strictPort",
-    "build": "node scripts/clean_stale_js.mjs && tsc && vite build",
+    "build": "node scripts/clean_stale_js.mjs && tsc && vite build && node scripts/check_relative_urls.mjs dist",
     "preview": "vite preview",
     "start": "node ./bin/cli.js",
     "test": "node scripts/clean_stale_js.mjs && vitest run",

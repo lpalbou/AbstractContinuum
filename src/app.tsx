@@ -16,6 +16,7 @@ import {
   AfAppearanceDialog,
   AfDrawer,
   AfTopBarActions,
+  GATEWAY_CONNECTION_PATH,
   GatewayConnectModal,
   Icon,
   appIdentity,
@@ -125,12 +126,12 @@ export function App(): React.ReactElement {
   // server's on focus + every 5 minutes; mismatch = banner, never silent.
   const [stale_bundle, set_stale_bundle] = useState(false);
   useEffect(() => {
-    const own = document.querySelector<HTMLScriptElement>('script[type="module"][src*="/assets/"]')?.getAttribute("src") || "";
+    const own = document.querySelector<HTMLScriptElement>('script[type="module"][src*="assets/"]')?.getAttribute("src") || "";
     if (!own) return; // dev server (vite) — no hashed bundle, nothing to compare
     let gone = false;
     async function check(): Promise<void> {
       try {
-        const r = await fetch("/", { cache: "no-store", signal: AbortSignal.timeout(8000) });
+        const r = await fetch("./", { cache: "no-store", signal: AbortSignal.timeout(8000) });
         if (!r.ok) return;
         const html = await r.text();
         const m = html.match(/<script[^>]+type="module"[^>]+src="([^"]+)"/);
@@ -222,6 +223,9 @@ export function App(): React.ReactElement {
   // the data-plane probe below.
   const conn = useGatewayConnection({
     appName: "AbstractContinuum",
+    // Relative ("api/connection/gateway"): resolves under the app's base
+    // (/apps/continuum/ behind the gateway).
+    connectionPath: GATEWAY_CONNECTION_PATH,
     onStatusChange: () => set_probe_nonce((n) => n + 1),
   });
   const connection = conn.status;

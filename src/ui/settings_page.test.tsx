@@ -246,7 +246,7 @@ describe("Settings — Hub seat (Continuum server setting)", () => {
   it("shows the seat with its source and saves through the server", async () => {
     const calls: Array<{ method: string; body: string }> = [];
     const fetch_stub = vi.fn(async (url: string, init?: RequestInit) => {
-      expect(url).toBe("/api/continuum/settings");
+      expect(url).toBe("api/continuum/settings");
       calls.push({ method: String(init?.method || "GET"), body: String(init?.body || "") });
       const payload = init?.method === "PUT" ? view(JSON.parse(String(init.body)).hub_seat, "setting") : view("operator", "env");
       return new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });

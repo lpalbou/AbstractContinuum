@@ -248,7 +248,7 @@ describe("autolink_body (operator dm 39/44: pasted URLs clickable; hub-internal 
   it("rewrites a pasted hub attachment URL onto the proxy path and embeds when it is an image", () => {
     const body = "grab http://127.0.0.1:8765/channels/commons/attachments/sha256abc.png here";
     expect(autolink_body(body, { hub_base: "http://127.0.0.1:8765" })).toBe(
-      "grab ![image](/api/hub/channels/commons/attachments/sha256abc.png) here"
+      "grab ![image](api/hub/channels/commons/attachments/sha256abc.png) here"
     );
   });
 
@@ -290,8 +290,20 @@ describe("neutralize_unsafe_embeds (zero-click read-receipt forgery via CSP img-
   });
 
   it("LEAVES a legitimate hub attachment embed untouched (content-addressed, side-effect-free)", () => {
-    const ok = "![shot](/api/hub/channels/commons/attachments/sha256abc)";
+    const ok = "![shot](api/hub/channels/commons/attachments/sha256abc)";
     expect(neutralize_unsafe_embeds(ok)).toBe(ok);
+    const dotted = "![shot](./api/hub/channels/commons/attachments/sha256abc)";
+    expect(neutralize_unsafe_embeds(dotted)).toBe(dotted);
+  });
+
+  it("defangs the RELATIVE spellings of a side-effecting route (they resolve under the app's base)", () => {
+    for (const evil of ["![x](api/hub/channels/commons/messages/01ABC)", "![x](./api/hub/channels/commons/messages/01ABC)", "[see](api/hub/channels/c/attachments/../../messages/ID)"]) {
+      expect(neutralize_unsafe_embeds(evil), evil).toContain("(blocked link)");
+    }
+  });
+
+  it("defangs a ROOT-ABSOLUTE api URL even when it looks like an attachment (behind the gateway it escapes the app to the gateway's own API)", () => {
+    expect(neutralize_unsafe_embeds("![shot](/api/hub/channels/commons/attachments/sha256abc)")).toContain("(blocked link)");
   });
 
   it("defangs the parser-differential bypass: a whitespace+dot-segment tail hidden past an attachment prefix (adversary b22b19ed P1)", () => {
@@ -318,8 +330,8 @@ describe("neutralize_unsafe_embeds (zero-click read-receipt forgery via CSP img-
   });
 
   it("composes with autolink: a rewritten hub attachment URL stays embeddable, a messages route does not", () => {
-    // autolink turns a pasted hub image URL into ![image](/api/hub/.../attachments/..) — must survive.
-    const linked = autolink_body("![image](/api/hub/channels/commons/attachments/abc)");
+    // autolink turns a pasted hub image URL into ![image](api/hub/.../attachments/..) — must survive.
+    const linked = autolink_body("![image](api/hub/channels/commons/attachments/abc)");
     expect(neutralize_unsafe_embeds(linked)).toContain("attachments/abc");
   });
 });
