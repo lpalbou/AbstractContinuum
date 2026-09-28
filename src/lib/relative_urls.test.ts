@@ -2,7 +2,7 @@
 // `/apps/continuum/` behind the gateway: every URL the app builds for its
 // own origin is RELATIVE (scripts/check_relative_urls.mjs; `npm run build`
 // runs the same check over dist/).
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join, resolve } from "path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -19,6 +19,11 @@ afterEach(() => {
 describe("same-origin URLs are relative", () => {
   it("src/ builds no root-absolute /api/, /assets/, /app/ or /demo/ URL", () => {
     expect(findRootAbsoluteUrls([resolve(root, "src")], root)).toEqual([]);
+  });
+
+  it("the page declares its icon (else the browser asks the host root for /favicon.ico)", () => {
+    const html = readFileSync(resolve(root, "index.html"), "utf-8");
+    expect(html).toMatch(/<link rel="icon" href="(data:|\.\/)[^"]*"/);
   });
 
   it("the check sees every root-absolute spelling (and a missing directory is an error)", () => {
