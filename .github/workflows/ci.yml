@@ -44,7 +44,7 @@ jobs:
         run: npm ci
 
       - name: Check app-server resolves
-        run: node -e "import('@abstractframework/app-server').then(m => { if (typeof m.createGatewaySessionProxy !== 'function') throw new Error('createGatewaySessionProxy missing'); console.log('app-server OK'); })"
+        run: node -e "import('@abstractframework/app-server').then(m => { for (const n of ['createGatewaySessionProxy', 'createMountedHandler', 'injectShell', 'requestContext', 'rejectUpgrade', 'resolveGatewayUrl', 'createGatewayUrlResolver']) if (typeof m[n] !== 'function') throw new Error(n + ' missing (app-server too old for the /apps/<id>/ mount)'); console.log('app-server OK'); })"
 
       - name: Test
         run: npm test

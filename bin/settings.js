@@ -22,6 +22,8 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { dirname, join } from 'path';
+import { MountRequestError, resolveGatewayUrl } from '@abstractframework/app-server';
+import { request_gate } from './request_gate.js';
 
 const TRUE_VALUES = new Set(['1', 'true', 'yes', 'y', 'on']);
 const FALSE_VALUES = new Set(['0', 'false', 'no', 'n', 'off']);
@@ -50,7 +52,12 @@ export const SETTINGS = [
   {
     key: 'gateway_url',
     flag: '--gateway-url',
+    // The same spellings as every AbstractFramework app
+    // (@abstractframework/app-server parseAppFlags).
+    aliases: ['--gateway', '--url'],
     type: 'url',
+    // With no flag, setting or environment: the gateway installed on this
+    // computer (~/.abstractframework/gateway.json), else this URL.
     default: 'http://127.0.0.1:8080',
     env: ['ABSTRACTCONTINUUM_GATEWAY_URL', 'ABSTRACTGATEWAY_URL'],
     metavar: '<url>',
@@ -134,7 +141,7 @@ export const SETTINGS = [
 export const UI_WRITABLE_KEYS = ['hub_seat'];
 
 const BY_KEY = new Map(SETTINGS.map((s) => [s.key, s]));
-const BY_FLAG = new Map(SETTINGS.map((s) => [s.flag, s]));
+const BY_FLAG = new Map(SETTINGS.flatMap((s) => [s.flag, ...(s.aliases || [])].map((f) => [f, s])));
 
 export function setting_spec(key) {
   return BY_KEY.get(key) || null;
@@ -195,11 +202,16 @@ export function coerce(spec, raw) {
 /**
  * THE precedence function: flag > settings file > environment (legacy) >
  * default, per key. Returns `{ [key]: { value, source } }` with source one
- * of "flag" | "setting" | "env" | "default". An invalid file or env value
- * is skipped (reported in `problems`) so one bad entry cannot stop the
- * server; an invalid FLAG never reaches here (parse_args refuses it).
+ * of "flag" | "setting" | "env" | "pointer" | "default". An invalid file or
+ * env value is skipped (reported in `problems`) so one bad entry cannot
+ * stop the server; an invalid FLAG never reaches here (parse_args refuses
+ * it).
+ *
+ * gateway_url with nothing chosen follows the kit's local gateway pointer
+ * (`~/.abstractframework/gateway.json` under `home`, source "pointer"),
+ * else the built-in default: the same reader as every other app.
  */
-export function resolve_settings({ flags = {}, file = {}, env = {} } = {}) {
+export function resolve_settings({ flags = {}, file = {}, env = {}, home, pointer } = {}) {
   const out = {};
   const problems = [];
   for (const spec of SETTINGS) {
@@ -226,6 +238,10 @@ export function resolve_settings({ flags = {}, file = {}, env = {} } = {}) {
         }
         break;
       }
+    }
+    if (!picked && k === 'gateway_url') {
+      const r = resolveGatewayUrl({ home, pointer, warn: (m) => problems.push(m) });
+      picked = { value: r.url, source: r.source === 'pointer' ? 'pointer' : 'default' };
     }
     if (!picked) picked = { value: spec.default, source: 'default' };
     out[k] = picked;
@@ -276,7 +292,13 @@ export function display_value(spec, value) {
   return String(value);
 }
 
-export const SOURCE_WORDS = { flag: 'launch flag', setting: 'setting', env: 'environment (legacy)', default: 'default' };
+export const SOURCE_WORDS = {
+  flag: 'launch flag',
+  setting: 'setting',
+  env: 'environment (legacy)',
+  pointer: 'the gateway installed on this computer',
+  default: 'default',
+};
 
 /**
  * Parse argv. Shapes:
@@ -379,7 +401,7 @@ export function apply_session_proxy_gates(settings, env) {
  * without a restart). Port, host, gateway URL and the sign-in gates are
  * read once at start.
  */
-export function createLiveSettings({ flags = {}, settingsPath, env = process.env, onProblem = () => {} }) {
+export function createLiveSettings({ flags = {}, settingsPath, env = process.env, home, onProblem = () => {} }) {
   let stamp = '';
   let file = {};
   let resolved = null;
@@ -398,7 +420,7 @@ export function createLiveSettings({ flags = {}, settingsPath, env = process.env
     } catch (e) {
       onProblem(`settings file ${settingsPath}: ${e.message}`);
     }
-    const r = resolve_settings({ flags, file, env });
+    const r = resolve_settings({ flags, file, env, home });
     for (const p of r.problems) onProblem(p);
     resolved = r.settings;
     return resolved;
@@ -421,21 +443,6 @@ function send_json(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
-function is_loopback_peer(req) {
-  const peer = String(req.socket && req.socket.remoteAddress ? req.socket.remoteAddress : '');
-  return peer === '127.0.0.1' || peer === '::1' || peer === '::ffff:127.0.0.1' || peer === '';
-}
-
-function same_origin(req) {
-  const origin = String((req.headers && req.headers.origin) || '').trim();
-  if (!origin) return true;
-  try {
-    return new URL(origin).host.toLowerCase() === String((req.headers && req.headers.host) || '').trim().toLowerCase();
-  } catch {
-    return false;
-  }
-}
-
 /** Public view: every setting with its source; secrets as presence only. */
 export function settings_view(live, extra = {}) {
   const s = live.get();
@@ -449,9 +456,11 @@ export function settings_view(live, extra = {}) {
 
 /**
  * GET/PUT /api/continuum/settings — the Settings page's door to this
- * server's own settings. Local only: the socket peer must be loopback
- * (the same gate as the hub proxy, which this seat setting steers) and a
- * browser Origin must match the Host. PUT takes `{ hub_seat: "<seat>" }`
+ * server's own settings. Local only: the BROWSER must run on this computer
+ * (bin/request_gate.js — behind the gateway's /apps/continuum/ that is the
+ * forwarded client address, never the socket peer; the same gate as the hub
+ * proxy, which this seat setting steers) and a browser Origin must match
+ * the host it addressed. PUT takes `{ hub_seat: "<seat>" }`
  * or `{ hub_seat: null }` (back to the default) and persists to the
  * settings file.
  */
@@ -462,11 +471,19 @@ export function createSettingsRoute({ live, extra = () => ({}) }) {
     path: SETTINGS_ROUTE,
     handle(req, res, pathname) {
       if (pathname !== SETTINGS_ROUTE) return false;
-      if (!is_loopback_peer(req)) {
+      let gate;
+      try {
+        gate = request_gate(req);
+      } catch (e) {
+        if (!(e instanceof MountRequestError)) throw e;
+        send_json(res, e.status, { error: 'bad_request', detail: e.message });
+        return true;
+      }
+      if (!gate.loopback) {
         send_json(res, 403, { error: 'settings_non_loopback', detail: "Continuum's settings can only be changed from the computer it runs on." });
         return true;
       }
-      if (!same_origin(req)) {
+      if (!gate.same_origin) {
         send_json(res, 403, { error: 'settings_cross_origin', detail: 'Cross-origin requests to the settings route are refused.' });
         return true;
       }

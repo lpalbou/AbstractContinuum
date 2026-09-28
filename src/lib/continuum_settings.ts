@@ -13,7 +13,7 @@ export type ServerSettingsView = {
   settings_file: string;
 };
 
-export const SERVER_SETTINGS_PATH = "/api/continuum/settings";
+export const SERVER_SETTINGS_PATH = "api/continuum/settings";
 
 async function call(init?: RequestInit): Promise<ServerSettingsView> {
   const r = await fetch(SERVER_SETTINGS_PATH, {

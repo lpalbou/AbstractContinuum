@@ -35,19 +35,19 @@ type StubOpts = {
 function stub_hub(opts: StubOpts = {}): ReturnType<typeof vi.fn> {
   const fetch_mock = vi.fn(async (input: any, init?: any) => {
     const url = String(typeof input === "string" ? input : input?.url || "");
-    if (url.includes("/api/hub/meta")) {
+    if (url.includes("api/hub/meta")) {
       return new Response(JSON.stringify({ ok: true, hub_url: "http://hub", seat: "laurent", seat_key_present: true }), { status: 200 });
     }
-    if (url.includes("/api/hub/healthz")) {
+    if (url.includes("api/hub/healthz")) {
       return new Response(JSON.stringify({ ok: true, version: "0.10.0", protocol: opts.protocol ?? "agora/0.4", paused: opts.paused ?? false }), { status: 200 });
     }
-    if (url.includes("/api/hub/inbox")) {
+    if (url.includes("api/hub/inbox")) {
       return new Response(JSON.stringify(opts.inbox ?? []), { status: 200 });
     }
-    if (url.includes("/api/hub/owed")) {
+    if (url.includes("api/hub/owed")) {
       return new Response(JSON.stringify(opts.owed ?? { to_answer: [], to_consume: [], waiting_on: [], counts: { to_answer: 0, to_consume: 0 } }), { status: 200 });
     }
-    if (url.includes("/api/hub/search")) {
+    if (url.includes("api/hub/search")) {
       const empty = { hits: [], shown: 0, total: 0 };
       return new Response(
         JSON.stringify(
@@ -60,7 +60,7 @@ function stub_hub(opts: StubOpts = {}): ReturnType<typeof vi.fn> {
       const channel = decodeURIComponent(url.split("/channels/")[1].split("/digest")[0]);
       return new Response(JSON.stringify({ channel, counts: { open_questions: opts.digest_counts?.[channel] ?? 0 } }), { status: 200 });
     }
-    if (url.includes("/api/hub/channels") && url.includes("/info")) {
+    if (url.includes("api/hub/channels") && url.includes("/info")) {
       return new Response(
         JSON.stringify(
           opts.info ?? { channel: { name: "commons", private: false }, meta: { purpose: "cross-package commons" }, members: ["a", "b"], response_sla_minutes: 1440, state: "open", charter: null }
@@ -68,39 +68,39 @@ function stub_hub(opts: StubOpts = {}): ReturnType<typeof vi.fn> {
         { status: 200 }
       );
     }
-    if (url.includes("/api/hub/channels") && url.includes("/members")) {
+    if (url.includes("api/hub/channels") && url.includes("/members")) {
       return new Response(JSON.stringify(opts.members ?? []), { status: 200 });
     }
-    if (url.includes("/api/hub/blocks")) {
+    if (url.includes("api/hub/blocks")) {
       return new Response(JSON.stringify(opts.blocks ?? []), { status: 200 });
     }
-    if (url.includes("/api/hub/hub/blocks")) {
+    if (url.includes("api/hub/hub/blocks")) {
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }
-    if (url.includes("/api/hub/channels") && url.includes("/messages") && String(init?.method || "GET") === "GET") {
+    if (url.includes("api/hub/channels") && url.includes("/messages") && String(init?.method || "GET") === "GET") {
       return new Response(JSON.stringify(opts.messages ?? []), { status: 200 });
     }
-    if (url.includes("/api/hub/channels") && url.endsWith("/leave") && String(init?.method || "GET") === "POST") {
+    if (url.includes("api/hub/channels") && url.endsWith("/leave") && String(init?.method || "GET") === "POST") {
       return new Response(JSON.stringify({ left: true }), { status: 200 });
     }
-    if (url.includes("/api/hub/channels") && url.endsWith("/archive")) {
+    if (url.includes("api/hub/channels") && url.endsWith("/archive")) {
       // Hub verb not shipped yet (agora 0090) — feature-detect on 404.
       return new Response(JSON.stringify({ detail: "Not Found" }), { status: 404 });
     }
-    if (url.endsWith("/api/hub/agents/retired")) {
+    if (url.endsWith("api/hub/agents/retired")) {
       return new Response(JSON.stringify(opts.retired ?? []), { status: 200 });
     }
-    if (url.includes("/api/hub/agents/") && url.endsWith("/retire")) {
+    if (url.includes("api/hub/agents/") && url.endsWith("/retire")) {
       // Hub verb not shipped yet (agora 0089) — feature-detect on 404.
       return new Response(JSON.stringify({ detail: "Not Found" }), { status: 404 });
     }
-    if (url.match(/\/api\/hub\/channels\/[^/]+\/fs$/)) {
+    if (url.match(/api\/hub\/channels\/[^/]+\/fs$/)) {
       return new Response(JSON.stringify(opts.files ?? []), { status: 200 });
     }
-    if (url.match(/\/api\/hub\/channels\/[^/]+\/fs\//)) {
+    if (url.match(/api\/hub\/channels\/[^/]+\/fs\//)) {
       return new Response(JSON.stringify({ path: "plans/x.md", content: "# Plan\n\nhello **world**", mime: "text/markdown", version: 2, updated_by: "flow", updated_at: 1 }), { status: 200 });
     }
-    if (url.endsWith("/api/hub/channels")) {
+    if (url.endsWith("api/hub/channels")) {
       return new Response(JSON.stringify(opts.channels ?? [{ name: "commons", private: false, member: true, member_count: 14, last_seq: 10, last_at: Date.now() / 1000 }]), { status: 200 });
     }
     return new Response(JSON.stringify({ ok: true }), { status: 200 });
@@ -165,7 +165,7 @@ describe("hub-wide search (agora-0132, hub ≥ 0.12.44)", () => {
     fireEvent.submit(input.closest("form")!);
     // The verb fired with the query.
     await waitFor(() => {
-      const calls = fetch_mock.mock.calls.filter(([u]: any[]) => String(u).includes("/api/hub/search"));
+      const calls = fetch_mock.mock.calls.filter(([u]: any[]) => String(u).includes("api/hub/search"));
       expect(calls.length).toBeGreaterThan(0);
       expect(String(calls[0][0])).toContain("q=kelp");
     });
@@ -255,7 +255,7 @@ describe("hub-wide search (agora-0132, hub ≥ 0.12.44)", () => {
     // sort=votes (net order) — the "where is the displeasure" view.
     fireEvent.submit(input.closest("form")!);
     await waitFor(() => {
-      const browse = fetch_mock.mock.calls.find(([u]: any[]) => String(u).includes("/api/hub/search") && String(u).includes("rated=down"));
+      const browse = fetch_mock.mock.calls.find(([u]: any[]) => String(u).includes("api/hub/search") && String(u).includes("rated=down"));
       expect(browse).toBeTruthy();
       const url = String(browse![0]);
       expect(url).toContain("q=&"); // empty query rides the wire
@@ -523,13 +523,13 @@ describe("TeamPage moderation (operator dm 12: remove from a channel OR the hub)
     // The member's channel + hub moderation acts render.
     const hub_ban = await screen.findByRole("button", { name: "hub ban" });
     const hub_calls = () =>
-      fetch_mock.mock.calls.filter((c) => String(c[0]).includes("/api/hub/hub/blocks") && String(c[1]?.method || "GET") === "POST").length;
+      fetch_mock.mock.calls.filter((c) => String(c[0]).includes("api/hub/hub/blocks") && String(c[1]?.method || "GET") === "POST").length;
     // First click ARMS (no request), second CONFIRMS.
     fireEvent.click(hub_ban);
     expect(hub_calls()).toBe(0);
     fireEvent.click(await screen.findByRole("button", { name: "confirm hub ban" }));
     await waitFor(() => expect(hub_calls()).toBe(1));
-    const post = fetch_mock.mock.calls.find((c) => String(c[0]).includes("/api/hub/hub/blocks") && String(c[1]?.method || "GET") === "POST");
+    const post = fetch_mock.mock.calls.find((c) => String(c[0]).includes("api/hub/hub/blocks") && String(c[1]?.method || "GET") === "POST");
     const body = JSON.parse(String(post?.[1]?.body || "{}"));
     expect(body.agent).toBe("spammer");
     expect(body.seconds).toBeUndefined(); // indefinite = ban
@@ -619,12 +619,12 @@ describe("TeamPage moderation (operator dm 12: remove from a channel OR the hub)
       if (url.includes("/attachments") && String(init?.method || "GET") === "POST") {
         return new Response(JSON.stringify({ id: "sha-note", filename: "note.png", content_type: "image/png", size: 3 }), { status: 200 });
       }
-      if (url.includes("/api/hub/meta")) return new Response(JSON.stringify({ ok: true, hub_url: "http://hub", seat: "laurent", seat_key_present: true }), { status: 200 });
-      if (url.includes("/api/hub/healthz")) return new Response(JSON.stringify({ ok: true, protocol: "agora/0.4", paused: false }), { status: 200 });
-      if (url.includes("/api/hub/inbox")) return new Response(JSON.stringify([]), { status: 200 });
+      if (url.includes("api/hub/meta")) return new Response(JSON.stringify({ ok: true, hub_url: "http://hub", seat: "laurent", seat_key_present: true }), { status: 200 });
+      if (url.includes("api/hub/healthz")) return new Response(JSON.stringify({ ok: true, protocol: "agora/0.4", paused: false }), { status: 200 });
+      if (url.includes("api/hub/inbox")) return new Response(JSON.stringify([]), { status: 200 });
       if (url.includes("/digest")) return new Response(JSON.stringify({ counts: {} }), { status: 200 });
       if (url.includes("/messages") && String(init?.method || "GET") === "GET") return new Response(JSON.stringify([]), { status: 200 });
-      if (url.endsWith("/api/hub/channels")) return new Response(JSON.stringify([{ name: "commons", private: false, member: true, member_count: 2, last_seq: 1, last_at: Date.now() / 1000 }]), { status: 200 });
+      if (url.endsWith("api/hub/channels")) return new Response(JSON.stringify([{ name: "commons", private: false, member: true, member_count: 2, last_seq: 1, last_at: Date.now() / 1000 }]), { status: 200 });
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     });
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -666,7 +666,7 @@ describe("TeamPage moderation (operator dm 12: remove from a channel OR the hub)
     await screen.findByText("with files");
     // Image → inline <img> pointing at the proxy attachment URL.
     const img = (await screen.findByAltText("diagram.png")) as HTMLImageElement;
-    expect(img.getAttribute("src")).toContain("/api/hub/channels/commons/attachments/sha-img");
+    expect(img.getAttribute("src")).toContain("api/hub/channels/commons/attachments/sha-img");
     // Non-image → preview chip (button), never inline.
     const chip = await screen.findByTitle(/application\/pdf .* click to preview/);
     expect(chip.tagName).toBe("BUTTON");
@@ -748,13 +748,13 @@ describe("TeamPage moderation (operator dm 12: remove from a channel OR the hub)
     (fetch_mock as any).mockImplementation(async (input: any, init?: any) => {
       const url = String(typeof input === "string" ? input : input?.url || "");
       if (url.includes("/attachments/sha-notes")) return new Response("## Notes\n\ninline **preview** works", { status: 200, headers: { "Content-Type": "text/markdown" } });
-      if (url.includes("/api/hub/meta")) return new Response(JSON.stringify({ ok: true, seat: "laurent", seat_key_present: true, hub_url: "http://hub" }), { status: 200 });
-      if (url.includes("/api/hub/healthz")) return new Response(JSON.stringify({ ok: true, protocol: "agora/0.4", paused: false }), { status: 200 });
-      if (url.includes("/api/hub/inbox")) return new Response(JSON.stringify([]), { status: 200 });
+      if (url.includes("api/hub/meta")) return new Response(JSON.stringify({ ok: true, seat: "laurent", seat_key_present: true, hub_url: "http://hub" }), { status: 200 });
+      if (url.includes("api/hub/healthz")) return new Response(JSON.stringify({ ok: true, protocol: "agora/0.4", paused: false }), { status: 200 });
+      if (url.includes("api/hub/inbox")) return new Response(JSON.stringify([]), { status: 200 });
       if (url.includes("/digest")) return new Response(JSON.stringify({ counts: {} }), { status: 200 });
       if (url.includes("/messages") && String(init?.method || "GET") === "GET")
         return new Response(JSON.stringify([{ ...base, id: "md1", seq: 1, sender: "core", status: "fyi", title: "doc", body: "see the notes", data: { attachments: [{ id: "sha-notes", filename: "notes.md", content_type: "text/markdown", size: 40 }] } }]), { status: 200 });
-      if (url.endsWith("/api/hub/channels")) return new Response(JSON.stringify([{ name: "commons", private: false, member: true, member_count: 2, last_seq: 1, last_at: Date.now() / 1000 }]), { status: 200 });
+      if (url.endsWith("api/hub/channels")) return new Response(JSON.stringify([{ name: "commons", private: false, member: true, member_count: 2, last_seq: 1, last_at: Date.now() / 1000 }]), { status: 200 });
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     });
     render_page();
@@ -784,25 +784,25 @@ describe("TeamPage moderation (operator dm 12: remove from a channel OR the hub)
     let resolve_slow_channels: ((value: Response) => void) | null = null;
     const fetch_mock = vi.fn(async (input: any, init?: any) => {
       const url = String(typeof input === "string" ? input : input?.url || "");
-      if (url.includes("/api/hub/meta")) {
+      if (url.includes("api/hub/meta")) {
         return new Response(JSON.stringify({ ok: true, hub_url: "http://hub", seat: "laurent", seat_key_present: true }), { status: 200 });
       }
-      if (url.includes("/api/hub/healthz")) {
+      if (url.includes("api/hub/healthz")) {
         return new Response(JSON.stringify({ ok: true, version: "0.10.0", protocol: "agora/0.4", paused: false }), { status: 200 });
       }
-      if (url.includes("/api/hub/inbox")) {
+      if (url.includes("api/hub/inbox")) {
         return new Response(JSON.stringify([]), { status: 200 });
       }
-      if (url.includes("/api/hub/owed")) {
+      if (url.includes("api/hub/owed")) {
         return new Response(JSON.stringify({ to_answer: [], to_consume: [], waiting_on: [], counts: { to_answer: 0, to_consume: 0 } }), { status: 200 });
       }
       if (url.includes("/digest")) {
         return new Response(JSON.stringify({ channel: "commons", counts: { open_questions: 0 } }), { status: 200 });
       }
-      if (url.includes("/api/hub/channels/commons/messages") && String(init?.method || "GET") === "GET") {
+      if (url.includes("api/hub/channels/commons/messages") && String(init?.method || "GET") === "GET") {
         return new Response(JSON.stringify([{ ...base, id: "m1", seq: 399, sender: "agora", status: "fyi", body: "fast row" }]), { status: 200 });
       }
-      if (url.endsWith("/api/hub/channels")) {
+      if (url.endsWith("api/hub/channels")) {
         channel_calls += 1;
         if (channel_calls === 1) {
           return new Response(JSON.stringify([{ name: "commons", private: false, member: true, member_count: 2, last_seq: 400, last_at: now }]), { status: 200 });
@@ -895,20 +895,20 @@ describe("TeamPage threading + filters (2026-07-14 redesign)", () => {
     const inbox_calls = () =>
       fetch_mock.mock.calls.filter(([u]: any[]) => {
         const url = String(u);
-        return url.includes("/api/hub/inbox") && !url.includes("/api/hub/inbox/ack");
+        return url.includes("api/hub/inbox") && !url.includes("api/hub/inbox/ack");
       });
     const fetch_mock = vi.fn(async (input: any, init?: any) => {
       const url = String(typeof input === "string" ? input : input?.url || "");
-      if (url.includes("/api/hub/meta")) {
+      if (url.includes("api/hub/meta")) {
         return new Response(JSON.stringify({ ok: true, hub_url: "http://hub", seat: "laurent", seat_key_present: true }), { status: 200 });
       }
-      if (url.includes("/api/hub/healthz")) {
+      if (url.includes("api/hub/healthz")) {
         return new Response(JSON.stringify({ ok: true, version: "0.10.0", protocol: "agora/0.4", paused: false }), { status: 200 });
       }
-      if (url.includes("/api/hub/owed")) {
+      if (url.includes("api/hub/owed")) {
         return new Response(JSON.stringify({ to_answer: [], to_consume: [], waiting_on: [], counts: { to_answer: 0, to_consume: 0 } }), { status: 200 });
       }
-      if (url.includes("/api/hub/inbox")) {
+      if (url.includes("api/hub/inbox")) {
         if (!release_first_inbox) {
           return await new Promise<Response>((resolve) => {
             release_first_inbox = resolve;
@@ -919,16 +919,16 @@ describe("TeamPage threading + filters (2026-07-14 redesign)", () => {
       if (url.includes("/digest")) {
         return new Response(JSON.stringify({ channel: "commons", counts: { open_questions: 1 } }), { status: 200 });
       }
-      if (url.includes("/api/hub/channels") && url.includes("/messages/") && String(init?.method || "GET") === "GET") {
+      if (url.includes("api/hub/channels") && url.includes("/messages/") && String(init?.method || "GET") === "GET") {
         return new Response(JSON.stringify([{ id: "m1", channel: "commons", seq: 1, sender: "agora", kind: "message", status: "fyi", body: "read me", created_at: 1 }]), { status: 200 });
       }
-      if (url.includes("/api/hub/inbox/ack")) {
+      if (url.includes("api/hub/inbox/ack")) {
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
       }
-      if (url.includes("/api/hub/channels") && url.includes("/messages") && String(init?.method || "GET") === "GET") {
+      if (url.includes("api/hub/channels") && url.includes("/messages") && String(init?.method || "GET") === "GET") {
         return new Response(JSON.stringify([{ id: "m1", channel: "commons", seq: 1, sender: "agora", kind: "message", status: "fyi", body: "read me", created_at: 1 }]), { status: 200 });
       }
-      if (url.endsWith("/api/hub/channels")) {
+      if (url.endsWith("api/hub/channels")) {
         return new Response(JSON.stringify([{ name: "commons", private: false, member: true, member_count: 14, last_seq: 10, last_at: 1 }]), { status: 200 });
       }
       return new Response(JSON.stringify({ ok: true }), { status: 200 });

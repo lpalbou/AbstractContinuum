@@ -35,7 +35,7 @@ function stub_fetch(connection: any): void {
     "fetch",
     vi.fn(async (input: any) => {
       const url = String(typeof input === "string" ? input : input?.url || "");
-      if (url.includes("/api/connection/gateway")) {
+      if (url.includes("api/connection/gateway")) {
         return new Response(JSON.stringify(connection), { status: 200 });
       }
       return new Response(JSON.stringify({ ok: true, runs: [], items: [], requests: [], processes: [], entities: [] }), { status: 200 });
@@ -85,13 +85,13 @@ describe("App shell About dialog", () => {
   function stub_about_fetch(about: { status: number; body: any }): ReturnType<typeof vi.fn> {
     const fn = vi.fn(async (input: any) => {
       const url = String(typeof input === "string" ? input : input?.url || "");
-      if (url.includes("/api/connection/gateway")) {
+      if (url.includes("api/connection/gateway")) {
         return new Response(
           JSON.stringify({ ok: true, gateway_url: "http://127.0.0.1:8080", has_session: true, gateway: { ok: true, principal: { user_id: "admin" } } }),
           { status: 200 }
         );
       }
-      if (url.includes("/api/gateway/about")) {
+      if (url.includes("api/gateway/about")) {
         return new Response(typeof about.body === "string" ? about.body : JSON.stringify(about.body), { status: about.status });
       }
       return new Response(JSON.stringify({ ok: true, runs: [], items: [], requests: [], processes: [], entities: [] }), { status: 200 });
@@ -122,7 +122,7 @@ describe("App shell About dialog", () => {
     render(<App />);
     await screen.findByRole("button", { name: "About AbstractContinuum" });
     // Lazy: nothing asks the gateway for versions before the dialog opens.
-    expect(fetch_fn.mock.calls.some((c: any[]) => String(c[0]).includes("/api/gateway/about"))).toBe(false);
+    expect(fetch_fn.mock.calls.some((c: any[]) => String(c[0]).includes("api/gateway/about"))).toBe(false);
 
     const dialog = await open_about();
     await waitFor(() => expect(rows_of(dialog).some(([l]) => l === "Gateway framework")).toBe(true));
@@ -158,7 +158,7 @@ describe("App shell About dialog", () => {
     expect(get("Gateway package abstractruntime")).toBe("0.4.33");
     expect(rows.filter(([l]) => l === "Gateway package abstractgateway")).toHaveLength(0);
     expect(rows.findIndex(([l]) => l === "Gateway")).toBeGreaterThan(rows.findIndex(([l]) => l === "Give feedback"));
-    expect(fetch_fn.mock.calls.some((c: any[]) => String(c[0]).includes("/api/gateway/about"))).toBe(true);
+    expect(fetch_fn.mock.calls.some((c: any[]) => String(c[0]).includes("api/gateway/about"))).toBe(true);
 
     // Close dismisses.
     fireEvent.click(screen.getAllByRole("button", { name: "Close" }).find((b) => dialog.contains(b))!);

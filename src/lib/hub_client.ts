@@ -1,4 +1,4 @@
-// Typed client for the Team page's hub proxy (/api/hub/* — bin/hub_proxy.js).
+// Typed client for the Team page's hub proxy (api/hub/* under the app base — bin/hub_proxy.js).
 //
 // The proxy attaches the OPERATOR seat's key server-side (agency contract
 // c1696); this client is same-origin and carries no credentials. Shapes
@@ -254,7 +254,7 @@ export class HubClient {
     // caps ~6 connections per origin — one wedged hub moment with no
     // timeouts let the 5s poll + badge fan-out occupy every slot and the
     // whole page silently froze until a relaunch freed the pool.
-    const r = await fetch(`/api/hub${path}`, {
+    const r = await fetch(`api/hub${path}`, {
       ...init,
       signal: init?.signal ?? AbortSignal.timeout(20_000),
       headers: { ...(init?.body ? { "Content-Type": "application/json" } : {}) },
@@ -423,7 +423,7 @@ export class HubClient {
    *  {id=sha256, filename, content_type, size}. Idempotent by content hash.
    *  Bypasses _fetch (that path forces JSON) — a direct raw-body POST. */
   async upload_attachment(channel: string, file: File): Promise<HubAttachment> {
-    const url = `/api/hub/channels/${encodeURIComponent(channel)}/attachments?filename=${encodeURIComponent(file.name)}`;
+    const url = `api/hub/channels/${encodeURIComponent(channel)}/attachments?filename=${encodeURIComponent(file.name)}`;
     const r = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": file.type || "application/octet-stream" },
@@ -457,7 +457,7 @@ export class HubClient {
    *  download href — the proxy forwards the hub's Content-Disposition +
    *  nosniff serve hardening. */
   attachment_url(channel: string, id: string): string {
-    return `/api/hub/channels/${encodeURIComponent(channel)}/attachments/${encodeURIComponent(id)}`;
+    return `api/hub/channels/${encodeURIComponent(channel)}/attachments/${encodeURIComponent(id)}`;
   }
 
   /** Cursor ack — EXPLICIT act only (agency rule 1: acking is "I have
@@ -847,8 +847,11 @@ export class HubClient {
 
   /** Live-update socket URL (the proxy relays to the hub with the seat
    *  key server-side; null protocol mismatch handled by caller). */
+  /** The live relay, under the app's base (document.baseURI: `/` on the
+   *  app's own port, `/apps/continuum/` behind the gateway). */
   ws_url(): string {
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return `${proto}//${window.location.host}/api/hub/ws`;
+    const u = new URL("api/hub/ws", document.baseURI);
+    u.protocol = u.protocol === "https:" ? "wss:" : "ws:";
+    return u.href;
   }
 }

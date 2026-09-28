@@ -20,6 +20,11 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { APP_IDENTITY_HEADER, MountRequestError, identityHeaderValue, rejectUpgrade } from '@abstractframework/app-server';
+import { request_gate } from './request_gate.js';
+
+/** The gateway catalog id this server announces (`/apps/continuum/`). */
+export const APP_ID = 'continuum';
 
 /** Console version for the hub's X-Agora-Client handshake (read once at
  *  boot; "0.0.0" only if package.json is unreadable — the header's job is
@@ -189,30 +194,6 @@ const HUB_ROUTES = [
   { method: 'PUT', re: /^\/channels\/[A-Za-z0-9_.:-]+\/reputation\/[A-Za-z0-9_.-]+$/ },
   { method: 'DELETE', re: /^\/channels\/[A-Za-z0-9_.:-]+\/reputation\/[A-Za-z0-9_.-]+$/ },
 ];
-
-/**
- * Cross-origin refusal (adversary P0, 2026-07-15): the loopback peer gate
- * defends against REMOTE peers, but the browser itself is a loopback peer —
- * a hostile page the operator visits can fire cross-origin fetches and
- * WebSocket handshakes at this proxy (WS handshakes skip CORS preflight
- * entirely), and the seat key rides server-side. Rule: when the browser
- * declares an Origin, it must match the Host the request was addressed to;
- * absent Origin (curl, scripts, same-origin GET navigations) passes — a
- * browser NEVER omits Origin on cross-origin fetch/WS, so the vector this
- * closes cannot dodge the check.
- */
-function origin_allowed(req) {
-  const origin = String((req.headers && req.headers.origin) || '').trim();
-  if (!origin) return true;
-  let parsed;
-  try {
-    parsed = new URL(origin);
-  } catch {
-    return false;
-  }
-  const host = String((req.headers && req.headers.host) || '').trim().toLowerCase();
-  return Boolean(host) && parsed.host.toLowerCase() === host;
-}
 
 function read_seat_key(keys_path, hub_url, seat, token) {
   // An explicit token (--hub-token / --hub-token-file / the hub_token
@@ -427,13 +408,20 @@ export function createHubProxy(opts) {
       socket.on('error', () => {
         try { socket.destroy(); } catch { /* already gone */ }
       });
+      // Same gate as the HTTP surface (the BROWSER's address, which behind
+      // the gateway is the forwarded one), PLUS the origin gate against the
+      // host the browser addressed — WS handshakes have no CORS preflight,
+      // so without it any page the operator visits could open this relay
+      // and read/write as the operator seat (adversary P0).
+      let gate;
       try {
-        // Same unforgeable peer gate as the HTTP surface, PLUS the origin
-        // gate — WS handshakes have no CORS preflight, so without it any
-        // page the operator visits could open this relay and read/write
-        // as the operator seat (adversary P0).
-        const peer = String(req.socket && req.socket.remoteAddress ? req.socket.remoteAddress : '');
-        const loopback = peer === '127.0.0.1' || peer === '::1' || peer === '::ffff:127.0.0.1' || peer === '';
+        gate = request_gate(req);
+      } catch (e) {
+        if (!(e instanceof MountRequestError)) throw e;
+        rejectUpgrade(socket, e.status, e.message);
+        return true;
+      }
+      try {
         const allow_remote = cfg().allow_remote;
         const seat_key = key();
         let WebSocketServer, WebSocket;
@@ -443,7 +431,15 @@ export function createHubProxy(opts) {
           socket.destroy();
           return true;
         }
-        if ((!loopback && !allow_remote) || !seat_key || !origin_allowed(req)) {
+        if (!gate.loopback && !allow_remote) {
+          rejectUpgrade(socket, 403, 'The hub relay answers this computer only (it authors as the operator seat).');
+          return true;
+        }
+        if (!gate.same_origin) {
+          rejectUpgrade(socket, 403, 'Cross-origin WebSocket to the hub relay refused.');
+          return true;
+        }
+        if (!seat_key) {
           socket.destroy();
           return true;
         }
@@ -451,7 +447,13 @@ export function createHubProxy(opts) {
         // one side of a string-pipe relay ships RSV1 frames the other side
         // never negotiated (live find: browsers/ws clients offer it by
         // default and the pipe corrupts).
-        if (!this._wss) this._wss = new WebSocketServer({ noServer: true, perMessageDeflate: false });
+        if (!this._wss) {
+          this._wss = new WebSocketServer({ noServer: true, perMessageDeflate: false });
+          // The 101 announces the app like every other response
+          // (X-AbstractFramework-App: continuum; mount=1).
+          const identity = `${APP_IDENTITY_HEADER}: ${identityHeaderValue(APP_ID)}`;
+          this._wss.on('headers', (headers) => headers.push(identity));
+        }
         const hub_ws_url = cfg().hub_url.replace(/^http/, 'ws') + '/ws';
         const upstream = new WebSocket(hub_ws_url, {
           headers: { Authorization: `Bearer ${seat_key}` },
@@ -532,24 +534,31 @@ export function createHubProxy(opts) {
     handle(req, res, pathname, search) {
       if (!pathname.startsWith('/api/hub/') && pathname !== '/api/hub/meta') return false;
 
-      // Socket-peer gate (entity's c1768 class, applied at the mount): this
-      // proxy authors hub messages AS THE OPERATOR, so a non-loopback peer
-      // reaching it could forge the operator's authorship. Gate on the
-      // connection's REAL peer (unforgeable), never a client-controlled
-      // header. The default 127.0.0.1 bind already prevents remote peers;
-      // this is defense-in-depth if HOST is widened deliberately.
-      const peer = String(req.socket && req.socket.remoteAddress ? req.socket.remoteAddress : '');
-      const loopback = peer === '127.0.0.1' || peer === '::1' || peer === '::ffff:127.0.0.1' || peer === '';
+      // Client gate (entity's c1768 class, applied at the mount): this
+      // proxy authors hub messages AS THE OPERATOR, so a browser on another
+      // machine could forge the operator's authorship. The client is the
+      // kit's requestContext answer (bin/request_gate.js): the socket peer,
+      // or behind the gateway's /apps/continuum/ (a loopback peer) the
+      // address the gateway forwarded — never a header from anyone else.
+      let gate;
+      try {
+        gate = request_gate(req);
+      } catch (e) {
+        if (!(e instanceof MountRequestError)) throw e;
+        res.writeHead(e.status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'bad_request', detail: e.message }));
+        return true;
+      }
       const allow_remote = cfg().allow_remote;
-      if (!loopback && !allow_remote) {
+      if (!gate.loopback && !allow_remote) {
         res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'hub_proxy_non_loopback', detail: `Hub proxy refuses non-loopback peer ${peer} (it authors as the operator seat). Start Continuum with --hub-allow-remote only behind a trusted front.` }));
+        res.end(JSON.stringify({ error: 'hub_proxy_non_loopback', detail: `Hub proxy refuses a browser on another machine (${gate.ctx.clientAddress}): it authors as the operator seat. Start Continuum with --hub-allow-remote only behind a trusted front.` }));
         return true;
       }
       // Cross-origin browser requests are refused even from loopback: the
       // browser is a loopback peer, and a hostile page can fire simple
       // POSTs (no preflight) at this surface. Origin-vs-Host is the gate.
-      if (!origin_allowed(req)) {
+      if (!gate.same_origin) {
         res.writeHead(403, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'hub_proxy_cross_origin', detail: 'Cross-origin requests to the hub proxy are refused (the proxy authors as the operator seat).' }));
         return true;
