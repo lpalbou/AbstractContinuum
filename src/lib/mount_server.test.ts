@@ -66,7 +66,7 @@ afterAll(async () => {
 });
 
 /** What the gateway's /apps/continuum/ proxy adds for a browser. */
-function viaGateway(client: string, host = "gw.example:8080"): Record<string, string> {
+function viaGateway(client: string, host = "127.0.0.1:8080"): Record<string, string> {
   return { "x-forwarded-for": client, "x-forwarded-prefix": PREFIX, "x-forwarded-proto": "http", "x-forwarded-host": host };
 }
 
@@ -123,13 +123,25 @@ describe("app-local privileged routes judge the BROWSER, not the gateway's socke
   });
 
   it("hub proxy: the Origin must name the host the browser addressed (the forwarded host behind the gateway)", async () => {
-    const same = await fetch(`${base}/api/hub/meta`, { headers: { ...viaGateway("127.0.0.1"), origin: "http://gw.example:8080" } });
+    const same = await fetch(`${base}/api/hub/meta`, { headers: { ...viaGateway("127.0.0.1"), origin: "http://127.0.0.1:8080" } });
     expect(same.status).toBe(200);
     const other = await fetch(`${base}/api/hub/meta`, { headers: { ...viaGateway("127.0.0.1"), origin: "http://evil.example" } });
     expect(other.status).toBe(403);
     // The gateway's host, sent straight to the app's port: Host is 127.0.0.1:<port>.
-    const noForward = await fetch(`${base}/api/hub/meta`, { headers: { origin: "http://gw.example:8080" } });
+    const noForward = await fetch(`${base}/api/hub/meta`, { headers: { origin: "http://127.0.0.1:8080" } });
     expect(noForward.status).toBe(403);
+  });
+
+  it("a browser on this computer that addressed a DNS name is not local (DNS rebinding): hub proxy, Settings and the WebSocket refuse it", async () => {
+    const rebound = { ...viaGateway("127.0.0.1", "rebind.example:8080"), origin: "http://rebind.example:8080" };
+    const hub = await fetch(`${base}/api/hub/meta`, { headers: rebound });
+    expect(hub.status).toBe(403);
+    expect((await hub.json()).error).toBe("hub_proxy_non_loopback");
+    const settings = await fetch(`${base}/api/continuum/settings`, { headers: rebound });
+    expect(settings.status).toBe(403);
+    expect((await settings.json()).error).toBe("settings_non_loopback");
+    const { origin, ...wsHeaders } = rebound;
+    expect((await openWs("/api/hub/ws", wsHeaders, origin)).status).toBe(403);
   });
 
   it("forwarded headers from a NON-loopback peer are ignored (the app binds loopback; defence in depth)", async () => {
@@ -142,7 +154,7 @@ describe("app-local privileged routes judge the BROWSER, not the gateway's socke
     const remote = await fetch(`${base}/api/continuum/settings`, { headers: viaGateway(REMOTE) });
     expect(remote.status).toBe(403);
     expect((await remote.json()).error).toBe("settings_non_loopback");
-    const local = await fetch(`${base}/api/continuum/settings`, { headers: { ...viaGateway("127.0.0.1"), origin: "http://gw.example:8080" } });
+    const local = await fetch(`${base}/api/continuum/settings`, { headers: { ...viaGateway("127.0.0.1"), origin: "http://127.0.0.1:8080" } });
     expect(local.status).toBe(200);
   });
 });
@@ -161,7 +173,7 @@ function openWs(path: string, headers: Record<string, string>, origin?: string):
 
 describe("the Team hub WebSocket relay through the gateway", () => {
   it("a local browser through the gateway reaches the hub; the 101 announces the app", async () => {
-    const r = await openWs("/api/hub/ws", viaGateway("127.0.0.1"), "http://gw.example:8080");
+    const r = await openWs("/api/hub/ws", viaGateway("127.0.0.1"), "http://127.0.0.1:8080");
     expect(r.ok).toBe(true);
     expect(r.identity).toBe("continuum; mount=1");
     r.ws!.send(JSON.stringify({ type: "subscribe", channels: ["commons"] }));
@@ -171,7 +183,7 @@ describe("the Team hub WebSocket relay through the gateway", () => {
   });
 
   it("refuses a remote browser (403), another site's page (403), a malformed header (400), any other path (404)", async () => {
-    expect((await openWs("/api/hub/ws", viaGateway(REMOTE), "http://gw.example:8080")).status).toBe(403);
+    expect((await openWs("/api/hub/ws", viaGateway(REMOTE), "http://127.0.0.1:8080")).status).toBe(403);
     expect((await openWs("/api/hub/ws", viaGateway("127.0.0.1"), "https://evil.example")).status).toBe(403);
     expect((await openWs("/api/hub/ws", { "x-forwarded-prefix": "/x/../y" })).status).toBe(400);
     expect((await openWs("/elsewhere", viaGateway("127.0.0.1"))).status).toBe(404);
@@ -180,7 +192,7 @@ describe("the Team hub WebSocket relay through the gateway", () => {
 
 describe("session cookies under the base path", () => {
   it("sign-out clears the cookies at Path=/apps/continuum/ (and the legacy /)", async () => {
-    const r = await fetch(`${base}/api/connection/gateway`, { method: "DELETE", headers: { ...viaGateway("127.0.0.1"), origin: "http://gw.example:8080", "x-abstract-csrf": "x" } });
+    const r = await fetch(`${base}/api/connection/gateway`, { method: "DELETE", headers: { ...viaGateway("127.0.0.1"), origin: "http://127.0.0.1:8080", "x-abstract-csrf": "x" } });
     const cookies = r.headers.getSetCookie();
     expect(cookies.some((c) => c.startsWith("abstractcontinuum_gateway_session=") && c.includes(`Path=${PREFIX}/`))).toBe(true);
   });

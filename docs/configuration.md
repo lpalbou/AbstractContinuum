@@ -90,14 +90,17 @@ gateway's own address; the gateway starts Continuum on `127.0.0.1` with
 `--port`, `--host` and `--gateway-url` and relays every request, the Team
 page's WebSocket included. Nothing needs configuring: the same build serves
 at `/` on Continuum's own port and at `/apps/continuum/` through the
-gateway.
+gateway. Serving under `/apps/continuum/` needs AbstractGateway 0.7.0 or
+newer.
 
 - The page, its assets and every request it makes use addresses relative
   to the page, so they stay under `/apps/continuum/`.
 - Continuum's cookies carry `Path=/apps/continuum/`.
 - The checks that only a browser on this computer passes (the hub proxy,
   the Settings route, a browser-chosen gateway URL) judge the browser's
-  address as the gateway reports it. A browser on another machine that
+  address as the gateway reports it, and the host name the browser
+  addressed: both must be loopback (`localhost` or `127.0.0.1`), so open
+  the gateway by a loopback address to use them. A browser on another machine that
   opens Continuum through the gateway can use the gateway-backed pages;
   the Team page's hub proxy refuses it unless you start Continuum with
   `--hub-allow-remote`.

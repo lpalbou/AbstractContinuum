@@ -1,7 +1,7 @@
 # AbstractContinuum — full documentation corpus
 
 > Aggregated from the core docs for LLM/tool consumption (package
-> `@abstractframework/continuum` 0.3.2). Canonical sources live in the
+> `@abstractframework/continuum` 0.4.0). Canonical sources live in the
 > repository; this file is regenerated whenever the docs change.
 
 ---
@@ -799,14 +799,17 @@ gateway's own address; the gateway starts Continuum on `127.0.0.1` with
 `--port`, `--host` and `--gateway-url` and relays every request, the Team
 page's WebSocket included. Nothing needs configuring: the same build serves
 at `/` on Continuum's own port and at `/apps/continuum/` through the
-gateway.
+gateway. Serving under `/apps/continuum/` needs AbstractGateway 0.7.0 or
+newer.
 
 - The page, its assets and every request it makes use addresses relative
   to the page, so they stay under `/apps/continuum/`.
 - Continuum's cookies carry `Path=/apps/continuum/`.
 - The checks that only a browser on this computer passes (the hub proxy,
   the Settings route, a browser-chosen gateway URL) judge the browser's
-  address as the gateway reports it. A browser on another machine that
+  address as the gateway reports it, and the host name the browser
+  addressed: both must be loopback (`localhost` or `127.0.0.1`), so open
+  the gateway by a loopback address to use them. A browser on another machine that
   opens Continuum through the gateway can use the gateway-backed pages;
   the Team page's hub proxy refuses it unless you start Continuum with
   `--hub-allow-remote`.
@@ -1482,7 +1485,12 @@ npm run build      # production build must stay green
 
 All notable, user-visible changes to AbstractContinuum.
 
-## [Unreleased]
+## 0.4.0 — 2026-09-28
+
+Serving Continuum through the gateway at `/apps/continuum/` needs
+AbstractGateway 0.7.0 or newer. Standalone use on Continuum's own port works
+with AbstractGateway 0.4.1 or newer, as before. The server keeps listening on
+`127.0.0.1` by default.
 
 ### Added
 
@@ -1516,10 +1524,16 @@ All notable, user-visible changes to AbstractContinuum.
   `/api/…` address is shown as a blocked link (behind the gateway it would
   reach the gateway's own API); hub attachment images embed through the
   relative `api/hub/…` address.
-- Requires `@abstractframework/app-server` with the mount kit
-  (`createMountedHandler`, `requestContext`, `injectShell`, the gateway
-  pointer reader) and `@abstractframework/ui-kit` with `joinBaseUrl` /
-  `GATEWAY_CONNECTION_PATH`.
+- Requires `@abstractframework/app-server` 0.1.11 or newer (the mount kit)
+  and is built against `@abstractframework/ui-kit` 0.1.14 (`joinBaseUrl` /
+  `GATEWAY_CONNECTION_PATH`).
+
+### Security
+
+- With `@abstractframework/app-server` 0.1.11 or newer, a request counts as
+  coming from this computer only when both its connection address and the
+  host name the browser addressed are loopback, so a page served from another
+  site under a name that resolves to `127.0.0.1` is treated as remote.
 
 ## 0.3.2 — 2026-09-26
 
