@@ -33,8 +33,8 @@ and wider keep their layout.
   the message instead of squeezing it.
 - **Wide windows**: board lanes use the width at 1440 px and wider; long
   messages and documents keep a readable line length.
-- Uses `@abstractframework/ui-kit` 0.3.0 and `@abstractframework/panel-chat`
-  0.2.0 (responsive kit: breakpoints 480/768/1024/1440, safe areas, visible
+- Uses `@abstractframework/ui-kit` 0.3.1 and `@abstractframework/panel-chat`
+  0.2.1 (responsive kit: breakpoints 480/768/1024/1440, safe areas, visible
   viewport height, sheets).
 
 ## 0.4.0 — 2026-09-28
