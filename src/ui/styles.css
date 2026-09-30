@@ -136,7 +136,8 @@ button.primary:hover:not(:disabled) {
 .shell {
   display: flex;
   flex-direction: row;
-  height: 100vh;
+  height: 100vh; /* fallback for the var below */
+  height: var(--vv-height, var(--vh-full, 100vh)); /* dvh + iOS keyboard (DESIGN §4) */
   min-width: 0;
 }
 
@@ -279,21 +280,14 @@ button.primary:hover:not(:disabled) {
   overflow: hidden;
 }
 
-@media (max-width: 900px) {
-  .shell_sidebar {
-    flex-basis: 56px;
-  }
-
-  .shell_brand_name,
-  .shell_nav_label {
+/* Below md (1024 px) the sidebar is not rendered in the row: app.tsx moves
+   the same nav into a left AfDrawer (DESIGN §5.2). This guard keeps any
+   stray docked sidebar out of the row. */
+@media (max-width: 1023.98px) {
+  .shell > .shell_sidebar {
     display: none;
   }
-
-  .shell_nav_item {
-    justify-content: center;
-  }
-
-  }
+}
 
 /* ===============================
    BOARD (kanban)
@@ -1236,13 +1230,13 @@ button.primary:hover:not(:disabled) {
   vertical-align: middle;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1439.98px) {
   .backlog_table .col_labels {
     display: none;
   }
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1023.98px) {
   .backlog_table .col_package {
     display: none;
   }
@@ -1301,7 +1295,7 @@ button.primary:hover:not(:disabled) {
 
 /* With a drawer open on a narrow window, the channel rail yields —
    the thread column is the page's primary reading surface. */
-@media (max-width: 1350px) {
+@media (max-width: 1439.98px) {
   .team_layout.with_drawer {
     grid-template-columns: minmax(380px, 1fr) 340px 30px;
   }
@@ -1513,6 +1507,7 @@ button.primary:hover:not(:disabled) {
   padding: 6px 12px;
   border-bottom: 1px solid var(--bg-tertiary);
   display: flex;
+  flex-wrap: wrap; /* never overlap: the sort segment and meta wrapped over each other at 1512 */
   align-items: center;
   gap: 10px;
 }
@@ -2554,18 +2549,81 @@ button.primary:hover:not(:disabled) {
   padding-top: 8px;
 }
 
-@media (max-width: 900px) {
-  .team_layout,
-  .team_layout.with_drawer {
-    grid-template-columns: 1fr 30px;
+/* Team three-pane (DESIGN §5.3). xl: channels | thread | inspector | rail.
+   lg (< 1440, above): with an inspector open the channel list yields.
+   md (< 1024): the channel column narrows; the inspector column narrows.
+   sm/xs (< 768): ONE pane at a time — the channel list, the thread (with a
+   back button), or the inspector over the thread; the rail becomes a
+   horizontal tab strip on top. */
+@media (max-width: 1023.98px) {
+  .team_layout {
+    grid-template-columns: clamp(180px, 24vw, 240px) minmax(0, 1fr) 30px;
   }
 
-  .team_layout.with_drawer .team_thread_pane {
+  .team_layout.with_drawer {
+    grid-template-columns: minmax(0, 1fr) clamp(260px, 36vw, 340px) 30px;
+  }
+
+  .team_layout.with_drawer.drawer_wide {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 48%) 30px;
+  }
+}
+
+.team_back_btn {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  .team_layout,
+  .team_layout.with_drawer,
+  .team_layout.with_drawer.drawer_wide {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .team_layout > .pane {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  /* Which single pane shows. */
+  .team_layout.team_mobile_channels > .team_thread_pane,
+  .team_layout.team_mobile_thread > .team_channels_pane,
+  .team_layout.with_drawer > .team_channels_pane,
+  .team_layout.with_drawer > .team_thread_pane {
     display: none;
   }
 
-  .team_channels_pane {
-    max-height: 200px;
+  .team_layout .team_channels_pane {
+    max-height: none;
+  }
+
+  .team_back_btn {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* The vertical trapeze rail becomes a horizontal, scrollable tab strip. */
+  .team_drawer_rail {
+    grid-row: 1;
+    grid-column: 1;
+    flex-direction: row;
+    gap: 6px;
+    padding-top: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+
+  .team_drawer_tab {
+    writing-mode: horizontal-tb;
+    clip-path: none;
+    border: 1px solid var(--bg-tertiary);
+    border-radius: 999px;
+    padding: 6px 12px;
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 }
 
@@ -2832,13 +2890,13 @@ button.primary:hover:not(:disabled) {
   color: var(--text-secondary);
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1023.98px) {
   .track_table .col_aux2 {
     display: none;
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 767.98px) {
   .track_table .col_aux {
     display: none;
   }
@@ -3702,7 +3760,7 @@ button.primary:hover:not(:disabled) {
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 767.98px) {
   .advisor_toggle {
     top: 50%;
     bottom: auto;
@@ -3725,11 +3783,34 @@ button.primary:hover:not(:disabled) {
   }
 }
 
-@media (max-width: 900px) {
-
+@media (max-width: 1023.98px) {
   .inbox_layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(220px, 36%) minmax(0, 1fr);
   }
+}
+
+.pane_back_bar {
+  display: none;
+}
+
+/* List/detail pages (Executions, Inbox reports + email) below sm: one pane
+   at a time; picking an item opens it, "Back to the list" returns. The
+   Executions page switches markup itself (use_media_query, same query). */
+@media (max-width: 767.98px) {
+  .inbox_layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .inbox_layout.phone_list > .pane:nth-child(2),
+  .inbox_layout.phone_detail > .pane:first-child {
+    display: none;
+  }
+
+  .pane_back_bar {
+    display: flex;
+    margin-bottom: 8px;
+  }
+
 
   /* Prevent iOS Safari auto-zoom on focus (needs >= 16px).
      Scope to touch devices so desktop narrow windows keep normal sizing. */
@@ -3744,7 +3825,7 @@ button.primary:hover:not(:disabled) {
 
 /* Narrow windows: filters wrap instead of clipping behind a hidden
    scrollbar (Resolved/@me were silently unreachable at 1100px). */
-@media (max-width: 1180px) {
+@media (max-width: 1439.98px) {
   .team_filterbar .seg.seg_scroll {
     flex-wrap: wrap;
     overflow-x: visible;
@@ -4843,4 +4924,378 @@ a.team_attach_dl:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+}
+
+/* =====================================================================
+   RESPONSIVE (DESIGN v2, ui-kit 0.3.0 tokens) — 2026-09-30
+   Breakpoints: xs < 480, sm < 768, md < 1024, lg < 1440, xl >= 1440,
+   short = max-height 500px. Desktop (fine pointer, >= 1024) keeps its look;
+   below, the layout reflows; on touch, targets grow and text stays legible.
+   ===================================================================== */
+
+/* No pull-to-refresh bounce dragging the whole shell. */
+body {
+  overscroll-behavior-y: none;
+}
+
+.shell_main,
+.shell_content,
+.page,
+.pane,
+.pane_body,
+.board_page_root,
+.board_columns {
+  min-width: 0;
+}
+
+.pane_body,
+.board_columns,
+.board_column_body,
+.shell_nav,
+.inbox_list,
+.work_drawer_body,
+.modal_body,
+.drawer_body {
+  overscroll-behavior: contain;
+}
+
+/* --- Header: never wider than the screen -------------------------------- */
+.shell_header {
+  min-width: 0;
+  padding-top: max(10px, var(--safe-top, 0px));
+  padding-left: max(16px, var(--safe-left, 0px));
+  padding-right: max(16px, var(--safe-right, 0px));
+}
+
+.shell_header_title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell_header_actions {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.shell_newtask_btn {
+  white-space: nowrap;
+}
+
+.shell_menu_btn {
+  flex: 0 0 auto;
+}
+
+/* Left nav drawer (below md): same items as the docked sidebar. */
+.shell_nav_drawer .af-drawer__body {
+  padding: 0;
+}
+
+.shell_nav_drawer_body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--bg-secondary);
+  padding-top: var(--safe-top, 0px);
+  padding-bottom: max(8px, var(--safe-bottom, 0px));
+}
+
+.shell_nav_drawer_body .shell_nav {
+  overflow: visible;
+}
+
+.shell_nav_drawer_body .shell_nav_item {
+  font-size: var(--font-size-base);
+  padding: 10px 12px;
+}
+
+.shell_nav_close {
+  margin: 8px 16px 0;
+}
+
+@media (max-width: 479.98px) {
+  .shell_header {
+    gap: 6px;
+    padding-left: max(10px, var(--safe-left, 0px));
+    padding-right: max(10px, var(--safe-right, 0px));
+  }
+
+  .shell_header_actions {
+    gap: 4px;
+  }
+
+  .shell_header_actions .af-topbar {
+    gap: 4px;
+  }
+
+  /* "+ New task" -> "+" (aria-label keeps the full name). */
+  .shell_newtask_label {
+    display: none;
+  }
+
+  .shell_newtask_btn {
+    min-width: var(--tap-min, 32px);
+    font-size: var(--font-size-lg);
+    padding: 4px 10px;
+  }
+}
+
+/* Phone landscape: thin chrome. */
+@media (max-height: 500px) {
+  .shell_header {
+    padding-top: max(4px, var(--safe-top, 0px));
+    padding-bottom: 4px;
+  }
+
+  .shell_banner {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+}
+
+/* --- Page gutters on phones --------------------------------------------- */
+@media (max-width: 479.98px) {
+  .page_pad,
+  .page.page_scroll .page_inner.page_pad,
+  .board_page_root {
+    padding: 10px 12px 12px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  /* Board: the label facet cloud becomes one horizontal strip instead of
+     five wrapped rows above the first card. */
+  .board_facets {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+
+  .board_facets > * {
+    flex: 0 0 auto;
+  }
+
+  .board_search {
+    min-width: 0;
+    max-width: none;
+    flex-basis: 100%;
+  }
+
+  .board_column {
+    max-width: none;
+    flex-basis: 100%;
+    max-height: none;
+    min-height: 0;
+  }
+
+  .work_meta_editor input {
+    min-width: 0;
+  }
+
+  .work_spec_editor {
+    min-height: 40vh;
+  }
+
+  /* Backlog table -> card rows (the table is the page's main content). */
+  .backlog_table,
+  .backlog_table tbody,
+  .backlog_table tr,
+  .backlog_table td {
+    display: block;
+    width: auto;
+  }
+
+  .backlog_table thead {
+    display: none;
+  }
+
+  .backlog_table tr.backlog_row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--bg-tertiary);
+  }
+
+  .backlog_table td {
+    border: none;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .backlog_table .backlog_table_title {
+    order: -1;
+    flex: 1 1 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .backlog_table .col_sel {
+    order: -2;
+    width: auto;
+  }
+
+  .backlog_table .col_id:empty,
+  .backlog_table .col_type:empty,
+  .backlog_table .col_priority:empty,
+  .backlog_table .col_labels:empty {
+    display: none;
+  }
+
+  .backlog_table .col_labels,
+  .backlog_table .col_package {
+    display: block;
+  }
+
+  .backlog_table .col_actions {
+    flex: 1 1 100%;
+  }
+
+  .backlog_table .col_actions .entity_card_actions {
+    flex-wrap: wrap;
+  }
+
+  /* Drawers are full-width sheets on phones. */
+  .drawer_panel {
+    width: 100%;
+    max-width: 100%;
+    border-left: none;
+    padding-top: var(--safe-top, 0px);
+    padding-bottom: var(--safe-bottom, 0px);
+  }
+
+  .drawer_header {
+    flex-wrap: wrap;
+  }
+}
+
+/* The drawer panel honours the visible height, not 100vh. */
+.drawer_panel {
+  height: auto;
+  max-height: 100%;
+}
+
+/* --- App modals: fit the viewport; bottom sheet on phones (§5.7) -------- */
+.modal_backdrop {
+  padding: max(40px, var(--safe-top, 0px)) max(16px, var(--safe-right, 0px)) max(16px, var(--safe-bottom, 0px)) max(16px, var(--safe-left, 0px));
+}
+
+.modal_panel {
+  max-height: calc(var(--vv-height, var(--vh-full, 100vh)) - 80px);
+  overscroll-behavior: contain;
+}
+
+.modal_panel.fullscreen {
+  height: var(--vv-height, var(--vh-full, 100vh));
+  max-height: var(--vv-height, var(--vh-full, 100vh));
+}
+
+.modal_footer {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 767.98px), (max-height: 500px) {
+  .modal_backdrop:not(.fullscreen) {
+    align-items: flex-end;
+    padding: var(--safe-top, 0px) 0 0;
+  }
+
+  .modal_backdrop:not(.fullscreen) .modal_panel {
+    width: 100%;
+    max-height: 100%;
+    border-radius: 16px 16px 0 0;
+    border-bottom: none;
+  }
+
+  .modal_footer {
+    padding-bottom: max(12px, var(--safe-bottom, 0px));
+  }
+}
+
+@media (max-width: 479.98px) {
+  /* Actions stack full width, primary (last in DOM) closest to the thumb. */
+  .modal_footer {
+    flex-direction: column;
+  }
+
+  .modal_footer > .btn,
+  .modal_footer > button {
+    width: 100%;
+  }
+}
+
+/* --- Touch: 44 px targets, 16 px inputs, comfortable text (§2, §3) ------ */
+@media (pointer: coarse) {
+  :root {
+    /* App text rides md/sm/xs; lift them on touch only (desktop unchanged). */
+    --font-size-xs: max(12px, calc(11px * var(--font-scale, 1)));
+    --font-size-sm: max(13px, calc(12px * var(--font-scale, 1)));
+    --font-size-md: max(14px, calc(13px * var(--font-scale, 1)));
+  }
+
+  .btn,
+  button.tab,
+  .tab,
+  .seg_btn,
+  .shell_nav_item,
+  .team_channel,
+  .team_drawer_tab,
+  .inbox_item,
+  .board_facet,
+  select,
+  input:not([type="checkbox"]):not([type="radio"]),
+  .pane_back_btn,
+  .team_back_btn {
+    min-height: var(--tap-min, 44px);
+  }
+
+  .btn.btn_icon,
+  .shell_menu_btn,
+  .shell_newtask_btn {
+    min-width: var(--tap-min, 44px);
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: var(--font-size-input, 16px);
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 22px;
+    height: 22px;
+  }
+
+  .board_card_actions .btn,
+  .backlog_table .col_actions .btn {
+    padding: 8px 14px;
+    font-size: var(--font-size-sm);
+  }
+
+  /* Dense inline link rows (member moderation) get real hit boxes. */
+  .team_members_pane button,
+  .team_members_pane a {
+    min-height: 36px;
+  }
+}
+
+/* --- Wide screens (§7) -------------------------------------------------- */
+@media (min-width: 1440px) {
+  /* Lanes use the width instead of leaving a third of a 2560 window empty.
+     At 1512/1728 the six lanes are already below the old 340 px cap. */
+  .board_column {
+    max-width: none;
+  }
+}
+
+/* Thread prose never runs 1700 px wide. */
+.team_thread_pane .team_row_body,
+.inbox_markdown,
+.work_drawer_body .md_doc {
+  max-width: var(--reading-max, 86ch);
 }

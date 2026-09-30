@@ -45,6 +45,8 @@ export function ReportInboxPage(props: ReportInboxPageProps): React.ReactElement
   // === Inbox feature gating (simple mailbox vs triage) ===
   const triage_enabled = Boolean(props.enable_triage);
 
+  /** Phone stack (< 768 px, DESIGN §5.3): the list OR the open item. */
+  const [phone_detail, set_phone_detail] = useState(false);
   const [tab, set_tab] = useState<InboxTab>(triage_enabled ? "messages" : "email");
 
   const [bugs, set_bugs] = useState<ReportInboxItem[]>([]);
@@ -304,6 +306,11 @@ export function ReportInboxPage(props: ReportInboxPageProps): React.ReactElement
     }
   }
 
+  // A tab switch lands on the new tab's list (phone stack).
+  useEffect(() => {
+    set_phone_detail(false);
+  }, [tab]);
+
   return (
     <div className="page page_pad">
       <div className="page_toolbar">
@@ -372,8 +379,13 @@ export function ReportInboxPage(props: ReportInboxPageProps): React.ReactElement
       {tab === "email" ? (
         <EmailInboxPanel gateway={gateway} enabled={can_use_gateway} />
       ) : (
-        <div className="inbox_layout exec_layout">
-          <div className="pane">
+        <div className={`inbox_layout exec_layout ${phone_detail ? "phone_detail" : "phone_list"}`}>
+          <div
+          className="pane"
+          onClickCapture={(e) => {
+            if ((e.target as HTMLElement | null)?.closest?.(".inbox_item")) set_phone_detail(true);
+          }}
+        >
             <div className="pane_header">
               <span className="pane_title">{tab === "messages" ? "Triage decisions" : tab === "bugs" ? "Bug reports" : "Feature requests"}</span>
               <span className="pane_count">{tab === "messages" ? decisions.length : inbox_items.length}</span>
@@ -440,6 +452,11 @@ export function ReportInboxPage(props: ReportInboxPageProps): React.ReactElement
 
           <div className="pane">
             <div className="pane_body">
+            <div className="pane_back_bar">
+              <button type="button" className="btn pane_back_btn" onClick={() => set_phone_detail(false)}>
+                ← Back to the list
+              </button>
+            </div>
             {tab === "messages" ? (
               selected_decision ? (
                 <div className="inbox_detail">

@@ -29,7 +29,7 @@ export function Modal({ open, title, children, actions, variant = "default", onC
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={`modal_panel${is_fullscreen ? " fullscreen" : ""}`}>
+      <div className={`modal_panel${is_fullscreen ? " fullscreen" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal_header">
           <div className="modal_title">{title}</div>
           <button className="btn" onClick={onClose}>

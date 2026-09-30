@@ -53,7 +53,7 @@ export function BoardPage(props: {
 }): React.ReactElement {
   const { gateway, gateway_connected, data_nonce, on_mutated, on_open_executions } = props;
   const default_mode = props.default_execution_mode === "inplace" ? "inplace" : "uat";
-  const is_compact = use_media_query("(max-width: 900px)");
+  const is_compact = use_media_query("(max-width: 767.98px)");
   // Per-request agent picker options (gateway c2194 point 5).
   const executor_registry = use_executor_registry(gateway, gateway_connected);
 

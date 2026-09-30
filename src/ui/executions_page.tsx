@@ -29,7 +29,7 @@ export function ExecutionsPage(props: {
   on_open_settings?: () => void;
 }): React.ReactElement {
   const { gateway, gateway_connected } = props;
-  const is_compact_layout = use_media_query("(max-width: 900px)");
+  const is_compact_layout = use_media_query("(max-width: 767.98px)");
   const [compact_pane, set_compact_pane] = useState<"list" | "detail">("list");
   /** Executor registry (feature-detected): when it serves, the setup
    *  callout speaks REGISTRY truth ("pick a default") instead of the env

@@ -35,8 +35,11 @@ describe("AbstractContinuum styles", () => {
     const css = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
 
     expect(css).toMatch(/\.page\.page_scroll\s*\{[^}]*overflow-x:\s*hidden;/);
-    // The sidebar collapses to icons below 900px.
-    expect(css).toMatch(/@media\s*\(max-width:\s*900px\)\s*\{[\s\S]*\.shell_nav_label[\s\S]*display:\s*none;/);
+    // Below md (1024px) the docked sidebar leaves the row (app.tsx renders
+    // the nav in a left AfDrawer; DESIGN §5.2).
+    expect(css).toMatch(/@media\s*\(max-width:\s*1023\.98px\)\s*\{\s*\.shell\s*>\s*\.shell_sidebar\s*\{\s*display:\s*none;/);
+    // The shell is bounded by the visible viewport (dvh / iOS keyboard), not 100vh alone.
+    expect(css).toMatch(/\.shell\s*\{[^}]*height:\s*var\(--vv-height,\s*var\(--vh-full/);
     // The connection LED died with the unified top-bar adoption (uic c1648
     // — the kit pill owns connection rendering); no .gateway_led remains.
     expect(css).not.toMatch(/\.gateway_led/);
@@ -47,8 +50,8 @@ describe("AbstractContinuum styles", () => {
 
     // The many-tab segment scrolls instead of wrapping (2026-07-13 pass).
     expect(css).toMatch(/\.seg\.seg_scroll\s*\{[^}]*overflow-x:\s*auto;/);
-    expect(css).toMatch(/@media\s*\(max-width:\s*700px\)\s*\{[\s\S]*\.advisor_toggle\s*\{[\s\S]*top:\s*50%;/);
-    expect(css).toMatch(/@media\s*\(max-width:\s*700px\)\s*\{[\s\S]*\.advisor_toggle_label\s*\{[\s\S]*writing-mode:\s*vertical-rl;/);
+    expect(css).toMatch(/@media\s*\(max-width:\s*767\.98px\)\s*\{[\s\S]*\.advisor_toggle\s*\{[\s\S]*top:\s*50%;/);
+    expect(css).toMatch(/@media\s*\(max-width:\s*767\.98px\)\s*\{[\s\S]*\.advisor_toggle_label\s*\{[\s\S]*writing-mode:\s*vertical-rl;/);
     expect(css).toMatch(/\.drawer_panel\s*\{[^}]*width:\s*clamp\(/);
     expect(css).toMatch(/\.pane\s+\.pc-md\s+:not\(pre\)\s*>\s*code\s*\{[^}]*overflow-wrap:\s*anywhere;/);
     expect(css).toMatch(/\.exec_log_scroll\s*\{[^}]*padding-bottom:\s*calc\(/);
@@ -68,5 +71,23 @@ describe("AbstractContinuum styles", () => {
     expect(css).toMatch(/\.seg_btn\.active\s*\{/);
     expect(css).toMatch(/\.entity_card\s*\{[^}]*border-radius:\s*10px;/);
     expect(css).toMatch(/\.data_table\s+th\s*\{/);
+  });
+});
+
+describe("responsive contract (DESIGN v2 breakpoints)", () => {
+  it("uses only the named breakpoints 480/768/1024/1440 (+ max-height 500)", () => {
+    const css = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
+    const widths = [...css.matchAll(/\((?:max|min)-width:\s*([\d.]+)px\)/g)].map((m) => m[1]);
+    expect(widths.length).toBeGreaterThan(0);
+    for (const w of widths) expect(["479.98", "767.98", "1023.98", "1439.98", "1440"]).toContain(w);
+    const heights = [...css.matchAll(/\((?:max|min)-height:\s*([\d.]+)px\)/g)].map((m) => m[1]);
+    for (const h of heights) expect(h).toBe("500");
+  });
+
+  it("stacks the Team three-pane and the list/detail pages below 768px", () => {
+    const css = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
+    expect(css).toMatch(/\.team_layout\.team_mobile_channels\s*>\s*\.team_thread_pane/);
+    expect(css).toMatch(/\.inbox_layout\.phone_list\s*>\s*\.pane:nth-child\(2\)/);
+    expect(css).toMatch(/@media\s*\(pointer:\s*coarse\)\s*\{[\s\S]*min-height:\s*var\(--tap-min/);
   });
 });

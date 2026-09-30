@@ -92,6 +92,17 @@ export function WorkItemDrawer(props: {
 
   const metadata = useMemo(() => parse_work_item_metadata(content), [content]);
 
+  // Escape closes the drawer like the backdrop and Close do (DESIGN §5.2);
+  // a nested dialog that consumed the key (defaultPrevented) keeps it.
+  useEffect(() => {
+    if (!open || !target) return;
+    const on_key = (e: KeyboardEvent): void => {
+      if (e.key === "Escape" && !e.defaultPrevented) on_close();
+    };
+    window.addEventListener("keydown", on_key);
+    return () => window.removeEventListener("keydown", on_key);
+  }, [open, target, on_close]);
+
   useEffect(() => {
     if (!open || !target) return;
     set_tab(target.initial_tab || "spec");
@@ -269,7 +280,7 @@ export function WorkItemDrawer(props: {
         if (e.target === e.currentTarget) on_close();
       }}
     >
-      <div className="drawer_panel work_drawer">
+      <div className="drawer_panel work_drawer" role="dialog" aria-modal="true" aria-label={target.title || "Work item"}>
         <div className="drawer_header">
           <div className="col" style={{ gap: 2, minWidth: 0 }}>
             <div className="drawer_title" title={target.filename}>

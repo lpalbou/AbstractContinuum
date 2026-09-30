@@ -50,7 +50,7 @@ export function BacklogBrowserPage(props: BacklogBrowserPageProps): React.ReactE
   const maint_reasoning = String(props.maintenance_ai_reasoning || "").trim();
   const advisor_agent = String(props.backlog_advisor_agent || "").trim() || "basic-agent";
   const default_mode = props.default_execution_mode === "inplace" ? "inplace" : "uat";
-  const is_compact_layout = use_media_query("(max-width: 900px)");
+  const is_compact_layout = use_media_query("(max-width: 767.98px)");
 
   const [kind, set_kind] = useState<DrawerKind>("planned");
   const [items, set_items] = useState<BacklogItemSummary[]>([]);

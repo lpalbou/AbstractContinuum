@@ -21,6 +21,7 @@ import {
   Icon,
   appIdentity,
   type IconName,
+  useAfMedia,
   useAppearanceSettings,
   useGatewayConnection,
 } from "@abstractframework/ui-kit";
@@ -87,6 +88,33 @@ function load_settings(): ContinuumSettings {
 
 export function App(): React.ReactElement {
   const [page, set_page] = useState<Page>("board");
+  // Below the md breakpoint (1024 px, DESIGN §5.2) the sidebar leaves the
+  // row and becomes a left drawer opened from the header menu button.
+  const nav_narrow = useAfMedia("(max-width: 1023.98px)");
+  const [nav_open, set_nav_open] = useState(false);
+  const nav_btn_ref = useRef<HTMLButtonElement | null>(null);
+  const nav_drawer_ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!nav_narrow) set_nav_open(false);
+  }, [nav_narrow]);
+  useEffect(() => {
+    if (!nav_narrow) return;
+    if (nav_open) {
+      // Focus moves into the drawer (the active item) on open…
+      const t = window.setTimeout(() => {
+        const el = nav_drawer_ref.current?.querySelector<HTMLButtonElement>(".shell_nav_item.active, .shell_nav_item");
+        el?.focus();
+      }, 0);
+      return () => window.clearTimeout(t);
+    }
+    // …and back to the opener on close.
+    if (document.activeElement === document.body || nav_drawer_ref.current?.contains(document.activeElement)) nav_btn_ref.current?.focus();
+    return undefined;
+  }, [nav_open, nav_narrow]);
+  function pick_page(id: Page): void {
+    set_page(id);
+    set_nav_open(false);
+  }
   /** Board search preset (Team work-id chips: chip click -> Board filtered
    *  to that item; consumed once by BoardPage). */
   const [board_query_preset, set_board_query_preset] = useState<string | null>(null);
@@ -312,32 +340,50 @@ export function App(): React.ReactElement {
     return String(res?.reply || "").trim() || "(the advisor returned an empty reply)";
   }
 
+  const shell_nav = (
+    <>
+      <div className="shell_brand" title="AbstractContinuum — continuous development console">
+        <span className="shell_brand_mark">∞</span>
+        <span className="shell_brand_name">Continuum</span>
+      </div>
+      <nav className="shell_nav" aria-label="Pages">
+        {NAV.map((item) => (
+          <button
+            key={item.id}
+            className={`shell_nav_item ${page === item.id ? "active" : ""}`}
+            onClick={() => pick_page(item.id)}
+            title={item.label}
+            aria-current={page === item.id ? "page" : undefined}
+          >
+            <span className="shell_nav_icon">
+              <Icon name={item.icon} size={16} />
+            </span>
+            <span className="shell_nav_label">{item.label}</span>
+          </button>
+        ))}
+      </nav>
+    </>
+  );
+
   return (
     <div className="shell" onClickCapture={retarget_root_links}>
-      <aside className="shell_sidebar">
-        <div className="shell_brand" title="AbstractContinuum — continuous development console">
-          <span className="shell_brand_mark">∞</span>
-          <span className="shell_brand_name">Continuum</span>
-        </div>
-        <nav className="shell_nav">
-          {NAV.map((item) => (
-            <button
-              key={item.id}
-              className={`shell_nav_item ${page === item.id ? "active" : ""}`}
-              onClick={() => set_page(item.id)}
-              title={item.label}
-            >
-              <span className="shell_nav_icon">
-                <Icon name={item.icon} size={16} />
-              </span>
-              <span className="shell_nav_label">{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      {nav_narrow ? null : <aside className="shell_sidebar">{shell_nav}</aside>}
 
       <div className="shell_main">
         <header className="shell_header">
+          {nav_narrow ? (
+            <button
+              ref={nav_btn_ref}
+              type="button"
+              className="btn btn_icon shell_menu_btn"
+              aria-label="Open navigation"
+              aria-expanded={nav_open}
+              title="Pages"
+              onClick={() => set_nav_open((v) => !v)}
+            >
+              <Icon name="list" size={18} />
+            </button>
+          ) : null}
           <div className="shell_header_title">{NAV.find((n) => n.id === page)?.label || ""}</div>
           <div className="shell_header_actions">
             {/* The unified top-right cluster (operator directive 20:02,
@@ -348,8 +394,8 @@ export function App(): React.ReactElement {
               appearance={{ onOpen: () => set_appearance_open(true) }}
               about={{ identity: about_identity, extraRows: gateway_about_rows, onOpen: refresh_gateway_about }}
               extraActions={
-                <button className="btn primary" onClick={() => set_new_task_open(true)} disabled={!connected}>
-                  + New task
+                <button className="btn primary shell_newtask_btn" onClick={() => set_new_task_open(true)} disabled={!connected} aria-label="+ New task" title="New task">
+                  +<span className="shell_newtask_label"> New task</span>
                 </button>
               }
               connection={{
@@ -519,6 +565,17 @@ export function App(): React.ReactElement {
       {/* Modal lifecycle is the hook's (boot-probe seed, auto-open per
           signed-out episode, close-on-connect) — spread its props. */}
       <GatewayConnectModal {...conn.modalProps} />
+
+      {nav_narrow ? (
+        <AfDrawer open={nav_open} onClose={() => set_nav_open(false)} label="Navigation" side="left" backdrop width={260} className="shell_nav_drawer">
+          <div ref={nav_drawer_ref} className="shell_nav_drawer_body">
+            {shell_nav}
+            <button type="button" className="btn shell_nav_close" onClick={() => set_nav_open(false)}>
+              Close menu
+            </button>
+          </div>
+        </AfDrawer>
+      ) : null}
 
       <AfDrawer open={assistant_open} onClose={() => set_assistant_open(false)} label="Assistant" title="Continuum assistant">
         <AssistantPanel

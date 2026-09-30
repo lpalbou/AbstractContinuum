@@ -478,6 +478,9 @@ export function TeamPage(props: {
     }
   }
   const [selected, set_selected] = useState("");
+  /** Phone stack (< 768 px, DESIGN §5.3): which pane the single-pane layout
+   *  shows — the channel list or the open thread. Inert above 768 px (CSS). */
+  const [mobile_pane, set_mobile_pane] = useState<"channels" | "thread">("channels");
   const [messages, set_messages] = useState<HubMessage[]>([]);
   const [filter, set_filter] = useState<TeamFilter>("all");
   /** Badge clicks stage their target filter here so the channel-switch
@@ -1773,6 +1776,7 @@ export function TeamPage(props: {
     props.on_focus_consumed?.();
     if (!channel) return;
     focus_anchor.current = { message_id, seq };
+    set_mobile_pane("thread");
     if (channel === selected) consume_focus_anchor();
     else set_selected(channel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -4227,8 +4231,14 @@ export function TeamPage(props: {
         </div>
       ) : null}
 
-      <div className={`team_layout ${drawer ? "with_drawer" : ""} ${drawer === "leaderboard" ? "drawer_wide" : ""}`}>
-        <div className="pane team_channels_pane">
+      <div className={`team_layout ${drawer ? "with_drawer" : ""} ${drawer === "leaderboard" ? "drawer_wide" : ""} team_mobile_${mobile_pane}`}>
+        <div
+          className="pane team_channels_pane"
+          onClickCapture={(e) => {
+            // Phone stack: picking a channel/DM opens its thread pane.
+            if ((e.target as HTMLElement | null)?.closest?.(".team_channel")) set_mobile_pane("thread");
+          }}
+        >
           <div className="pane_header">
             <span className="pane_title">Channels</span>
             <span className="pane_count">{channels.filter((c) => !c.name.startsWith("dm:")).length}</span>
@@ -4432,6 +4442,18 @@ export function TeamPage(props: {
 
         <div className="pane team_thread_pane">
           <div className="pane_header team_thread_header">
+            <button
+              type="button"
+              className="btn team_back_btn"
+              onClick={() => {
+                set_mobile_pane("channels");
+                if (drawer) set_drawer("");
+              }}
+              aria-label="Back to channels"
+              title="Back to channels"
+            >
+              ← Channels
+            </button>
             <span className="pane_title team_pane_title">
               {selected ? (is_dm_channel ? `@${dm_display_peer} — direct` : `#${selected}`) : "Select a channel"}
             </span>

@@ -39,6 +39,8 @@ export type EmailInboxPanelProps = {
 export function EmailInboxPanel(props: EmailInboxPanelProps): React.ReactElement {
   const gateway = props.gateway;
 
+  /** Phone stack (< 768 px, DESIGN §5.3): the list OR the open item. */
+  const [phone_detail, set_phone_detail] = useState(false);
   const [accounts, set_accounts] = useState<EmailAccountInfo[]>([]);
   const [default_account, set_default_account] = useState<string>("");
   const [account, set_account] = useState<string>("");
@@ -288,8 +290,13 @@ export function EmailInboxPanel(props: EmailInboxPanelProps): React.ReactElement
 
   return (
     <>
-      <div className="inbox_layout exec_layout">
-        <div className="pane">
+      <div className={`inbox_layout exec_layout ${phone_detail ? "phone_detail" : "phone_list"}`}>
+        <div
+          className="pane"
+          onClickCapture={(e) => {
+            if ((e.target as HTMLElement | null)?.closest?.(".inbox_item")) set_phone_detail(true);
+          }}
+        >
           <div className="pane_header">
             <span className="pane_title">Email</span>
             <span className="pane_count">{messages.length}</span>
@@ -394,6 +401,11 @@ export function EmailInboxPanel(props: EmailInboxPanelProps): React.ReactElement
 
         <div className="pane">
           <div className="pane_body">
+            <div className="pane_back_bar">
+              <button type="button" className="btn pane_back_btn" onClick={() => set_phone_detail(false)}>
+                ← Back to the list
+              </button>
+            </div>
           {!selected_uid ? (
             <div className="mono muted" style={{ fontSize: "var(--font-size-sm)" }}>
               Select an email to read.
