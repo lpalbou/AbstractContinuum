@@ -5270,9 +5270,9 @@ body {
     min-width: var(--tap-min, 44px);
   }
 
-  input:not([type="checkbox"]):not([type="radio"]),
-  textarea,
-  select {
+  /* Beats class-level sizes (.team_compose_text, .team_search_input …):
+     any focused field under 16 px makes iOS zoom the page. */
+  html body :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
     font-size: var(--font-size-input, 16px);
   }
 
@@ -5385,5 +5385,49 @@ body {
   .page.page_pad:not(:has(.team_layout)) > .inbox_layout {
     flex: 1 0 auto;
     min-height: min(560px, calc(var(--vh-full, 100vh) - 120px));
+  }
+}
+
+/* Short landscape windows (phone landscape): the whole filter bar is ONE
+   scrollable row and the thread chrome is thin, so messages keep rows. */
+@media (max-height: 500px) {
+  .team_filterbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .team_filterbar > * {
+    flex: 0 0 auto;
+  }
+
+  .team_filterbar .seg.seg_scroll {
+    flex: 0 0 auto;
+    overflow-x: visible;
+  }
+
+  .team_search_bar {
+    flex: 0 0 180px;
+  }
+
+  .team_thread_header {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+}
+
+@media (pointer: coarse) {
+  :root {
+    --font-size-xxs: max(11px, calc(10px * var(--font-scale, 1)));
+  }
+}
+
+@media (max-height: 500px) {
+  .team_composer {
+    padding: 6px 10px;
+  }
+
+  .team_compose_text {
+    max-height: 88px;
   }
 }
