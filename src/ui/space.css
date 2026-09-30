@@ -148,6 +148,15 @@
   }
 }
 
+/* The Executions live log's "Raw JSONL" (was inline styles; same desktop look). */
+.exec_raw_log {
+  white-space: pre-wrap;
+  font-size: var(--font-size-sm);
+  margin-top: 8px;
+  max-height: 240px;
+  overflow: auto;
+}
+
 /* ───────────────────────── Paths never cut (every width) ───────────────────────── */
 
 /* A long unbroken path in a flex row or in report markdown was clipped by
@@ -293,9 +302,14 @@
   }
 
   .inbox_layout .inbox_list,
-  .exec_log_scroll {
+  .exec_log_scroll,
+  .exec_raw_log {
     overflow: visible;
     max-height: none;
+  }
+
+  .exec_raw_log {
+    overflow-wrap: anywhere;
   }
 
   .board_columns {

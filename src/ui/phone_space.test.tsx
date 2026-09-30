@@ -268,7 +268,7 @@ describe("space.css: the phone layout rules", () => {
   it("phones: list and detail panes are flat sections, rows are hairline items, no inner scroll", () => {
     const phone = block(PHONE);
     expect(phone).toMatch(/\.inbox_layout > \.pane,\s*\.exec_side > \.pane,\s*\.backlog_table_pane,\s*\.board_column \{\s*background: none;\s*border: 0;\s*border-radius: 0;\s*box-shadow: none;\s*overflow: visible;/);
-    expect(phone).toMatch(/\.inbox_layout \.inbox_list,\s*\.exec_log_scroll \{\s*overflow: visible;\s*max-height: none;/);
+    expect(phone).toMatch(/\.inbox_layout \.inbox_list,\s*\.exec_log_scroll,\s*\.exec_raw_log \{\s*overflow: visible;\s*max-height: none;/);
     expect(phone).toMatch(/\.run_card,\s*\.inbox_item \{\s*border: 0;/);
     expect(phone).toMatch(/\.exec_layout,\s*\.inbox_layout \{\s*display: flex;\s*flex-direction: column;/);
   });

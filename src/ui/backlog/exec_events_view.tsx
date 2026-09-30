@@ -200,7 +200,7 @@ export function ExecEventsView(props: {
               Raw JSONL
               {parsed_exec_events.bad ? ` (${parsed_exec_events.bad} unparsable line(s))` : ""}
             </summary>
-            <pre className="mono" style={{ whiteSpace: "pre-wrap", fontSize: "var(--font-size-sm)", marginTop: "8px", maxHeight: "240px", overflow: "auto" }}>
+            <pre className="mono exec_raw_log">
               {parsed_exec_events.raw || ""}
             </pre>
           </details>
