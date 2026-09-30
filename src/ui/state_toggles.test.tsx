@@ -180,6 +180,14 @@ describe("Auto-refresh switches", () => {
   });
 });
 
+describe("Team: new channel", () => {
+  it("'Private' is a switch in the create-channel form (source: the page needs a live hub to render)", () => {
+    const src = fs.readFileSync(path.resolve(__dirname, "team_page.tsx"), "utf8");
+    expect(src).toMatch(/<AfSwitch[^>]*?label="Private"[^>]*?action="new-channel-private"/s);
+    expect(src).not.toMatch(/is_private: e\.target\.checked/);
+  });
+});
+
 describe("source guard", () => {
   const SRC = path.resolve(__dirname, "..");
   function walk(dir: string, out: string[] = []): string[] {

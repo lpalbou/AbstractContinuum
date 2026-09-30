@@ -23,6 +23,8 @@ needs.
 - **Auto-refresh** is a switch on the Services page and in the Executions
   live log, which used to show "Auto on" / "Auto off". In the live log it is
   unavailable until an execution is picked.
+- **Private** in the Team page's new-channel form is a switch; **Create**
+  stays the one action.
 
 ## 0.5.0 — 2026-09-30
 
