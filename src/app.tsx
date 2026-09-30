@@ -94,6 +94,7 @@ export function App(): React.ReactElement {
   const [nav_open, set_nav_open] = useState(false);
   const nav_btn_ref = useRef<HTMLButtonElement | null>(null);
   const nav_drawer_ref = useRef<HTMLDivElement | null>(null);
+  const nav_was_open = useRef(false);
   useEffect(() => {
     if (!nav_narrow) set_nav_open(false);
   }, [nav_narrow]);
@@ -107,10 +108,16 @@ export function App(): React.ReactElement {
       }, 0);
       return () => window.clearTimeout(t);
     }
-    // …and back to the opener on close.
-    if (document.activeElement === document.body || nav_drawer_ref.current?.contains(document.activeElement)) nav_btn_ref.current?.focus();
+    // …and back to the opener on close — only after a real open (review B:
+    // the menu button stole focus on every narrow load / shrink).
+    if (nav_was_open.current && (document.activeElement === document.body || !document.activeElement || nav_drawer_ref.current?.contains(document.activeElement))) {
+      nav_btn_ref.current?.focus();
+    }
     return undefined;
   }, [nav_open, nav_narrow]);
+  useEffect(() => {
+    nav_was_open.current = nav_open;
+  }, [nav_open]);
   function pick_page(id: Page): void {
     set_page(id);
     set_nav_open(false);
@@ -369,7 +376,10 @@ export function App(): React.ReactElement {
     <div className="shell" onClickCapture={retarget_root_links}>
       {nav_narrow ? null : <aside className="shell_sidebar">{shell_nav}</aside>}
 
-      <div className="shell_main">
+      {/* While the nav drawer is open the page behind it is inert (no Tab
+          escape, no screen-reader wandering); React 18 passes `inert` as a
+          plain attribute. */}
+      <div className="shell_main" {...(nav_narrow && nav_open ? { inert: "" } : {})}>
         <header className="shell_header">
           {nav_narrow ? (
             <button

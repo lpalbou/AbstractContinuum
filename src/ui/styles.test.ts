@@ -77,10 +77,12 @@ describe("AbstractContinuum styles", () => {
 describe("responsive contract (DESIGN v2 breakpoints)", () => {
   it("uses only the named breakpoints 480/768/1024/1440 (+ max-height 500)", () => {
     const css = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
-    const widths = [...css.matchAll(/\((?:max|min)-width:\s*([\d.]+)px\)/g)].map((m) => m[1]);
+    // Viewport queries only: @container rules use PANE widths (DESIGN §6).
+    const media = [...css.matchAll(/@media[^{]*/g)].map((m) => m[0]).join("\n");
+    const widths = [...media.matchAll(/\((?:max|min)-width:\s*([\d.]+)px\)/g)].map((m) => m[1]);
     expect(widths.length).toBeGreaterThan(0);
     for (const w of widths) expect(["479.98", "767.98", "1023.98", "1439.98", "1440"]).toContain(w);
-    const heights = [...css.matchAll(/\((?:max|min)-height:\s*([\d.]+)px\)/g)].map((m) => m[1]);
+    const heights = [...media.matchAll(/\((?:max|min)-height:\s*([\d.]+)px\)/g)].map((m) => m[1]);
     for (const h of heights) expect(h).toBe("500");
   });
 

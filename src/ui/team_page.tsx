@@ -481,6 +481,9 @@ export function TeamPage(props: {
   /** Phone stack (< 768 px, DESIGN §5.3): which pane the single-pane layout
    *  shows — the channel list or the open thread. Inert above 768 px (CSS). */
   const [mobile_pane, set_mobile_pane] = useState<"channels" | "thread">("channels");
+  /** Phone thread chrome: collapsed to ONE bar (back, channel, "More");
+   *  "More" reveals the header actions, filters, search/sort and panel tabs. */
+  const [mobile_tools, set_mobile_tools] = useState(false);
   const [messages, set_messages] = useState<HubMessage[]>([]);
   const [filter, set_filter] = useState<TeamFilter>("all");
   /** Badge clicks stage their target filter here so the channel-switch
@@ -4231,7 +4234,7 @@ export function TeamPage(props: {
         </div>
       ) : null}
 
-      <div className={`team_layout ${drawer ? "with_drawer" : ""} ${drawer === "leaderboard" ? "drawer_wide" : ""} team_mobile_${mobile_pane}`}>
+      <div className={`team_layout ${drawer ? "with_drawer" : ""} ${drawer === "leaderboard" ? "drawer_wide" : ""} team_mobile_${mobile_pane} ${mobile_tools ? "team_tools_open" : ""}`}>
         <div
           className="pane team_channels_pane"
           onClickCapture={(e) => {
@@ -4447,12 +4450,23 @@ export function TeamPage(props: {
               className="btn team_back_btn"
               onClick={() => {
                 set_mobile_pane("channels");
+                set_mobile_tools(false);
                 if (drawer) set_drawer("");
               }}
               aria-label="Back to channels"
               title="Back to channels"
             >
               ← Channels
+            </button>
+            <button
+              type="button"
+              className="btn team_tools_btn"
+              onClick={() => set_mobile_tools((v) => !v)}
+              aria-expanded={mobile_tools}
+              aria-label={mobile_tools ? "Hide thread tools" : "Show thread tools (filters, search, panels)"}
+              title="Filters, search, panels and actions"
+            >
+              {mobile_tools ? "Less" : "More"}
             </button>
             <span className="pane_title team_pane_title">
               {selected ? (is_dm_channel ? `@${dm_display_peer} — direct` : `#${selected}`) : "Select a channel"}
@@ -5101,7 +5115,12 @@ export function TeamPage(props: {
                     !(compose_kind === "group" && !reply_to && !is_dm_channel && parse_member_list(group_members_text).length > 0))
                 }
                 onClick={() => void post()}
+                aria-label={posting ? "Sending" : undefined}
               >
+                <span className="team_send_icon" aria-hidden="true">
+                  <Icon name="send" size={16} />
+                </span>
+                <span className="team_send_label">
                 {posting
                   ? "Sending…"
                   : group_preview?.members.length || (!reply_to && !is_dm_channel && compose_kind === "group")
@@ -5113,6 +5132,7 @@ export function TeamPage(props: {
                         : compose_kind === "ask"
                           ? "Ask"
                           : "Send"}
+                </span>
               </button>
             </div>
           </div>

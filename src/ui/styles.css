@@ -1232,13 +1232,21 @@ button.primary:hover:not(:disabled) {
   vertical-align: middle;
 }
 
-@media (max-width: 1439.98px) {
+/* Ancillary columns follow the TABLE's width, not the viewport (review B:
+   mapping the old 1280/1080 viewport rules to 1440/1024 dropped the labels
+   column on a 1366 laptop). The thresholds are the pane widths the old
+   rules fired at with the 196 px sidebar docked (1280 - 230, 1080 - 230). */
+.backlog_table_pane {
+  container: backlog-table / inline-size;
+}
+
+@container backlog-table (max-width: 1050px) {
   .backlog_table .col_labels {
     display: none;
   }
 }
 
-@media (max-width: 1023.98px) {
+@container backlog-table (max-width: 850px) {
   .backlog_table .col_package {
     display: none;
   }
@@ -2581,11 +2589,13 @@ button.primary:hover:not(:disabled) {
   }
 }
 
-.team_back_btn {
+.team_back_btn,
+.team_tools_btn,
+.team_send_icon {
   display: none;
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 767.98px), (max-width: 1023.98px) and (max-height: 500px) {
   .team_layout,
   .team_layout.with_drawer,
   .team_layout.with_drawer.drawer_wide {
@@ -5243,13 +5253,6 @@ body {
 
 /* --- Touch: 44 px targets, 16 px inputs, comfortable text (§2, §3) ------ */
 @media (pointer: coarse) {
-  :root {
-    /* App text rides md/sm/xs; lift them on touch only (desktop unchanged). */
-    --font-size-xs: max(12px, calc(11px * var(--font-scale, 1)));
-    --font-size-sm: max(13px, calc(12px * var(--font-scale, 1)));
-    --font-size-md: max(14px, calc(13px * var(--font-scale, 1)));
-  }
-
   .btn,
   button.tab,
   .tab,
@@ -5420,11 +5423,6 @@ body {
   }
 }
 
-@media (pointer: coarse) {
-  :root {
-    --font-size-xxs: max(11px, calc(10px * var(--font-scale, 1)));
-  }
-}
 
 @media (max-height: 500px) {
   .team_composer {
@@ -5494,5 +5492,117 @@ body {
   .btn,
   .btn.btn_icon {
     min-height: var(--tap-min, 44px);
+  }
+}
+
+/* Round 4 — Team thread on phones and short landscape windows (review B
+   blocker 3). The thread chrome collapses to ONE 44 px bar (← Channels,
+   #channel, More); "More" reveals the header actions, the filter bar and the
+   panel tabs. Send becomes a 44x44 icon button so the textarea takes the
+   width; the composer is capped. Same query as the single-pane stack. */
+@media (max-width: 767.98px), (max-width: 1023.98px) and (max-height: 500px) {
+  .team_tools_btn {
+    display: inline-flex;
+    align-items: center;
+    margin-left: auto;
+    order: 10; /* after the channel title, at the right edge */
+  }
+
+  .team_layout.team_mobile_thread:not(.team_tools_open) .team_filterbar,
+  .team_layout.team_mobile_thread:not(.team_tools_open):not(.with_drawer) > .team_drawer_rail,
+  .team_layout.team_mobile_thread:not(.team_tools_open) .team_thread_header > :not(.team_back_btn):not(.team_pane_title):not(.team_tools_btn) {
+    display: none;
+  }
+
+  .team_thread_header {
+    padding: 4px 8px;
+    gap: 6px;
+  }
+
+  .team_pane_title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .team_layout.team_mobile_thread:not(.team_tools_open) .team_thread_header > .team_pane_title {
+    flex: 1 1 auto;
+  }
+
+  .team_composer {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .team_compose_row {
+    gap: 6px;
+  }
+
+  .team_kind_select {
+    width: 64px;
+    padding: 0 6px;
+  }
+
+  .team_compose_text {
+    max-height: 88px;
+    padding: 10px;
+  }
+
+  .team_compose_row .team_send {
+    position: relative;
+    width: var(--tap-min, 44px);
+    min-width: var(--tap-min, 44px);
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .team_send_icon {
+    display: inline-flex;
+  }
+
+  /* Visually hidden, still the button's accessible name. */
+  .team_send_label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* Round 4 — reading surfaces on touch get the kit body size (>= 14 px x the
+   user's scale); dense data (chips, tables, meta rows) keeps the kit's small
+   sizes, so the user's Small/Medium/Large scale stays honest. */
+@media (pointer: coarse) {
+  .team_row_body,
+  .inbox_markdown,
+  .md_doc,
+  .modal_body label,
+  .field label,
+  .field_help {
+    font-size: var(--font-size-body);
+    line-height: 1.5;
+  }
+}
+
+/* Round 4 — full-width phone sheets and drawers are OPAQUE (the kit's
+   --bg-card can be translucent; the board ghosted through the form).
+   Desktop cards keep their look. */
+@media (max-width: 767.98px), (max-height: 500px) {
+  .modal_backdrop:not(.fullscreen) .modal_panel,
+  .modal_backdrop:not(.fullscreen) .modal_header,
+  .modal_backdrop:not(.fullscreen) .modal_footer {
+    background: var(--bg-secondary);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .drawer_panel,
+  .drawer_panel .drawer_header {
+    background: var(--bg-secondary);
   }
 }

@@ -92,16 +92,23 @@ export function WorkItemDrawer(props: {
 
   const metadata = useMemo(() => parse_work_item_metadata(content), [content]);
 
-  // Escape closes the drawer like the backdrop and Close do (DESIGN §5.2);
-  // a nested dialog that consumed the key (defaultPrevented) keeps it.
+  // Escape closes the drawer like the backdrop and Close do (DESIGN §5.2) —
+  // but NEVER while the operator is typing or has an unsaved spec edit (review
+  // B: Escape in the spec textarea closed the drawer and discarded the edit),
+  // never when another layer consumed the key, and never under an open modal.
   useEffect(() => {
     if (!open || !target) return;
     const on_key = (e: KeyboardEvent): void => {
-      if (e.key === "Escape" && !e.defaultPrevented) on_close();
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (escape_targets_editable(e.target)) return;
+      if (editing) return;
+      if (document.querySelector(".modal_backdrop")) return;
+      e.preventDefault();
+      on_close();
     };
     window.addEventListener("keydown", on_key);
     return () => window.removeEventListener("keydown", on_key);
-  }, [open, target, on_close]);
+  }, [open, target, on_close, editing]);
 
   useEffect(() => {
     if (!open || !target) return;
@@ -516,4 +523,12 @@ export function WorkItemDrawer(props: {
       </div>
     </div>
   );
+}
+
+/** True when Escape was pressed inside a text field / select / contenteditable
+ *  (the key belongs to the field, not to the drawer). */
+export function escape_targets_editable(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el || typeof el.closest !== "function") return false;
+  return Boolean(el.closest("input, textarea, select, [contenteditable=''], [contenteditable='true']"));
 }

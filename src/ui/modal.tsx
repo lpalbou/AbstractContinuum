@@ -13,7 +13,11 @@ export function Modal({ open, title, children, actions, variant = "default", onC
   useEffect(() => {
     if (!open) return;
     const on_keydown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      // The modal is the top layer: it consumes the key so a drawer or the
+      // nav drawer underneath does not close on the same press.
+      e.preventDefault();
+      onClose();
     };
     window.addEventListener("keydown", on_keydown);
     return () => window.removeEventListener("keydown", on_keydown);
