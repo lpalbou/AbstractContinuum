@@ -2,6 +2,41 @@
 
 All notable, user-visible changes to AbstractContinuum.
 
+## 0.5.0 — unreleased (feat/responsive)
+
+Continuum adapts to the screen: a MacBook window, a resized browser window,
+an iPad and an iPhone (portrait and landscape). Desktop windows at 1440 px
+and wider keep their layout.
+
+### Changed
+
+- **Navigation drawer below 1024 px.** The sidebar leaves the row on narrow
+  windows and tablets; the menu button in the header opens it from the left
+  (Escape, a tap outside, or Close menu closes it; focus moves in and back).
+- **The header always fits.** The page title shortens with an ellipsis and,
+  on phones, "+ New task" becomes "+"; the connection pill keeps its dot.
+- **Team: one pane at a time on phones.** Below 768 px the Team page shows the
+  channel list, then the thread with a "← Channels" button; the Assistant,
+  Members, Files, Leaderboard and Desk tabs become a strip above it, and an
+  open panel replaces the thread until closed. From 768 to 1439 px an open
+  panel sits beside the thread (the channel list yields); from 1440 px the
+  three panes stay side by side. The filter bar wraps instead of overlapping
+  the sort buttons, which also shows the filters that were hidden at 1512 px.
+- **Executions and Inbox: list, then detail on phones**, with "Back to the
+  list"; the backlog table becomes one card per item (title first, actions
+  underneath) instead of hiding the title column.
+- **Dialogs are bottom sheets on phones** and in short landscape windows, with
+  their buttons always visible; the work-item drawer is full width on phones
+  and closes with Escape.
+- **Touch screens** get 44 px buttons, rows and tabs, 16 px form fields (no
+  iOS zoom on focus) and one size larger small text; message actions sit under
+  the message instead of squeezing it.
+- **Wide windows**: board lanes use the width at 1440 px and wider; long
+  messages and documents keep a readable line length.
+- Uses `@abstractframework/ui-kit` 0.3.0 and `@abstractframework/panel-chat`
+  0.2.0 (responsive kit: breakpoints 480/768/1024/1440, safe areas, visible
+  viewport height, sheets).
+
 ## 0.4.0 — 2026-09-28
 
 Serving Continuum through the gateway at `/apps/continuum/` needs
