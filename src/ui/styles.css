@@ -1688,6 +1688,12 @@ button.primary:hover:not(:disabled) {
 
 /* Touch devices have no hover — the rail is always present (critic F3). */
 @media (pointer: coarse) {
+  .team_row {
+    flex-wrap: wrap;
+  }
+
+  /* The always-on rail drops under the message instead of squeezing the
+     body into a 100 px column on phones (responsive pass 2026-09-30). */
   .team_row_rail {
     display: flex;
     position: static;
@@ -1695,6 +1701,10 @@ button.primary:hover:not(:disabled) {
     border: none;
     background: transparent;
     padding: 0;
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
 }
 
@@ -4968,7 +4978,7 @@ body {
 }
 
 .shell_header_title {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -5121,7 +5131,8 @@ body {
     border-bottom: 1px solid var(--bg-tertiary);
   }
 
-  .backlog_table td {
+  .backlog_table tr.backlog_row > td {
+    width: auto;
     border: none;
     padding: 0;
     overflow: visible;
@@ -5129,7 +5140,7 @@ body {
 
   .backlog_table .backlog_table_title {
     order: -1;
-    flex: 1 1 100%;
+    flex: 1 1 calc(100% - 44px);
     white-space: normal;
     overflow-wrap: anywhere;
   }
@@ -5298,4 +5309,81 @@ body {
 .inbox_markdown,
 .work_drawer_body .md_doc {
   max-width: var(--reading-max, 86ch);
+}
+
+/* Nav drawer: the item list scrolls inside the drawer (phone landscape is
+   393 px tall — the items overlapped the close button). */
+.shell_nav_drawer .af-drawer__body {
+  overflow-y: auto;
+}
+
+.shell_nav_drawer_body .shell_nav {
+  flex: 0 0 auto;
+}
+
+/* Team thread chrome on phones (and short landscape windows): every strip
+   is ONE row (horizontal scroll) so the messages keep the screen (baseline:
+   3 wrapped filter rows + search + sort left ~2 message lines at 375x667). */
+@media (max-width: 767.98px), (max-height: 500px) {
+  .team_thread_header {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .team_thread_header > * {
+    flex: 0 0 auto;
+  }
+
+  .team_filterbar {
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .team_filterbar .seg.seg_scroll {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .team_filterbar .seg.seg_scroll .seg_btn {
+    flex: 0 0 auto;
+  }
+
+  .team_search_bar {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .team_filterbar_meta {
+    display: none;
+  }
+}
+
+/* The vertical inspector rail never sets the Team row height (five tall
+   tabs forced the grid to 620 px in a 393 px landscape window). */
+:where(.team_layout) {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+:where(.team_drawer_rail) {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+/* Phones / short windows: flat pages with callouts + stat strips above a
+   list/detail pair scroll as a page (the pair keeps a usable height)
+   instead of cutting the bottom off. The Team page keeps its own panes. */
+@media (max-width: 767.98px), (max-height: 500px) {
+  .page.page_pad:not(.board_page_root):not(:has(.team_layout)) {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .page.page_pad:not(:has(.team_layout)) > .inbox_layout {
+    flex: 1 0 auto;
+    min-height: min(560px, calc(var(--vh-full, 100vh) - 120px));
+  }
 }

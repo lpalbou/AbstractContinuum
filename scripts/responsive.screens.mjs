@@ -284,6 +284,20 @@ export default {
       },
       settle: 700,
     },
+    {
+      // Added after the baseline (no baseline row): the Team thread with no
+      // inspector open — on phones the single-pane stack after picking a channel.
+      name: "thread",
+      async run(page) {
+        await go(page, "Team");
+        const close = page.locator(".team_drawer .pane_header button[title='Close'], .team_drawer_pane .pane_header button[title='Close']").first();
+        if (await close.isVisible().catch(() => false)) await close.click().catch(() => {});
+        const ch = page.locator(".team_channel", { hasText: "commons" }).first();
+        if (await ch.isVisible().catch(() => false)) await ch.click().catch(() => {});
+        await page.getByText("Release sequence for the responsive wave").first().waitFor({ state: "attached", timeout: 15000 });
+      },
+      settle: 900,
+    },
   ],
   sweepScreen: "team",
 };
