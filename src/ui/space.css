@@ -1,0 +1,523 @@
+/* space.css — list + detail screens use the space they have (DESIGN §12,
+ * operator 2026-09-30 "you do not use enough the space").
+ *
+ * Loaded after styles.css (main.tsx). Measured on a 393 px phone (0.5.0):
+ * every list and detail sat in a bordered pane card inside the page gutter
+ * (12 + 1 + 12 px before the first character of a run detail), run and
+ * report rows were cards inside that card, the Team thread was a card with
+ * the replies indented a further 29 px, the event log scrolled inside the
+ * page, run facts spent a line per label, and long paths were cut off (the
+ * Review tab's candidate line, report markdown). The fixes:
+ *   - every list panel next to a detail has a disclosure header
+ *     (list_disclosure.tsx), open by default and remembered per viewer;
+ *   - Executions and Inbox stack the list above the detail on phones (one
+ *     page scroll; a pick scrolls the detail into view);
+ *   - below 768 px panes and rows are flat sections with hairline dividers,
+ *     no scroll box inside the page (the spec editor's textarea excepted),
+ *     label/value pairs share a line, paths are a plain monospace line;
+ *   - tablets keep two columns only where both get >= 360 px: Executions and
+ *     Inbox do (list 360 px+), the Team page (a ~200 px channel list) takes
+ *     the phone layout below 1024 px (styles.css, Team stack queries);
+ *   - reading text is body size (14 px) on phones; chips, ids and times stay
+ *     small.
+ * Only the named breakpoints (768 = "not (max-width: 767.98px)"). */
+
+/* ───────────────────────── Touch type scale (DESIGN §12.1) ───────────────────────── */
+
+/* Phones and tablets: body text is 14-17 px. The whole kit scale is lifted
+ * at the token level (not per element), so every surface follows, and the
+ * user's font-scale setting still multiplies it: body 15, the small sizes
+ * 14, meta (chips, ids, times) 12-13. Desktops keep the kit scale. */
+@media (pointer: coarse) {
+  :root {
+    --font-size-xxs: calc(12px * var(--font-scale, 1));
+    --font-size-xs: calc(13px * var(--font-scale, 1));
+    --font-size-sm: calc(14px * var(--font-scale, 1));
+    --font-size-md: calc(14px * var(--font-scale, 1));
+    --font-size-base: calc(15px * var(--font-scale, 1));
+  }
+
+  /* Filter chips are controls (44 px pills): button-size text, like .btn. */
+  .chip.board_facet {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* ───────────────────────── Disclosure header ───────────────────────── */
+
+.list_collapsed [hidden] {
+  display: none !important;
+}
+
+.list_disclosure {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 32px; /* a real target with a mouse too; the header trims its padding below */
+  margin: 0;
+  padding: 0 8px 0 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.list_disclosure > svg {
+  flex: none;
+  color: var(--text-secondary);
+}
+
+.list_disclosure:hover {
+  background: var(--ui-overlay-bg-hover, rgba(255, 255, 255, 0.04));
+}
+
+.list_disclosure:focus-visible {
+  outline: 2px solid var(--accent, #60a5fa);
+  outline-offset: 2px;
+}
+
+.list_disclosure > span {
+  min-width: 0;
+}
+
+.list_disclosure > .pane_count,
+.list_disclosure > .board_column_count {
+  flex: none;
+}
+
+@media (pointer: coarse) {
+  .list_disclosure {
+    min-height: var(--tap-min, 44px);
+  }
+}
+
+/* A header holding a disclosure keeps its height: the 32/44 px button
+ * replaces most of the header's vertical padding. */
+.pane_header:has(> .list_disclosure),
+.board_column_header:has(> .list_disclosure) {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+/* The Board column header keeps its count at the right edge. */
+.board_column_header > .list_disclosure {
+  flex: 1 1 auto;
+}
+
+.board_column_header > .list_disclosure > .board_column_count {
+  margin-left: auto;
+}
+
+/* A collapsed panel is its header only. */
+.pane.list_collapsed > .pane_header,
+.board_column.list_collapsed > .board_column_header {
+  border-bottom: 0;
+}
+
+.board_column.list_collapsed {
+  min-height: 0;
+  align-self: flex-start;
+}
+
+.exec_side > .pane.list_collapsed {
+  flex: 0 0 auto;
+}
+
+/* Moved from inline styles (the disclosure owns these bodies now). */
+.exec_recent_body {
+  padding: 0;
+}
+
+.email_list_body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Collapsing the list gives the detail the whole width (two-column layouts). */
+@media not all and (max-width: 767.98px) {
+  .inbox_layout.list_collapsed,
+  .exec_layout:has(> .exec_side > .exec_pane_active.list_collapsed):has(> .exec_side > .exec_pane_recent.list_collapsed) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .exec_layout:has(> .exec_side > .exec_pane_active.list_collapsed):has(> .exec_side > .exec_pane_recent.list_collapsed) > .exec_side {
+    flex-direction: row;
+  }
+
+  .exec_layout:has(> .exec_side > .exec_pane_active.list_collapsed):has(> .exec_side > .exec_pane_recent.list_collapsed) > .exec_side > .pane {
+    flex: 1 1 0;
+  }
+}
+
+/* The Executions live log's "Raw JSONL" (was inline styles; same desktop look). */
+.exec_raw_log {
+  white-space: pre-wrap;
+  font-size: var(--font-size-sm);
+  margin-top: 8px;
+  max-height: 240px;
+  overflow: auto;
+}
+
+/* ───────────────────────── Paths never cut (every width) ───────────────────────── */
+
+/* A long unbroken path in a flex row or in report markdown was clipped by
+ * the pane/drawer (393 px: the Review tab's candidate line, a report's path). */
+.work_review_meta {
+  flex: 1 1 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-sm);
+}
+
+/* Work drawer helper and warning lines (were inline sizes; same desktop look). */
+.work_drawer_hint {
+  font-size: var(--font-size-xs);
+}
+
+.work_drawer_warn {
+  color: rgb(250, 204, 21);
+  font-size: var(--font-size-sm);
+}
+
+.inbox_markdown,
+.md_doc {
+  overflow-wrap: anywhere;
+}
+
+/* ───────────────────────── Tablets: two columns only when both get >= 360 px ───────────────────────── */
+
+@media not all and (max-width: 767.98px) {
+  @media (max-width: 1023.98px) {
+    .inbox_layout:not(.list_collapsed) {
+      grid-template-columns: minmax(360px, 42%) minmax(360px, 1fr);
+    }
+  }
+}
+
+/* ───────────────────────── Team below 1024: flat panes (phone layout, tablet gutters) ───────────────────────── */
+
+@media (max-width: 1023.98px) {
+  .team_layout > .pane {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .team_layout > .pane > .pane_header,
+  .team_layout .team_thread_header,
+  .team_layout .team_filterbar {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .team_layout .team_thread {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .team_layout .team_composer {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Replies: a thin rule instead of a 29 px indent. */
+  .team_layout .team_replies {
+    margin-left: 4px;
+    padding-left: 8px;
+  }
+
+  .team_layout .team_trail_bar,
+  .team_layout .team_thread_tools {
+    padding-left: 0;
+  }
+
+  .team_layout .team_thread_group {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .team_layout .team_row {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* ───────────────────────── Phones (< 768): every list + detail screen ───────────────────────── */
+
+@media (max-width: 767.98px) {
+  /* Executions + Inbox: the list (a disclosure) above the detail. */
+  .exec_layout,
+  .inbox_layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .inbox_layout > *,
+  .exec_side > .pane {
+    flex: 0 0 auto;
+  }
+
+  .exec_side {
+    gap: 0;
+  }
+
+  /* Panes are flat sections: no card, no inner scroll, hairline between. */
+  .inbox_layout > .pane,
+  .exec_side > .pane,
+  .backlog_table_pane,
+  .board_column {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .exec_side > .pane + .pane,
+  .inbox_layout > .pane + .pane,
+  .inbox_layout > .exec_side + .pane,
+  .board_column + .board_column {
+    border-top: 1px solid var(--bg-tertiary);
+  }
+
+  .inbox_layout > .pane > .pane_header,
+  .exec_side > .pane > .pane_header,
+  .backlog_table_pane > .pane_header,
+  .board_column > .board_column_header {
+    padding-left: 0;
+    padding-right: 0;
+    border-bottom: 0;
+  }
+
+  .inbox_layout > .pane > .pane_body,
+  .exec_side > .pane > .pane_body,
+  .board_column > .board_column_body {
+    padding-left: 0;
+    padding-right: 0;
+    overflow: visible;
+    max-height: none;
+  }
+
+  .inbox_layout .inbox_list,
+  .exec_log_scroll,
+  .exec_raw_log {
+    overflow: visible;
+    max-height: none;
+  }
+
+  .exec_raw_log {
+    overflow-wrap: anywhere;
+  }
+
+  .board_columns {
+    gap: 0;
+  }
+
+  .board_column.drag_over {
+    outline-offset: 0;
+  }
+
+  /* List rows: flat items with a hairline; the selected one keeps an accent rule. */
+  .exec_side .pane_body_list,
+  .inbox_layout .pane_body_list {
+    gap: 0;
+  }
+
+  .run_card,
+  .inbox_item {
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    padding: 10px 0;
+  }
+
+  .run_card:hover:not(:disabled),
+  .inbox_item:hover:not(:disabled) {
+    border: 0;
+    background: none;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .run_card + .run_card,
+  .inbox_item + .inbox_item {
+    border-top: 1px solid var(--bg-tertiary);
+  }
+
+  .run_card.is_running {
+    padding-left: 10px;
+    border-left: 3px solid var(--info, #60a5fa);
+  }
+
+  .run_card.selected,
+  .inbox_item.active {
+    padding-left: 10px;
+    box-shadow: inset 2.5px 0 0 var(--info, #60a5fa);
+    background: var(--info-subtle, rgba(96, 165, 250, 0.08));
+  }
+
+  .recent_row {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Stat strip: one row of four compact figures, not four cards. */
+  .stat_strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .stat_card,
+  .stat_card.tone_ok,
+  .stat_card.tone_warn,
+  .stat_card.tone_info,
+  .stat_card.tone_danger {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    padding: 4px 8px 4px 0;
+  }
+
+  .stat_card.tone_ok .stat_value {
+    color: var(--success, rgb(74, 222, 128));
+  }
+
+  .stat_card.tone_warn .stat_value {
+    color: var(--warning, rgb(250, 204, 21));
+  }
+
+  .stat_card.tone_info .stat_value {
+    color: var(--info, #60a5fa);
+  }
+
+  .stat_card.tone_danger .stat_value {
+    color: var(--danger, rgb(248, 113, 113));
+  }
+
+  /* Detail: the detail pane's own section title row goes flat too. */
+  .inbox_detail_actions {
+    justify-content: flex-start;
+  }
+
+  /* Label / value on one line where they fit; the value drops below only
+   * when it wraps. Paths (wide facts) are a full-width monospace line. */
+  .fact_grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    font-size: var(--font-size-body, 14px);
+  }
+
+  .fact {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 10px;
+    row-gap: 1px;
+  }
+
+  .fact_label {
+    flex: 0 0 auto;
+    min-width: 7.5em;
+    font-size: var(--font-size-sm);
+  }
+
+  .fact_value {
+    flex: 1 1 12em;
+    min-width: 0;
+  }
+
+  .fact_wide .fact_value,
+  .fact_value.mono {
+    flex-basis: 100%;
+    font-size: var(--font-size-sm);
+  }
+
+  /* Event log: flat entries (the status keeps its left rule), no scroll box. */
+  .exec_event,
+  .exec_event.ok,
+  .exec_event.error {
+    border-top: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  .exec_event_summary {
+    padding: 8px 0 8px 10px;
+  }
+
+  .exec_event_body {
+    padding: 0 0 10px 10px;
+  }
+
+  .exec_event_main {
+    font-size: var(--font-size-body, 14px);
+  }
+
+  .exec_event_body pre {
+    overflow-wrap: anywhere;
+  }
+
+  /* The work drawer is an opaque full-screen sheet on phones: while it is
+   * open it is the one scroll — the page behind it is hidden (not removed,
+   * so the board keeps its scroll position for when the drawer closes). */
+  .page:has(> .drawer_backdrop) > :not(.drawer_backdrop) {
+    visibility: hidden;
+  }
+
+  /* Work drawer: the body owns a 16 px gutter at most; action rows wrap. */
+  .work_drawer_body {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .work_drawer_tabs,
+  .drawer_panel .drawer_header {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .work_meta_editor,
+  .board_card_actions,
+  .inbox_detail_actions,
+  .row:has(> .btn) {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Helper text is never xs on a phone (DESIGN §3: 13 px). */
+  .work_drawer_hint,
+  .work_review_meta,
+  .work_drawer_warn {
+    font-size: var(--font-size-md);
+  }
+
+  /* Reading text at body size; chips, ids and times keep the small scale. */
+  .board_card_title_text,
+  .backlog_table .backlog_table_title,
+  .run_card_title,
+  .inbox_item_title,
+  .recent_row_name,
+  .detail_prose,
+  .detail_hint,
+  .detail_warn,
+  .inbox_markdown,
+  .work_drawer_body .md_doc,
+  .work_dod_item,
+  .exec_event_body .md_doc {
+    font-size: var(--font-size-body, 14px);
+  }
+}

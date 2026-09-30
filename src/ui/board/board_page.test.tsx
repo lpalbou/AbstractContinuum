@@ -4,7 +4,7 @@
 // gateway state, the busy-set behavior, card actions (promote to Ready,
 // DoR-gated execute), and metadata chip hydration.
 import React from "react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { BoardPage } from "./board_page";
@@ -191,9 +191,10 @@ describe("BoardPage", () => {
     render_board(gw);
     fireEvent.click(await screen.findByText("Ready item"));
 
-    expect(await screen.findByRole("button", { name: "Spec" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Runs/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Review/ })).toBeTruthy();
+    const drawer = await screen.findByRole("dialog");
+    expect(await within(drawer).findByRole("button", { name: "Spec" })).toBeTruthy();
+    expect(within(drawer).getByRole("button", { name: /Runs/ })).toBeTruthy();
+    expect(within(drawer).getByRole("button", { name: /Review/ })).toBeTruthy();
     await waitFor(() => expect(gw.backlog_content).toHaveBeenCalledWith("planned", "0001-x-ready.md"));
     expect(await screen.findByText("Real summary.")).toBeTruthy();
   });

@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { copyText } from "@abstractframework/panel-chat";
 
 import type { EmailAccountInfo, EmailMessageSummary, EmailReadResponse } from "../lib/gateway_client";
 import { GatewayClient } from "../lib/gateway_client";
+import { ListDisclosure, reveal_on_phone, useListOpen } from "./list_disclosure";
 import { Modal } from "./modal";
 
 type EmailStatus = "all" | "unread" | "read";
@@ -39,8 +40,11 @@ export type EmailInboxPanelProps = {
 export function EmailInboxPanel(props: EmailInboxPanelProps): React.ReactElement {
   const gateway = props.gateway;
 
-  /** Phone stack (< 768 px, DESIGN §5.3): the list OR the open item. */
-  const [phone_detail, set_phone_detail] = useState(false);
+  /** Phones stack the list above the open email (one page scroll, DESIGN
+   *  §12); the list is a disclosure, open by default and remembered. */
+  const [list_open, toggle_list] = useListOpen("inbox_email");
+  const list_ref = useRef<HTMLDivElement | null>(null);
+  const detail_ref = useRef<HTMLDivElement | null>(null);
   const [accounts, set_accounts] = useState<EmailAccountInfo[]>([]);
   const [default_account, set_default_account] = useState<string>("");
   const [account, set_account] = useState<string>("");
@@ -290,18 +294,18 @@ export function EmailInboxPanel(props: EmailInboxPanelProps): React.ReactElement
 
   return (
     <>
-      <div className={`inbox_layout exec_layout ${phone_detail ? "phone_detail" : "phone_list"}`}>
+      <div className={`inbox_layout exec_layout${list_open ? "" : " list_collapsed"}`}>
         <div
-          className="pane"
+          className={`pane inbox_list_pane${list_open ? "" : " list_collapsed"}`}
+          ref={list_ref}
           onClickCapture={(e) => {
-            if ((e.target as HTMLElement | null)?.closest?.(".inbox_item")) set_phone_detail(true);
+            if ((e.target as HTMLElement | null)?.closest?.(".inbox_item")) requestAnimationFrame(() => reveal_on_phone(detail_ref.current));
           }}
         >
           <div className="pane_header">
-            <span className="pane_title">Email</span>
-            <span className="pane_count">{messages.length}</span>
+            <ListDisclosure open={list_open} on_toggle={toggle_list} controls="inbox_email_list" title="Email" count={messages.length} />
           </div>
-          <div className="pane_body" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div className="pane_body email_list_body" id="inbox_email_list" hidden={!list_open}>
           <div className="row" style={{ alignItems: "center", justifyContent: "space-between" }}>
             <div className="row" style={{ gap: "8px", alignItems: "center" }}>
               <select value={account} onChange={(e) => set_account(String(e.target.value || ""))} disabled={!can_use || loading_accounts}>
@@ -399,10 +403,10 @@ export function EmailInboxPanel(props: EmailInboxPanelProps): React.ReactElement
           </div>
         </div>
 
-        <div className="pane">
+        <div className="pane inbox_detail_pane" ref={detail_ref}>
           <div className="pane_body">
             <div className="pane_back_bar">
-              <button type="button" className="btn pane_back_btn" onClick={() => set_phone_detail(false)}>
+              <button type="button" className="btn pane_back_btn" onClick={() => reveal_on_phone(list_ref.current)}>
                 ← Back to the list
               </button>
             </div>

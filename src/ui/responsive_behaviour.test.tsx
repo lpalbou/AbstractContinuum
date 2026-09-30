@@ -310,7 +310,10 @@ describe("work-item drawer Escape guard", () => {
 // ---------------------------------------------------------------------------
 describe("responsive stylesheet rules the states depend on", () => {
   const css = readFileSync(resolve(__dirname, "styles.css"), "utf8");
-  const STACK = /@media \(max-width: 767\.98px\), \(max-width: 1023\.98px\) and \(max-height: 500px\) \{/g;
+  // Team's single-pane stack and collapsed chrome: below 1024 px (phones and
+  // tablets — a ~200 px channel list beside the thread fails DESIGN §12's
+  // "two columns only when both get ~360 px").
+  const STACK = /@media \(max-width: 1023\.98px\) \{/g;
 
   function blocks(re: RegExp): string[] {
     const out: string[] = [];

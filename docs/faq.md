@@ -7,8 +7,9 @@ system (runs, ledgers, artifacts, memory graphs, entities); continuum
 They were one app until 2026-07-12 (`history.md` records the split).
 
 **Can I use Continuum on a phone or a tablet?**
-Yes. Below 1024 px the sidebar becomes a menu, and below 768 px each page
-shows one pane at a time (list, then the selected item). See
+Yes. Below 1024 px the sidebar becomes a menu and the Team page shows one
+pane at a time; below 768 px lists and details use the full width, with the
+list above the selected item in one scrolling page. See
 [Responsive layout](../README.md#responsive-layout) for the details per
 width.
 

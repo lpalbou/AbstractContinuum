@@ -89,7 +89,8 @@ describe("responsive contract (DESIGN v2 breakpoints)", () => {
   it("stacks the Team three-pane and the list/detail pages below 768px", () => {
     const css = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
     expect(css).toMatch(/\.team_layout\.team_mobile_channels\s*>\s*\.team_thread_pane/);
-    expect(css).toMatch(/\.inbox_layout\.phone_list\s*>\s*\.pane:nth-child\(2\)/);
+    // Team: one pane at a time below 1024 (tablets included: DESIGN §12).
+    expect(css).toMatch(/@media \(max-width: 1023\.98px\) \{\s*\.team_layout,\s*\.team_layout\.with_drawer,/);
     expect(css).toMatch(/@media\s*\(pointer:\s*coarse\)\s*\{[\s\S]*min-height:\s*var\(--tap-min/);
   });
 });
