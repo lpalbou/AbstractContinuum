@@ -11,7 +11,7 @@
 // variables).
 import React, { useEffect, useState } from "react";
 
-import { ProviderModelPicker, type GatewayConnectionState, type ProviderOption } from "@abstractframework/ui-kit";
+import { AfSwitch, ProviderModelPicker, type GatewayConnectionState, type ProviderOption } from "@abstractframework/ui-kit";
 
 import { get_server_settings, save_server_setting, type ServerSettingsView } from "../lib/continuum_settings";
 import { knob_bool, knob_string, type AdminRuntimeConfigResponse, type DataHomeRow, type GatewayClient } from "../lib/gateway_client";
@@ -353,18 +353,22 @@ export function SettingsPage(props: {
   const [data_homes, set_data_homes] = useState<DataHomeRow[] | null>(null);
   const [data_homes_warnings, set_data_homes_warnings] = useState<string[]>([]);
   const [admin_error, set_admin_error] = useState("");
+  /** The state a switch change produced, in words ("Exec runner is on."). */
+  const [admin_notice, set_admin_notice] = useState("");
   const [admin_busy, set_admin_busy] = useState(false);
   const [posture_nonce, set_posture_nonce] = useState(0);
 
   /** Admin write: one key per call; the response is the fresh posture.
    *  Refusals render verbatim (the gateway is the gatekeeper). */
-  async function admin_update(patch: Parameters<GatewayClient["admin_runtime_config_update"]>[0]): Promise<void> {
+  async function admin_update(patch: Parameters<GatewayClient["admin_runtime_config_update"]>[0], notice = ""): Promise<void> {
     if (admin_busy) return;
     set_admin_busy(true);
     set_admin_error("");
+    set_admin_notice("");
     try {
       const cfg = await gateway.admin_runtime_config_update(patch);
       set_admin_cfg(cfg);
+      set_admin_notice(notice);
       set_posture_nonce((n) => n + 1); // re-derive the posture table
     } catch (e: any) {
       set_admin_error(String(e?.message || e || "Config update refused"));
@@ -694,6 +698,20 @@ export function SettingsPage(props: {
                   // actions behind a horizontal scroll (operator 07-14).
                   const can_write = admin_cfg?.writable === true;
                   const executors = Array.isArray(admin_cfg?.executors) ? admin_cfg.executors : [];
+                  // On/off settings are switches labelled by the feature
+                  // (state-toggles rule): the switch position IS the state,
+                  // shown to everyone; only a writable principal may flip it.
+                  const switch_reason = can_write
+                    ? null
+                    : !admin_cfg
+                      ? "This gateway does not serve its settings to Continuum (older build)."
+                      : admin_cfg.writable === false
+                        ? "Only a gateway admin can change this."
+                        : "This gateway does not say whether you may change it.";
+                  const exec_on = admin_cfg
+                    ? knob_bool(admin_cfg.backlog_exec_runner) === true
+                    : posture.exec_pipeline === "on" || posture.exec_pipeline === "degraded";
+                  const pm_on = admin_cfg ? knob_bool(admin_cfg.process_manager) === true : posture.process_manager === true;
                   return (
                     <div>
                       <div className="admin_row" data-testid="admin_row_backlog_folder">
@@ -734,26 +752,26 @@ export function SettingsPage(props: {
                         </div>
                       </div>
 
-                      <div className="admin_row">
+                      <div className="admin_row" data-testid="admin_row_exec_runner">
                         <div className="admin_row_top">
-                          <span className="admin_row_name">Exec runner</span>
+                          <AfSwitch
+                            label="Exec runner"
+                            action="exec-runner"
+                            checked={exec_on}
+                            unavailableReason={switch_reason}
+                            busy={admin_busy}
+                            onChange={(next) => void admin_update({ backlog_exec_runner: next }, next ? "Exec runner is on." : "Exec runner is off.")}
+                          />
                           {posture.exec_pipeline === null ? (
-                            <span className="chip mono muted">unknown</span>
-                          ) : (
-                            <span className={`chip mono ${posture.exec_pipeline === "on" ? "ok" : "warn"}`}>{posture.exec_pipeline}</span>
-                          )}
+                            <span className="chip mono muted" title="The gateway did not report the runner's state.">
+                              state unknown
+                            </span>
+                          ) : exec_on && posture.exec_pipeline !== "on" ? (
+                            <span className="chip mono warn" title={posture.exec_detail}>
+                              degraded
+                            </span>
+                          ) : null}
                           {source_chip(admin_cfg?.backlog_exec_runner?.source)}
-                          <div className="admin_row_action">
-                            {can_write ? (
-                              <button
-                                className="btn"
-                                disabled={admin_busy}
-                                onClick={() => void admin_update({ backlog_exec_runner: !(knob_bool(admin_cfg?.backlog_exec_runner) === true) })}
-                              >
-                                {knob_bool(admin_cfg?.backlog_exec_runner) === true ? "Disable" : "Enable"}
-                              </button>
-                            ) : null}
-                          </div>
                         </div>
                         <div className="admin_row_detail">
                           {admin_cfg?.backlog_exec_runner?.help || "Runs the backlog items queued for execution on the gateway's computer."}
@@ -793,22 +811,22 @@ export function SettingsPage(props: {
                         </div>
                       </div>
 
-                      <div className="admin_row">
+                      <div className="admin_row" data-testid="admin_row_process_manager">
                         <div className="admin_row_top">
-                          <span className="admin_row_name">Process manager</span>
-                          {posture_chip(posture.process_manager, "enabled", "disabled")}
+                          <AfSwitch
+                            label="Process manager"
+                            action="process-manager"
+                            checked={pm_on}
+                            unavailableReason={switch_reason}
+                            busy={admin_busy}
+                            onChange={(next) => void admin_update({ process_manager: next }, next ? "Process manager is on." : "Process manager is off.")}
+                          />
+                          {!admin_cfg && posture.process_manager === null ? (
+                            <span className="chip mono muted" title="The gateway did not report the process manager's state.">
+                              state unknown
+                            </span>
+                          ) : null}
                           {source_chip(admin_cfg?.process_manager?.source)}
-                          <div className="admin_row_action">
-                            {can_write ? (
-                              <button
-                                className="btn"
-                                disabled={admin_busy}
-                                onClick={() => void admin_update({ process_manager: !(knob_bool(admin_cfg?.process_manager) === true) })}
-                              >
-                                {knob_bool(admin_cfg?.process_manager) === true ? "Disable" : "Enable"}
-                              </button>
-                            ) : null}
-                          </div>
                         </div>
                         <div className="admin_row_detail">
                           {admin_cfg?.process_manager?.help || "Powers the Services page. High trust: whoever reaches Services can redeploy."}
@@ -818,6 +836,11 @@ export function SettingsPage(props: {
                   );
                 })()}
                 {admin_error ? <div className="page_error mono" style={{ marginTop: "6px" }}>{admin_error}</div> : null}
+                {admin_notice && !admin_error ? (
+                  <div className="muted" role="status" data-testid="admin_notice" style={{ fontSize: "var(--font-size-sm)", marginTop: "6px" }}>
+                    {admin_notice}
+                  </div>
+                ) : null}
                 <div className="muted" style={{ fontSize: "var(--font-size-sm)", marginTop: "8px" }}>
                   {/* Three-way on writable: absence of the field is NOT
                       evidence of denial (older admin surface). */}

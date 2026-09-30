@@ -2,11 +2,14 @@
 
 All notable, user-visible changes to AbstractContinuum.
 
-## [Unreleased]
+## Unreleased
 
 Phones and tablets use the whole screen on the list and detail pages: the
 Board, Backlog, the work-item drawer, Executions, the Inbox and the Team page.
-Desktop windows keep their layout; the list headers gain a chevron.
+On/off settings are switches labelled by what they control; the switch shows
+the state. Everyone using the web console is affected; nothing changes in the
+server, its flags or the gateway it needs. Desktop windows keep their layout;
+the list headers gain a chevron.
 
 ### Added
 
@@ -35,6 +38,20 @@ Desktop windows keep their layout; the list headers gain a chevron.
   time, with **← Channels**.
 - **Two columns on tablets only when both are at least 360 px wide.** On a
   tablet the Executions and Inbox lists are 360 px or wider next to the detail.
+- **Gateway administration.** **Exec runner** and **Process manager** are
+  switches that apply at once and say the new state ("Process manager is
+  on."). A refused change keeps the old state and shows the gateway's reason.
+  Someone who is not a gateway admin sees the switches with the reason they
+  cannot change them ("Only a gateway admin can change this."). The
+  Enable / Disable buttons and the separate on / off chips are gone; a
+  **degraded** chip still appears when the runner is on but cannot run.
+- **Custom voice** (Settings → Voice) is a switch; the voice fields show
+  while it is on.
+- **Auto-refresh** is a switch on the Services page and in the Executions
+  live log, which used to show "Auto on" / "Auto off". In the live log it is
+  unavailable until an execution is picked.
+- **Private** in the Team page's new-channel form is a switch; **Create**
+  stays the one action.
 
 ### Fixed
 

@@ -252,8 +252,8 @@ To work on a project's backlog instead (any folder that contains
 `docs/backlog/`), a gateway admin sets **Settings → Gateway administration →
 Backlog folder → Change…**, or runs `abstractgateway config set
 triage_repo_root /path/to/project` on the gateway's computer. Executing items
-also needs the exec runner: **Settings → Gateway administration → Exec runner
-→ Enable** (or `abstractgateway config set backlog_exec_runner on`). See
+also needs the exec runner: switch **Settings → Gateway administration → Exec
+runner** on (or run `abstractgateway config set backlog_exec_runner on`). See
 [configuration.md](configuration.md#gateway-side-features).
 
 ## Your first execution
@@ -916,8 +916,8 @@ Persisted in `localStorage` under `abstractcontinuum_settings_v1`:
 | Maintenance AI provider / model / reasoning effort | Provider, model and reasoning effort for backlog AI assist + maintenance chat (blank = gateway default). |
 | Backlog advisor agent | Gateway bundle id for the advisor (blank = `basic-agent`). |
 
-Voice overrides (Settings → voice panel) are stored separately under
-`abstractcontinuum_voice_override_v1`.
+The voice override (Settings → Voice: the **Custom voice** switch and its
+fields) is stored separately under `abstractcontinuum_voice_override_v1`.
 
 Connection is NOT a settings field: the shared `GatewayConnectModal`
 (sidebar badge, or "Manage connection" in Settings) signs in through
@@ -1301,7 +1301,7 @@ The rest of the app is unaffected. See [faq.md](faq.md).
 
 **Execute says the runner is disabled / not running / the executor is missing.**
 The gateway's exec worker is off or its executor is not installed. A gateway
-admin enables it in **Settings → Gateway administration → Exec runner** (it
+admin switches **Settings → Gateway administration → Exec runner** on (it
 applies at once) and picks an installed **Executor**, or on the gateway's
 computer runs `abstractgateway config set backlog_exec_runner on` and
 `abstractgateway config set executor codex`. The agent program must be
@@ -1320,8 +1320,8 @@ listed files manually.
 **UAT URLs do not respond after "Restart UAT".**
 The detail pane shows a probe warning when UAT processes fail their URL
 check. Open **Services → UAT** and read the process logs; the process
-manager must be enabled for UAT deploys (**Settings → Gateway administration
-→ Process manager**, or `abstractgateway config set process_manager on`).
+manager must be on for UAT deploys (the **Settings → Gateway administration
+→ Process manager** switch, or `abstractgateway config set process_manager on`).
 
 **Live logs say "#TRUNCATION: log tail truncated".**
 Live logs are bounded: each fetch reads at most the last 160 KB, and the
@@ -1528,11 +1528,14 @@ npm run build      # production build must stay green
 
 All notable, user-visible changes to AbstractContinuum.
 
-## [Unreleased]
+## Unreleased
 
 Phones and tablets use the whole screen on the list and detail pages: the
 Board, Backlog, the work-item drawer, Executions, the Inbox and the Team page.
-Desktop windows keep their layout; the list headers gain a chevron.
+On/off settings are switches labelled by what they control; the switch shows
+the state. Everyone using the web console is affected; nothing changes in the
+server, its flags or the gateway it needs. Desktop windows keep their layout;
+the list headers gain a chevron.
 
 ### Added
 
@@ -1561,6 +1564,20 @@ Desktop windows keep their layout; the list headers gain a chevron.
   time, with **← Channels**.
 - **Two columns on tablets only when both are at least 360 px wide.** On a
   tablet the Executions and Inbox lists are 360 px or wider next to the detail.
+- **Gateway administration.** **Exec runner** and **Process manager** are
+  switches that apply at once and say the new state ("Process manager is
+  on."). A refused change keeps the old state and shows the gateway's reason.
+  Someone who is not a gateway admin sees the switches with the reason they
+  cannot change them ("Only a gateway admin can change this."). The
+  Enable / Disable buttons and the separate on / off chips are gone; a
+  **degraded** chip still appears when the runner is on but cannot run.
+- **Custom voice** (Settings → Voice) is a switch; the voice fields show
+  while it is on.
+- **Auto-refresh** is a switch on the Services page and in the Executions
+  live log, which used to show "Auto on" / "Auto off". In the live log it is
+  unavailable until an execution is picked.
+- **Private** in the Team page's new-channel form is a switch; **Create**
+  stays the one action.
 
 ### Fixed
 

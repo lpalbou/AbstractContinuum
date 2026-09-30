@@ -169,8 +169,8 @@ Persisted in `localStorage` under `abstractcontinuum_settings_v1`:
 | Maintenance AI provider / model / reasoning effort | Provider, model and reasoning effort for backlog AI assist + maintenance chat (blank = gateway default). |
 | Backlog advisor agent | Gateway bundle id for the advisor (blank = `basic-agent`). |
 
-Voice overrides (Settings → voice panel) are stored separately under
-`abstractcontinuum_voice_override_v1`.
+The voice override (Settings → Voice: the **Custom voice** switch and its
+fields) is stored separately under `abstractcontinuum_voice_override_v1`.
 
 Connection is NOT a settings field: the shared `GatewayConnectModal`
 (sidebar badge, or "Manage connection" in Settings) signs in through

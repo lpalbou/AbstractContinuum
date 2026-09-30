@@ -2293,15 +2293,6 @@ button.primary:hover:not(:disabled) {
   min-width: 0;
 }
 
-.team_new_channel label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
 /* Rail section header (Direct messages). */
 .team_rail_section {
   font-size: var(--font-size-xs);
