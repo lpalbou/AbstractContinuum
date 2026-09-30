@@ -10,6 +10,8 @@
 // `verified` flag. Cross-language parity is test-pinned against a
 // Python-computed vector (hub_ledger.test.ts).
 
+import { sha256Hex } from "./secure-context";
+
 export type LedgerTurn = {
   id: string;
   seq: number;
@@ -152,10 +154,8 @@ export function canonical_json(value: unknown): string {
 }
 
 async function sha256_hex(text: string): Promise<string> {
-  // Browser path (secure contexts) and vitest/node both expose webcrypto.
-  const data = new TextEncoder().encode(text);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  // crypto.subtle exists only on https/localhost; sha256Hex falls back to a plain SHA-256 over http.
+  return sha256Hex(text);
 }
 
 export async function turn_hash(prev_hash: string, turn: LedgerTurn, channel: string): Promise<string> {

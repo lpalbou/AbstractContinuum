@@ -9,6 +9,7 @@ import { Icon as UiIcon, useGatewayVoice } from "@abstractframework/ui-kit";
 
 import type { AttachmentRef, GatewayClient } from "../../lib/gateway_client";
 import { random_id } from "../../lib/ids";
+import { MEDIA_NEEDS_HTTPS, mediaAvailable } from "../../lib/secure-context";
 import { inline_attachments } from "./advisor_attachments";
 import { type BacklogTab, type BacklogTaskTypeFilter, session_memory_run_id } from "./model";
 
@@ -323,7 +324,9 @@ export function AdvisorDrawer(props: {
                         }
                         title={
                           !advisor_voice.voice_ptt_supported
-                            ? "Voice recording is not supported in this browser"
+                            ? mediaAvailable()
+                              ? "Voice recording is not supported in this browser"
+                              : MEDIA_NEEDS_HTTPS
                             : advisor_voice.voice_ptt_busy
                               ? "Transcribing…"
                               : advisor_voice.voice_ptt_recording
@@ -387,6 +390,11 @@ export function AdvisorDrawer(props: {
                 {advisor_voice_error ? (
                   <div className="mono" style={{ color: "rgba(239, 68, 68, 0.9)", fontSize: "var(--font-size-sm)", marginTop: "8px" }}>
                     {advisor_voice_error}
+                  </div>
+                ) : null}
+                {!mediaAvailable() ? (
+                  <div className="muted" data-testid="voice-https-hint" style={{ fontSize: "var(--font-size-sm)", marginTop: "8px" }}>
+                    {MEDIA_NEEDS_HTTPS}
                   </div>
                 ) : null}
                 {!can_use_gateway ? (
