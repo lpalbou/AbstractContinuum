@@ -12,6 +12,7 @@ import { use_executor_registry, use_media_query } from "../backlog/hooks";
 import { type AgentOverride, ExecuteConfirmModal } from "../backlog/execute_modals";
 import { WORK_ITEM_TYPES, format_duration_ms, read_task_type, task_type_chip, task_type_title } from "../backlog/model";
 import { use_exec_pipeline } from "../backlog/use_exec_pipeline";
+import { ListDisclosure, useListsOpen } from "../list_disclosure";
 import {
   apply_work_claims,
   BOARD_COLUMNS,
@@ -54,6 +55,7 @@ export function BoardPage(props: {
   const { gateway, gateway_connected, data_nonce, on_mutated, on_open_executions } = props;
   const default_mode = props.default_execution_mode === "inplace" ? "inplace" : "uat";
   const is_compact = use_media_query("(max-width: 767.98px)");
+  const [column_open, toggle_column] = useListsOpen("board_column");
   // Per-request agent picker options (gateway c2194 point 5).
   const executor_registry = use_executor_registry(gateway, gateway_connected);
 
@@ -408,10 +410,11 @@ export function BoardPage(props: {
         {BOARD_COLUMNS.map((col) => {
           const list = by_column.get(col.id) || [];
           const drop_kind = droppable[col.id];
+          const col_open = column_open(col.id);
           return (
             <div
               key={col.id}
-              className={`board_column board_column_${col.id} ${drag_over === col.id ? "drag_over" : ""}`}
+              className={`board_column board_column_${col.id} ${drag_over === col.id ? "drag_over" : ""}${col_open ? "" : " list_collapsed"}`}
               onDragOver={(e) => {
                 if (!drop_kind || !drag_card_ref.current) return;
                 e.preventDefault();
@@ -427,10 +430,17 @@ export function BoardPage(props: {
               }}
             >
               <div className="board_column_header" title={col.hint}>
-                <span className="board_column_title">{col.label}</span>
-                <span className="board_column_count mono">{list.length}</span>
+                <ListDisclosure
+                  open={col_open}
+                  on_toggle={() => toggle_column(col.id)}
+                  controls={`board_column_body_${col.id}`}
+                  title={col.label}
+                  count={list.length}
+                  title_class="board_column_title"
+                  count_class="board_column_count mono"
+                />
               </div>
-              <div className="board_column_body">
+              <div className="board_column_body" id={`board_column_body_${col.id}`} hidden={!col_open}>
                 {list.map((card) => {
                   // Operator decision gates (c1631): supervisable, never
                   // actionable — no drag, no promote/demote, no Execute.

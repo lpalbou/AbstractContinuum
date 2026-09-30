@@ -332,7 +332,7 @@ export function WorkItemDrawer(props: {
           {tab === "spec" ? (
             <>
               {target.has_live_request ? (
-                <div className="mono" style={{ color: "rgb(250, 204, 21)", fontSize: "var(--font-size-sm)", marginBottom: "8px" }}>
+                <div className="mono work_drawer_warn" style={{ marginBottom: "8px" }}>
                   An execution holds a queue-time snapshot of this spec — edits here will NOT reach the running agent; they apply to the next
                   run (and QA iterations re-run from the snapshot plus your feedback).
                 </div>
@@ -386,7 +386,7 @@ export function WorkItemDrawer(props: {
               ) : content ? (
                 <>
                   <Markdown className="md_doc" text={content} />
-                  <div className="mono muted" style={{ fontSize: "var(--font-size-xs)", marginTop: "10px" }}>
+                  <div className="mono muted work_drawer_hint" style={{ marginTop: "10px" }}>
                     Deep tooling (maintenance AI chat, attachments, advisor) lives on the Backlog page.
                   </div>
                 </>
@@ -429,7 +429,7 @@ export function WorkItemDrawer(props: {
                 <div className="section_title" style={{ marginTop: 0 }}>
                   Definition of Done — acceptance criteria
                 </div>
-                <div className="mono muted" style={{ fontSize: "var(--font-size-xs)", marginBottom: "6px" }}>
+                <div className="mono muted work_drawer_hint" style={{ marginBottom: "6px" }}>
                   Criteria come from the current spec file; if the agent refined them inside the candidate, review against the candidate patch too.
                   Ticks live in this drawer session only.
                 </div>
@@ -460,7 +460,7 @@ export function WorkItemDrawer(props: {
                   return (
                     <>
                       <div className="row" style={{ alignItems: "center", gap: "10px", flexWrap: "wrap", marginTop: "8px" }}>
-                        <span className="mono muted" style={{ fontSize: "var(--font-size-sm)" }}>
+                        <span className="mono muted work_review_meta">
                           mode: {mode}
                           {candidate ? ` • candidate: ${candidate}` : ""}
                         </span>
@@ -478,7 +478,7 @@ export function WorkItemDrawer(props: {
                 })()}
 
                 {metadata.acceptance.length && unconfirmed > 0 ? (
-                  <div className="mono" style={{ color: "rgb(250, 204, 21)", fontSize: "var(--font-size-sm)", marginTop: "8px" }}>
+                  <div className="mono work_drawer_warn" style={{ marginTop: "8px" }}>
                     {unconfirmed} acceptance criteri{unconfirmed === 1 ? "on" : "a"} unconfirmed — promoting anyway is an override.
                   </div>
                 ) : null}

@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { Markdown, copyText } from "@abstractframework/panel-chat";
 
 import type { BacklogContentResponse, ReportInboxItem, TriageDecisionSummary } from "../lib/gateway_client";
 import { GatewayClient } from "../lib/gateway_client";
 import { EmailInboxPanel } from "./email_inbox";
+import { ListDisclosure, reveal_on_phone, useListOpen } from "./list_disclosure";
 import { Modal } from "./modal";
 
 type InboxTab = "messages" | "email" | "bugs" | "features";
@@ -45,8 +46,11 @@ export function ReportInboxPage(props: ReportInboxPageProps): React.ReactElement
   // === Inbox feature gating (simple mailbox vs triage) ===
   const triage_enabled = Boolean(props.enable_triage);
 
-  /** Phone stack (< 768 px, DESIGN §5.3): the list OR the open item. */
-  const [phone_detail, set_phone_detail] = useState(false);
+  /** Phones stack the list above the open item (one page scroll, DESIGN
+   *  §12); the list is a disclosure, open by default and remembered. */
+  const [list_open, toggle_list] = useListOpen("inbox_reports");
+  const list_ref = useRef<HTMLDivElement | null>(null);
+  const detail_ref = useRef<HTMLDivElement | null>(null);
   const [tab, set_tab] = useState<InboxTab>(triage_enabled ? "messages" : "email");
 
   const [bugs, set_bugs] = useState<ReportInboxItem[]>([]);
@@ -306,11 +310,6 @@ export function ReportInboxPage(props: ReportInboxPageProps): React.ReactElement
     }
   }
 
-  // A tab switch lands on the new tab's list (phone stack).
-  useEffect(() => {
-    set_phone_detail(false);
-  }, [tab]);
-
   return (
     <div className="page page_pad">
       <div className="page_toolbar">
@@ -379,18 +378,24 @@ export function ReportInboxPage(props: ReportInboxPageProps): React.ReactElement
       {tab === "email" ? (
         <EmailInboxPanel gateway={gateway} enabled={can_use_gateway} />
       ) : (
-        <div className={`inbox_layout exec_layout ${phone_detail ? "phone_detail" : "phone_list"}`}>
+        <div className={`inbox_layout exec_layout${list_open ? "" : " list_collapsed"}`}>
           <div
-          className="pane"
+          className={`pane inbox_list_pane${list_open ? "" : " list_collapsed"}`}
+          ref={list_ref}
           onClickCapture={(e) => {
-            if ((e.target as HTMLElement | null)?.closest?.(".inbox_item")) set_phone_detail(true);
+            if ((e.target as HTMLElement | null)?.closest?.(".inbox_item")) requestAnimationFrame(() => reveal_on_phone(detail_ref.current));
           }}
         >
             <div className="pane_header">
-              <span className="pane_title">{tab === "messages" ? "Triage decisions" : tab === "bugs" ? "Bug reports" : "Feature requests"}</span>
-              <span className="pane_count">{tab === "messages" ? decisions.length : inbox_items.length}</span>
+              <ListDisclosure
+                open={list_open}
+                on_toggle={toggle_list}
+                controls="inbox_report_list"
+                title={tab === "messages" ? "Triage decisions" : tab === "bugs" ? "Bug reports" : "Feature requests"}
+                count={tab === "messages" ? decisions.length : inbox_items.length}
+              />
             </div>
-            <div className="pane_body pane_body_list">
+            <div className="pane_body pane_body_list" id="inbox_report_list" hidden={!list_open}>
             {tab === "messages" ? (
               <>
                 {!decisions.length ? (
@@ -450,10 +455,10 @@ export function ReportInboxPage(props: ReportInboxPageProps): React.ReactElement
             </div>
           </div>
 
-          <div className="pane">
+          <div className="pane inbox_detail_pane" ref={detail_ref}>
             <div className="pane_body">
             <div className="pane_back_bar">
-              <button type="button" className="btn pane_back_btn" onClick={() => set_phone_detail(false)}>
+              <button type="button" className="btn pane_back_btn" onClick={() => reveal_on_phone(list_ref.current)}>
                 ← Back to the list
               </button>
             </div>

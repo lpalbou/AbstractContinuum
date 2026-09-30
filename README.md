@@ -112,8 +112,12 @@ in portrait and landscape. The layout follows the window as you resize it.
 | --- | --- |
 | 1440 px and wider | Sidebar docked; the Team page shows channels, thread and an open panel side by side; board lanes use the full width |
 | 1024 to 1439 px | Sidebar docked; on the Team page an open panel (Members, Files, …) sits beside the thread and the channel list steps aside |
-| 768 to 1023 px (tablets, narrow windows) | The sidebar becomes a menu: open it with the button at the left of the header |
-| Below 768 px (phones) | One pane at a time: pick a channel, message or report to open it, and use **← Channels** or **← Back to the list** to return |
+| 768 to 1023 px (tablets, narrow windows) | The sidebar becomes a menu: open it with the button at the left of the header; the Team page shows one pane at a time; Executions and the Inbox keep the list (at least 360 px) beside the detail |
+| Below 768 px (phones) | Lists and details use the full width as flat sections in one scrolling page: the list sits above the selected item, and picking an item scrolls to it; the Team page shows one pane at a time |
+
+Every list next to a detail (the Board columns, Executions' **Active** and
+**Recently finished**, the Inbox lists) has a chevron in its header: close it
+to give the detail the room. Each list remembers its state in this browser.
 
 On phones and in short landscape windows:
 
@@ -122,13 +126,16 @@ On phones and in short landscape windows:
   channel actions and the Assistant / Members / Files / Leaderboard / Desk
   panels. The message box takes the width and Send is an icon button.
 - **Backlog**: each item is a card (title first, actions underneath).
-- **Executions and Inbox**: the list, then the selected item.
+- **Executions and Inbox**: the list above the selected item; run facts read
+  on one line ("Model gpt-5-codex") and the run's event log is part of the
+  page.
 - **Dialogs** (New task, Execute, file viewer) open as sheets from the bottom
   of the screen with their buttons always visible, above the on-screen
   keyboard.
 
 On touch screens, buttons, rows and tabs are at least 44 px tall, form fields
-use 16 px text, and messages, reports and specs use the 14 px reading size.
+use 16 px text, body text is 15 px and small text 14 px (chips, ids and times
+12–13 px); your text size setting still applies.
 Escape closes the top dialog or drawer; it never closes the work-item drawer
 while you are typing or editing the spec.
 

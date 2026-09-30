@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import "@abstractframework/ui-kit/theme.css";
 import "@abstractframework/panel-chat/panel_chat.css";
 import "./ui/styles.css";
+import "./ui/space.css";
 import { installViewportVars } from "@abstractframework/ui-kit";
 
 import { App } from "./app";

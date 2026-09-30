@@ -2,6 +2,46 @@
 
 All notable, user-visible changes to AbstractContinuum.
 
+## [Unreleased]
+
+Phones and tablets use the whole screen on the list and detail pages: the
+Board, Backlog, the work-item drawer, Executions, the Inbox and the Team page.
+Desktop windows keep their layout; the list headers gain a chevron.
+
+### Added
+
+- **Collapsible lists.** The Board columns, Executions' **Active** and
+  **Recently finished** lists and the Inbox report and email lists have a
+  chevron in their header. A list starts open; closing it hides its items and
+  gives the detail the room, and each list remembers its state in this
+  browser. On tablets and desktops, closing the Inbox list (or both Executions
+  lists) gives the detail the full width.
+
+### Changed
+
+- **Executions and the Inbox on phones** show the list above the detail in one
+  scrolling page instead of one pane at a time. Picking a run or a report
+  scrolls to it; **Back** / **← Back to the list** scrolls back up.
+- **Flat sections on phones.** Lists and details are no longer boxes inside the
+  page: items are separated by thin lines, the selected one keeps its accent,
+  and nothing scrolls inside the page except the spec editor. The run's event
+  log is part of the page, the four Executions figures fit on one row, and
+  Team messages and replies use the full width.
+- **Run facts on one line on phones** ("Model gpt-5-codex"); paths such as the
+  run folder or the candidate take a full line of their own.
+- **Text size on phones and tablets.** Body text is 15 px and small text 14 px;
+  chips, ids and times are 12–13 px. Your text size setting still applies.
+- **Team page on tablets** (below 1024 px) uses the phone layout: one pane at a
+  time, with **← Channels**.
+- **Two columns on tablets only when both are at least 360 px wide.** On a
+  tablet the Executions and Inbox lists are 360 px or wider next to the detail.
+
+### Fixed
+
+- Long paths no longer run off the screen: the candidate line in the
+  work-item drawer's Review tab, and long words or paths in a report or a spec.
+- On phones, the Board no longer scrolls behind an open work-item drawer.
+
 ## 0.5.0 — 2026-09-30
 
 Continuum adapts to the screen: desktop windows of any size, tablets and

@@ -6,7 +6,7 @@
 //
 // Executor-agnostic by design: the worker chip and copy come from the
 // gateway's exec config (executor type + model), never hardcoded to codex.
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { Icon } from "@abstractframework/ui-kit";
 
@@ -16,6 +16,7 @@ import { ExecDetailPane } from "./backlog/exec_detail_pane";
 import { use_media_query } from "./backlog/hooks";
 import { exec_status_chip_class, exec_time_stats, format_duration_ms, short_id } from "./backlog/model";
 import { use_exec_pipeline } from "./backlog/use_exec_pipeline";
+import { ListDisclosure, reveal_on_phone, useListOpen } from "./list_disclosure";
 
 const RECENT_LIMIT = 10;
 
@@ -30,7 +31,16 @@ export function ExecutionsPage(props: {
 }): React.ReactElement {
   const { gateway, gateway_connected } = props;
   const is_compact_layout = use_media_query("(max-width: 767.98px)");
-  const [compact_pane, set_compact_pane] = useState<"list" | "detail">("list");
+  // Phones stack the lists above the run detail (one page scroll, DESIGN
+  // §12): a pick scrolls the detail into view, "Back" scrolls to the lists.
+  const side_ref = useRef<HTMLDivElement | null>(null);
+  const detail_ref = useRef<HTMLDivElement | null>(null);
+  const set_compact_pane = (pane: "list" | "detail") => {
+    const target = pane === "detail" ? detail_ref : side_ref;
+    requestAnimationFrame(() => reveal_on_phone(target.current));
+  };
+  const [active_open, toggle_active] = useListOpen("exec_active");
+  const [recent_open, toggle_recent] = useListOpen("exec_recent");
   /** Executor registry (feature-detected): when it serves, the setup
    *  callout speaks REGISTRY truth ("pick a default") instead of the env
    *  recipe — the operator hit the contradiction live (registry showed 4
@@ -155,8 +165,6 @@ export function ExecutionsPage(props: {
   const [folder_nonce, set_folder_nonce] = useState(0);
   const backlog_folder = use_backlog_status(gateway, gateway_connected && unconfigured, folder_nonce);
 
-  const show_compact_list = !is_compact_layout || compact_pane === "list";
-  const show_compact_detail = !is_compact_layout || compact_pane === "detail";
 
   return (
     <div className="page page_pad exec_page">
@@ -293,14 +301,12 @@ export function ExecutionsPage(props: {
           </div>
 
           <div className="inbox_layout exec_layout">
-            {show_compact_list ? (
-              <div className="exec_side">
-                <div className="pane exec_pane_active">
+              <div className="exec_side" ref={side_ref}>
+                <div className={`pane exec_pane_active${active_open ? "" : " list_collapsed"}`}>
                   <div className="pane_header">
-                    <span className="pane_title">Active</span>
-                    <span className="pane_count">{active.length}</span>
+                    <ListDisclosure open={active_open} on_toggle={toggle_active} controls="exec_active_list" title="Active" count={active.length} />
                   </div>
-                  <div className="pane_body pane_body_list">
+                  <div className="pane_body pane_body_list" id="exec_active_list" hidden={!active_open}>
                     {active.length ? (
                       active.map((r) => {
                         const st = String(r.status || "").trim().toLowerCase();
@@ -341,12 +347,11 @@ export function ExecutionsPage(props: {
                   </div>
                 </div>
 
-                <div className="pane exec_pane_recent">
+                <div className={`pane exec_pane_recent${recent_open ? "" : " list_collapsed"}`}>
                   <div className="pane_header">
-                    <span className="pane_title">Recently finished</span>
-                    <span className="pane_count">{recent.length}</span>
+                    <ListDisclosure open={recent_open} on_toggle={toggle_recent} controls="exec_recent_list" title="Recently finished" count={recent.length} />
                   </div>
-                  <div className="pane_body" style={{ padding: 0 }}>
+                  <div className="pane_body exec_recent_body" id="exec_recent_list" hidden={!recent_open}>
                     {recent_error && !unconfigured ? (
                       <div className="page_error mono" style={{ padding: "10px 12px" }}>
                         {recent_error}
@@ -378,10 +383,8 @@ export function ExecutionsPage(props: {
                   </div>
                 </div>
               </div>
-            ) : null}
 
-            {show_compact_detail ? (
-              <div className="pane">
+              <div className="pane exec_detail_pane" ref={detail_ref}>
                 <div className="pane_header">
                   <span className="pane_title">Run detail</span>
                   {pipeline.exec_selected ? (
@@ -419,7 +422,6 @@ export function ExecutionsPage(props: {
                   />
                 </div>
               </div>
-            ) : null}
           </div>
         </>
       )}

@@ -2571,23 +2571,10 @@ button.primary:hover:not(:disabled) {
 
 /* Team three-pane (DESIGN §5.3). xl: channels | thread | inspector | rail.
    lg (< 1440, above): with an inspector open the channel list yields.
-   md (< 1024): the channel column narrows; the inspector column narrows.
-   sm/xs (< 768): ONE pane at a time — the channel list, the thread (with a
-   back button), or the inspector over the thread; the rail becomes a
-   horizontal tab strip on top. */
-@media (max-width: 1023.98px) {
-  .team_layout {
-    grid-template-columns: clamp(180px, 24vw, 240px) minmax(0, 1fr) 30px;
-  }
-
-  .team_layout.with_drawer {
-    grid-template-columns: minmax(0, 1fr) clamp(260px, 36vw, 340px) 30px;
-  }
-
-  .team_layout.with_drawer.drawer_wide {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 48%) 30px;
-  }
-}
+   Below 1024 (phones and tablets, DESIGN §12: two columns only when both
+   get ~360 px, and a ~200 px channel list does not): ONE pane at a time —
+   the channel list, the thread (with a back button), or the inspector over
+   the thread; the rail becomes a horizontal tab strip on top. */
 
 .team_back_btn,
 .team_tools_btn,
@@ -2595,7 +2582,7 @@ button.primary:hover:not(:disabled) {
   display: none;
 }
 
-@media (max-width: 767.98px), (max-width: 1023.98px) and (max-height: 500px) {
+@media (max-width: 1023.98px) {
   .team_layout,
   .team_layout.with_drawer,
   .team_layout.with_drawer.drawer_wide {
@@ -3815,17 +3802,12 @@ button.primary:hover:not(:disabled) {
   display: none;
 }
 
-/* List/detail pages (Executions, Inbox reports + email) below sm: one pane
-   at a time; picking an item opens it, "Back to the list" returns. The
-   Executions page switches markup itself (use_media_query, same query). */
+/* List/detail pages (Executions, Inbox reports + email) below sm: the list
+   (a disclosure, space.css) above the detail in one page scroll; picking an
+   item scrolls the detail into view, "Back to the list" scrolls back up. */
 @media (max-width: 767.98px) {
   .inbox_layout {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .inbox_layout.phone_list > .pane:nth-child(2),
-  .inbox_layout.phone_detail > .pane:first-child {
-    display: none;
   }
 
   .pane_back_bar {
@@ -5503,7 +5485,7 @@ body {
    #channel, More); "More" reveals the header actions, the filter bar and the
    panel tabs. Send becomes a 44x44 icon button so the textarea takes the
    width; the composer is capped. Same query as the single-pane stack. */
-@media (max-width: 767.98px), (max-width: 1023.98px) and (max-height: 500px) {
+@media (max-width: 1023.98px) {
   .team_tools_btn {
     display: inline-flex;
     align-items: center;
