@@ -26,8 +26,6 @@ needs.
 - **Private** in the Team page's new-channel form is a switch; **Create**
   stays the one action.
 
-## [Unreleased]
-
 ### Fixed
 - **Plain http from another machine** (LAN, Tailscale). Browsers withhold
   `crypto.randomUUID`, `crypto.subtle`, the clipboard API and the microphone
