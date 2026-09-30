@@ -8,7 +8,7 @@
 //   (facts + QA decision) → executions log (events transcript) → team (thread + members pane)
 //   → thread → inbox (report detail)
 //
-//   node harness/capture.mjs --app continuum --url http://127.0.0.1:18788 --screens scripts/space.screens.mjs --out <dir>
+//   [SPACE_THEME=light] node harness/capture.mjs --app continuum --url http://127.0.0.1:18788 --screens scripts/space.screens.mjs --out <dir> --viewports iphone-15pro,ipad,mbp-14
 //
 // Read the space columns (text% / scroll / pad) of summary.md on the phone rows.
 
@@ -103,6 +103,16 @@ async function openExec(page) {
 
 export default {
   async setup(page, info) {
+    // SPACE_THEME=light|dark picks the app's own theme (Continuum follows its
+    // Appearance setting, not prefers-color-scheme).
+    const theme = process.env.SPACE_THEME;
+    if (theme) {
+      await page.addInitScript((t) => {
+        try {
+          localStorage.setItem("af_appearance_continuum_v1", JSON.stringify({ theme: t }));
+        } catch {}
+      }, theme);
+    }
     await base.setup(page, info);
     // Registered after the base catch-all, so Playwright consults it first.
     await page.route(/\/api\/gateway\/(backlog\/exec|admin\/executors)/, mockExec);

@@ -55,7 +55,7 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-  min-height: 24px; /* desktop: the header keeps its height (+ the chevron) */
+  min-height: 32px; /* a real target with a mouse too; the header trims its padding below */
   margin: 0;
   padding: 0 8px 0 0;
   border: 0;
@@ -94,6 +94,14 @@
   .list_disclosure {
     min-height: var(--tap-min, 44px);
   }
+}
+
+/* A header holding a disclosure keeps its height: the 32/44 px button
+ * replaces most of the header's vertical padding. */
+.pane_header:has(> .list_disclosure),
+.board_column_header:has(> .list_disclosure) {
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
 /* The Board column header keeps its count at the right edge. */
