@@ -60,8 +60,8 @@ To work on a project's backlog instead (any folder that contains
 `docs/backlog/`), a gateway admin sets **Settings → Gateway administration →
 Backlog folder → Change…**, or runs `abstractgateway config set
 triage_repo_root /path/to/project` on the gateway's computer. Executing items
-also needs the exec runner: **Settings → Gateway administration → Exec runner
-→ Enable** (or `abstractgateway config set backlog_exec_runner on`). See
+also needs the exec runner: switch **Settings → Gateway administration → Exec
+runner** on (or run `abstractgateway config set backlog_exec_runner on`). See
 [configuration.md](configuration.md#gateway-side-features).
 
 ## Your first execution
