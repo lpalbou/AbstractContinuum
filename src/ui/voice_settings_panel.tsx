@@ -7,6 +7,8 @@
 // to a labeled note, never dead UI.
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
+import { AfSwitch } from "@abstractframework/ui-kit";
+
 import type { GatewayClient } from "../lib/gateway_client";
 import { session_memory_run_id } from "../lib/session_run_id";
 import { load_voice_override, save_voice_override, voice_request_fields, resolve_default_voice_fields, type VoiceOverride } from "../lib/voice_settings";
@@ -227,10 +229,14 @@ export function VoiceSettingsPanel(props: { gateway: GatewayClient; gateway_conn
             <p className="muted team_note" style={{ marginTop: 0 }}>
               Each message can be read aloud (the speaker button on a message). By default the gateway&apos;s configured voice is used, streamed so playback starts immediately. Override it here for this browser.
             </p>
-            <label className="settings_row" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <input type="checkbox" checked={override.enabled} onChange={(e) => update({ enabled: e.target.checked })} />
-              Override the gateway default voice
-            </label>
+            <AfSwitch
+              variant="row"
+              label="Custom voice"
+              description="Read messages with the voice below instead of the gateway's default, in this browser."
+              action="custom-voice"
+              checked={override.enabled}
+              onChange={(next) => update({ enabled: next })}
+            />
 
             {cat.error ? <div className="muted team_note">Voice catalog unavailable ({cat.error.slice(0, 100)}) — you can still type provider/model/voice values below; the gateway validates on Test.</div> : null}
             {cat.loading ? <div className="muted team_note">Loading voices…</div> : null}

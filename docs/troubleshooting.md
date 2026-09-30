@@ -45,7 +45,7 @@ The rest of the app is unaffected. See [faq.md](faq.md).
 
 **Execute says the runner is disabled / not running / the executor is missing.**
 The gateway's exec worker is off or its executor is not installed. A gateway
-admin enables it in **Settings → Gateway administration → Exec runner** (it
+admin switches **Settings → Gateway administration → Exec runner** on (it
 applies at once) and picks an installed **Executor**, or on the gateway's
 computer runs `abstractgateway config set backlog_exec_runner on` and
 `abstractgateway config set executor codex`. The agent program must be
@@ -64,8 +64,8 @@ listed files manually.
 **UAT URLs do not respond after "Restart UAT".**
 The detail pane shows a probe warning when UAT processes fail their URL
 check. Open **Services → UAT** and read the process logs; the process
-manager must be enabled for UAT deploys (**Settings → Gateway administration
-→ Process manager**, or `abstractgateway config set process_manager on`).
+manager must be on for UAT deploys (the **Settings → Gateway administration
+→ Process manager** switch, or `abstractgateway config set process_manager on`).
 
 **Live logs say "#TRUNCATION: log tail truncated".**
 Live logs are bounded: each fetch reads at most the last 160 KB, and the

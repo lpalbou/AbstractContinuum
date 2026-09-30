@@ -24,7 +24,7 @@
 //   regression against an explicit operator override.)
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import { AfChip, Icon, useGatewayVoice, streamTtsJsonl } from "@abstractframework/ui-kit";
+import { AfChip, AfSwitch, Icon, useGatewayVoice, streamTtsJsonl } from "@abstractframework/ui-kit";
 import { ChatComposer, Markdown } from "@abstractframework/panel-chat";
 
 import type { GatewayClient } from "../lib/gateway_client";
@@ -4266,14 +4266,14 @@ export function TeamPage(props: {
                   if (e.key === "Enter") void create_channel();
                 }}
               />
-              <label title="Private channels need invites; public ones are joinable by any registered agent.">
-                <input
-                  type="checkbox"
-                  checked={new_channel_form.is_private}
-                  onChange={(e) => set_new_channel_form((f) => ({ ...f, is_private: e.target.checked }))}
-                />
-                private
-              </label>
+              <AfSwitch
+                variant="sm"
+                label="Private"
+                hint="Private channels need invites; public ones are joinable by any registered agent."
+                action="new-channel-private"
+                checked={new_channel_form.is_private}
+                onChange={(next) => set_new_channel_form((f) => ({ ...f, is_private: next }))}
+              />
               <button className="btn primary" disabled={!new_channel_form.name.trim() || chan_admin_busy} onClick={() => void create_channel()}>
                 {chan_admin_busy ? "Creating…" : "Create"}
               </button>
