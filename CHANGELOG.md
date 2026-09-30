@@ -2,6 +2,20 @@
 
 All notable, user-visible changes to AbstractContinuum.
 
+## [Unreleased]
+
+### Fixed
+
+- **Plain http from another machine** (LAN, Tailscale). Browsers withhold
+  `crypto.randomUUID`, `crypto.subtle`, the clipboard API and the microphone
+  outside https and localhost. Ids now come from the kit's `randomId()`, the
+  backlog and ledger hashes use a plain SHA-256 when `crypto.subtle` is
+  missing (same hashes), **Copy** on a process log falls back to a text
+  selection copy and says "Copied" or "Copy failed — select and copy", and
+  the advisor's voice control says "Voice and camera need an https address
+  (Network → HTTPS in the gateway console)." Needs `@abstractframework/ui-kit`
+  0.3.3.
+
 ## 0.5.0 — 2026-09-30
 
 Continuum adapts to the screen: desktop windows of any size, tablets and

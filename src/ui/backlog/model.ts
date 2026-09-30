@@ -5,6 +5,7 @@
 // Extracted verbatim from the pre-split backlog_browser.tsx (2026-07-12).
 
 import type { BacklogExecRequestSummary, BacklogItemSummary } from "../../lib/gateway_client";
+import { sha256Hex } from "../../lib/secure-context";
 
 export type BacklogTab = "processing" | "planned" | "proposed" | "recurrent" | "completed" | "failed" | "deprecated" | "trash";
 export type BacklogFileKind = "planned" | "proposed" | "recurrent" | "completed" | "deprecated" | "trash";
@@ -156,14 +157,8 @@ export function format_duration_ms(ms: number): string {
 }
 
 export async function sha256_hex(text: string): Promise<string> {
-  const payload = String(text || "");
-  const enc = new TextEncoder().encode(payload);
-  const c: any = (globalThis as any).crypto;
-  if (!c || !c.subtle || typeof c.subtle.digest !== "function") return "";
-  const digest = await c.subtle.digest("SHA-256", enc);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  // crypto.subtle exists only on https/localhost; sha256Hex falls back to a plain SHA-256 over http.
+  return sha256Hex(String(text || ""));
 }
 
 export { is_safe_run_id, session_memory_run_id } from "../../lib/session_run_id";

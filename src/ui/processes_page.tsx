@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { GatewayClient, ManagedEnvVarItem, ManagedProcessInfo } from "../lib/gateway_client";
 import { Modal } from "./modal";
 import { Icon } from "@abstractframework/ui-kit";
+import { clipboardWrite, COPY_FAILED } from "../lib/secure-context";
 
 function clamp(text: string, max_chars: number): string {
   const s = String(text || "");
@@ -75,6 +76,7 @@ export function ProcessesPage({
   const [log_text, set_log_text] = useState<string>("");
   const [log_meta, set_log_meta] = useState<string>("");
   const [log_loading, set_log_loading] = useState(false);
+  const [log_copy_state, set_log_copy_state] = useState<"idle" | "copied" | "failed">("idle");
   const log_refresh_timer = useRef<number | null>(null);
 
   const prod_items = useMemo(
@@ -477,16 +479,15 @@ export function ProcessesPage({
               <button
                 className="btn btn_icon"
                 onClick={() => {
-                  try {
-                    void navigator.clipboard.writeText(log_text || "");
-                  } catch {
-                    // ignore
-                  }
+                  void clipboardWrite(log_text || "").then((ok) => {
+                    set_log_copy_state(ok ? "copied" : "failed");
+                    window.setTimeout(() => set_log_copy_state("idle"), 2000);
+                  });
                 }}
                 disabled={!log_text}
               >
                 <Icon name="copy" size={16} />
-                Copy
+                {log_copy_state === "copied" ? "Copied" : log_copy_state === "failed" ? COPY_FAILED : "Copy"}
               </button>
             </div>
             <pre
