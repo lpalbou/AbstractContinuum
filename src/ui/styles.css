@@ -5224,7 +5224,10 @@ body {
 @media (max-width: 767.98px), (max-height: 500px) {
   .modal_backdrop:not(.fullscreen) {
     align-items: flex-end;
-    padding: var(--safe-top, 0px) 0 0;
+    /* The fixed overlay spans the LAYOUT viewport: on iOS the keyboard covers
+       its bottom, so the sheet (and its pinned actions) rises by the inset
+       installViewportVars() writes (0 without a keyboard). */
+    padding: var(--safe-top, 0px) 0 var(--keyboard-inset, 0px);
   }
 
   .modal_backdrop:not(.fullscreen) .modal_panel {
