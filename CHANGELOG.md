@@ -22,6 +22,15 @@ and wider keep their layout.
   panel sits beside the thread (the channel list yields); from 1440 px the
   three panes stay side by side. The filter bar wraps instead of overlapping
   the sort buttons, which also shows the filters that were hidden at 1512 px.
+- **Team thread on phones and short landscape windows**: the thread keeps
+  the screen — one bar with "← Channels", the channel name and **More**
+  (filters, search, sort, actions and the panel tabs live behind it); Send
+  is an icon button so the message box takes the width.
+- **Escape never discards work**: in the work-item drawer Escape does nothing
+  while you type or have the spec open for editing, and a dialog on top
+  takes the key without closing the drawer under it.
+- **Laptop windows keep the backlog labels column**: the table's optional
+  columns now follow the table's own width.
 - **Executions and Inbox: list, then detail on phones**, with "Back to the
   list"; the backlog table becomes one card per item (title first, actions
   underneath) instead of hiding the title column.
@@ -33,7 +42,7 @@ and wider keep their layout.
   the message instead of squeezing it.
 - **Wide windows**: board lanes use the width at 1440 px and wider; long
   messages and documents keep a readable line length.
-- Uses `@abstractframework/ui-kit` 0.3.1 and `@abstractframework/panel-chat`
+- Uses `@abstractframework/ui-kit` 0.3.2 and `@abstractframework/panel-chat`
   0.2.1 (responsive kit: breakpoints 480/768/1024/1440, safe areas, visible
   viewport height, sheets).
 
