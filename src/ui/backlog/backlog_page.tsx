@@ -509,12 +509,14 @@ export function BacklogBrowserPage(props: BacklogBrowserPageProps): React.ReactE
                         <tr key={`${kind}:${fn}`} className="backlog_row" onClick={() => open_drawer(it)}>
                           {kind === "planned" ? (
                             <td className="backlog_table_sel col_sel" onClick={(e) => e.stopPropagation()}>
-                              <input
-                                type="checkbox"
-                                checked={selected_filenames.includes(fn)}
-                                onChange={() => toggle_selected(fn)}
-                                aria-label={`Select ${fn}`}
-                              />
+                              <label className="backlog_sel_hit">
+                                <input
+                                  type="checkbox"
+                                  checked={selected_filenames.includes(fn)}
+                                  onChange={() => toggle_selected(fn)}
+                                  aria-label={`Select ${fn}`}
+                                />
+                              </label>
                             </td>
                           ) : null}
                           <td className="mono muted col_id">{it.item_id || ""}</td>

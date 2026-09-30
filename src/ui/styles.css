@@ -58,7 +58,9 @@ select {
   font-family: inherit;
   font-size: inherit;
   color: var(--text-primary);
-  background: var(--ui-surface-3, var(--bg-primary));
+  /* background-COLOR (not the shorthand): the kit's coarse-pointer select
+     chevron (background-image) must survive. */
+  background-color: var(--ui-surface-3, var(--bg-primary));
   border: 1px solid var(--ui-border-1, var(--bg-tertiary));
   border-radius: 10px;
   padding: 9px 10px;
@@ -5288,10 +5290,12 @@ body {
     font-size: var(--font-size-sm);
   }
 
-  /* Dense inline link rows (member moderation) get real hit boxes. */
+  /* Member moderation links (kick/ban/…) get real hit boxes. */
   .team_members_pane button,
   .team_members_pane a {
-    min-height: 36px;
+    min-height: var(--tap-min, 44px);
+    display: inline-flex;
+    align-items: center;
   }
 }
 
@@ -5429,5 +5433,66 @@ body {
 
   .team_compose_text {
     max-height: 88px;
+  }
+}
+
+/* Round 3 (WebKit touch audit): every remaining small control reaches
+   --tap-min on coarse pointers. */
+@media (pointer: coarse) {
+  /* Checkboxes stay native-size in WebKit: the label / cell is the target. */
+  label:has(> input[type="checkbox"]),
+  label:has(> input[type="radio"]) {
+    min-height: var(--tap-min, 44px);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .backlog_sel_hit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--tap-min, 44px);
+    min-height: var(--tap-min, 44px);
+    cursor: pointer;
+  }
+
+  .team_row_expand,
+  .team_fs_crumb,
+  .team_replies_more,
+  .team_members_chip,
+  summary {
+    min-height: var(--tap-min, 44px);
+  }
+
+  .team_row_expand,
+  .team_fs_crumb,
+  .team_replies_more,
+  .team_members_chip {
+    display: inline-flex;
+    align-items: center;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .team_dm_trash {
+    min-width: var(--tap-min, 44px);
+    min-height: var(--tap-min, 44px);
+  }
+
+  /* The channel-row badges are shortcuts (select the channel + apply the
+     filter) nested in a 44 px row; they grow to a 32 px pill (a 44 px
+     badge would double the row) — documented exception. */
+  .team_badge[role="button"] {
+    min-width: 32px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn,
+  .btn.btn_icon {
+    min-height: var(--tap-min, 44px);
   }
 }
