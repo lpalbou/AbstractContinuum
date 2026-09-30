@@ -4,7 +4,7 @@
 import React from "react";
 
 import { Markdown } from "@abstractframework/panel-chat";
-import { Icon } from "@abstractframework/ui-kit";
+import { AfSwitch, Icon } from "@abstractframework/ui-kit";
 
 import type { BacklogExecRequestSummary } from "../../lib/gateway_client";
 import { classify_exec_event_status_kind, humanize_shell_command, infer_exec_event_main_text, infer_exec_event_time_label } from "../exec_event";
@@ -57,9 +57,16 @@ export function ExecEventsView(props: {
             <option value="stderr">stderr</option>
             <option value="last_message">last message</option>
           </select>
-          <button className={`btn ${exec_log_auto ? "primary" : ""}`} onClick={() => set_exec_log_auto((v) => !v)} disabled={!exec_selected?.request_id}>
-            {exec_log_auto ? "Auto on" : "Auto off"}
-          </button>
+          <AfSwitch
+            variant="sm"
+            label="Auto-refresh"
+            action="exec-log-auto"
+            hint="Follow the log as it grows."
+            checked={exec_log_auto}
+            unavailableReason={exec_selected?.request_id ? null : "Pick an execution first."}
+            reasonVisible={false}
+            onChange={(next) => set_exec_log_auto(() => next)}
+          />
           <button
             className={`btn btn_icon ${exec_log_loading ? "is_loading" : ""}`}
             onClick={() => load_exec_log_tail()}

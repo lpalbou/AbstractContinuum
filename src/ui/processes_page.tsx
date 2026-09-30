@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import type { GatewayClient, ManagedEnvVarItem, ManagedProcessInfo } from "../lib/gateway_client";
 import { Modal } from "./modal";
-import { Icon } from "@abstractframework/ui-kit";
+import { AfSwitch, Icon } from "@abstractframework/ui-kit";
 
 function clamp(text: string, max_chars: number): string {
   const s = String(text || "");
@@ -282,10 +282,14 @@ export function ProcessesPage({
           <div className="page_toolbar_spacer" />
           {tab !== "env" ? (
             <>
-              <label className="btn btn_icon" style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                <input type="checkbox" checked={auto_refresh} onChange={(e) => set_auto_refresh(Boolean(e.target.checked))} />
-                auto
-              </label>
+              <AfSwitch
+                variant="sm"
+                label="Auto-refresh"
+                action="auto-refresh"
+                hint="Refresh this list every few seconds."
+                checked={auto_refresh}
+                onChange={(next) => set_auto_refresh(next)}
+              />
               <button className={`btn btn_icon ${loading ? "is_loading" : ""}`} onClick={() => void refresh()} disabled={!gateway_connected || loading}>
                 <Icon name="refresh" size={16} />
                 {loading ? "Refreshing…" : "Refresh"}
