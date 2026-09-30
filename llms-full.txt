@@ -1,7 +1,7 @@
 # AbstractContinuum — full documentation corpus
 
 > Aggregated from the core docs for LLM/tool consumption (package
-> `@abstractframework/continuum` 0.4.0). Canonical sources live in the
+> `@abstractframework/continuum` 0.5.0). Canonical sources live in the
 > repository; this file is regenerated whenever the docs change.
 
 ---
@@ -113,15 +113,43 @@ To point the Board at a project, or to enable executions, see
 Before exposing the console beyond localhost, read
 [docs/security.md](docs/security.md): a signed-in user can redeploy services.
 
+## Responsive layout
+
+Continuum works in a desktop window of any size, on a tablet and on a phone,
+in portrait and landscape. The layout follows the window as you resize it.
+
+| Window width | Layout |
+| --- | --- |
+| 1440 px and wider | Sidebar docked; the Team page shows channels, thread and an open panel side by side; board lanes use the full width |
+| 1024 to 1439 px | Sidebar docked; on the Team page an open panel (Members, Files, …) sits beside the thread and the channel list steps aside |
+| 768 to 1023 px (tablets, narrow windows) | The sidebar becomes a menu: open it with the button at the left of the header |
+| Below 768 px (phones) | One pane at a time: pick a channel, message or report to open it, and use **← Channels** or **← Back to the list** to return |
+
+On phones and in short landscape windows:
+
+- **Team**: the thread keeps the screen, with one bar holding **← Channels**,
+  the channel name and **More**. **More** shows the filters, search, sort,
+  channel actions and the Assistant / Members / Files / Leaderboard / Desk
+  panels. The message box takes the width and Send is an icon button.
+- **Backlog**: each item is a card (title first, actions underneath).
+- **Executions and Inbox**: the list, then the selected item.
+- **Dialogs** (New task, Execute, file viewer) open as sheets from the bottom
+  of the screen with their buttons always visible, above the on-screen
+  keyboard.
+
+On touch screens, buttons, rows and tabs are at least 44 px tall, form fields
+use 16 px text, and messages, reports and specs use the 14 px reading size.
+Escape closes the top dialog or drawer; it never closes the work-item drawer
+while you are typing or editing the spec.
+
 ## Develop from source
 
-The source build resolves the shared UI kit (`@abstractframework/ui-kit`,
+The shared UI kit (`@abstractframework/ui-kit`,
 `@abstractframework/panel-chat`) and the session proxy
-(`@abstractframework/app-server`) from a sibling
-[AbstractUIC](https://github.com/lpalbou/AbstractUIC) checkout:
+(`@abstractframework/app-server`) are regular npm dependencies, so a plain
+clone builds:
 
 ```bash
-git clone https://github.com/lpalbou/AbstractUIC.git abstractuic
 git clone https://github.com/lpalbou/AbstractContinuum.git abstractcontinuum
 cd abstractcontinuum
 npm install
@@ -143,6 +171,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
 - [docs/conventions.md](docs/conventions.md) — the work-item grammar the Board reads
 - [docs/security.md](docs/security.md) — trust model (read before deploying)
 - [docs/faq.md](docs/faq.md) / [docs/troubleshooting.md](docs/troubleshooting.md)
+- [Responsive layout](#responsive-layout) — tablets, phones and window sizes
 - [CHANGELOG.md](CHANGELOG.md) — release history
 - [CONTRIBUTING.md](CONTRIBUTING.md) — development workflow
 
@@ -181,8 +210,9 @@ flag: `abstractcontinuum config set gateway_url http://my-gateway:8080`
 [configuration.md](configuration.md#server-abstractcontinuum--npm-start--binclijs)
 has the details).
 
-Open `http://localhost:3002`, click the connection badge (bottom of the
-sidebar), and enter the gateway URL, user, and token in the connect dialog.
+Open `http://localhost:3002`; the connect dialog opens when you are not
+signed in (or use the connection button at the top right). Enter the gateway
+URL, user, and token.
 The token is exchanged server-side for a cookie session — it never lives in
 the browser. The server binds loopback (`127.0.0.1`) by default; before
 exposing it beyond localhost, read [security.md](security.md): this console
@@ -190,9 +220,8 @@ can redeploy services.
 
 ## First run from source (development)
 
-Clone [AbstractUIC](https://github.com/lpalbou/AbstractUIC) next to this
-repository as `abstractuic` (the source build resolves the shared UI kit
-and the session proxy from `../abstractuic`), then:
+From a clone of this repository (the shared UI kit and the session proxy
+are npm dependencies):
 
 ```bash
 npm install
@@ -262,7 +291,7 @@ processes; the app renders them and issues commands.
 
 ```mermaid
 flowchart LR
-    subgraph Browser["Browser (React SPA — sidebar shell)"]
+    subgraph Browser["Browser (React SPA — sidebar shell, menu drawer below 1024 px)"]
         BO[Board page<br/>kanban + drawer]
         EX[Executions page]
         BL[Backlog page]
@@ -437,7 +466,7 @@ new UI copy executor-neutral and read identity from the config.
 
 ```text
 src/
-  app.tsx                     shell: sidebar nav, uic connect modal, probe
+  app.tsx                     shell: sidebar nav (menu drawer < 1024 px), uic connect modal, probe
   lib/
     gateway_client.ts         typed gateway client (dev-lane families only)
     gateway_types.ts          request/response types
@@ -896,8 +925,7 @@ it reads the same settings file and mounts the same session, hub and
 settings routes as production. Vite takes no Continuum flags: use
 `abstractcontinuum config set` for dev settings, or `npm run dev -- --port
 <n>` for another port. Stop a running `npm start` first, or pick another
-port. The ui-kit and panel-chat packages resolve from a sibling
-`../abstractuic` checkout.
+port. The ui-kit and panel-chat packages resolve from `node_modules`.
 
 ---
 
@@ -1153,6 +1181,12 @@ system (runs, ledgers, artifacts, memory graphs, entities); continuum
 *develops and deploys* it (backlog, executions, triage, process control).
 They were one app until 2026-07-12 (`history.md` records the split).
 
+**Can I use Continuum on a phone or a tablet?**
+Yes. Below 1024 px the sidebar becomes a menu, and below 768 px each page
+shows one pane at a time (list, then the selected item). See
+[Responsive layout](../README.md#responsive-layout) for the details per
+width.
+
 **Is this tied to Codex?**
 No. The executor is a gateway setting: Codex CLI (`codex`, the default),
 Claude Code (`claude`), Cursor Agent (`cursor-agent`) or AbstractCode
@@ -1330,10 +1364,8 @@ everyone who reaches the page posts as the configured seat.
 ## Development
 
 **`npm run dev` fails resolving `@abstractframework/ui-kit`.**
-The source build expects a sibling `../abstractuic` checkout (Vite aliases
-+ `file:` dependency). Clone [AbstractUIC](https://github.com/lpalbou/AbstractUIC)
-next to this repo as `abstractuic` and run `npm install` again. The
-published npm package does not need it.
+The kit is an npm dependency: run `npm install` (or `npm ci`) in this
+repository and start the dev server again.
 
 **Tests fail with `scrollIntoView is not a function`.**
 jsdom lacks it; the suites stub `Element.prototype.scrollIntoView` in their
@@ -1429,10 +1461,9 @@ npm install
 npm run dev      # dev server on :3002, /api proxied to the configured gateway
 ```
 
-The dev toolchain resolves `@abstractframework/ui-kit` and
-`@abstractframework/panel-chat` from a sibling `../abstractuic` checkout
-(see `vite.config.ts` aliases) and `@abstractframework/app-server` via a
-`file:` dependency. Clone `abstractuic` next to this repo.
+`@abstractframework/ui-kit`, `@abstractframework/panel-chat` and
+`@abstractframework/app-server` are npm dependencies (`npm install` fetches
+them); no other checkout is needed.
 
 ## Before you finish any change
 
@@ -1470,7 +1501,9 @@ npm run build      # production build must stay green
   and discussing the running system; this app develops and deploys it.
 - Work items live in `docs/backlog/` (see `docs/backlog/overview.md`).
 - Documentation changes regenerate `llms.txt` / `llms-full.txt` in the same
-  change (see [docs/conventions.md](docs/conventions.md#docs-freshness)).
+  change (see [docs/conventions.md](docs/conventions.md#docs-freshness)):
+  edit `llms.txt` by hand, then run `node scripts/gen_llms_full.mjs`
+  (`--check` reports a stale file).
 
 ## See also
 
@@ -1486,6 +1519,58 @@ npm run build      # production build must stay green
 # Changelog
 
 All notable, user-visible changes to AbstractContinuum.
+
+## 0.5.0 — 2026-09-30
+
+Continuum adapts to the screen: desktop windows of any size, tablets and
+phones, in portrait and landscape. Everyone using the web console is
+affected; nothing changes in the server, its flags or the gateway it needs
+(AbstractGateway 0.4.1 or newer standalone, 0.7.0 or newer under
+`/apps/continuum/`). Desktop windows 1440 px and wider keep their layout.
+See [Responsive layout](README.md#responsive-layout).
+
+### Added
+
+- **Menu drawer below 1024 px.** On tablets and narrow windows the sidebar
+  becomes a menu opened from the header button; Escape, a tap outside or
+  **Close menu** closes it, and the page behind it is inactive while it is
+  open.
+- **Team page, one pane at a time on phones.** Pick a channel to open its
+  thread and use **← Channels** to return. The thread keeps the screen: one
+  bar holds **← Channels**, the channel name and **More**, which shows the
+  filters, search, sort, channel actions and the Assistant / Members / Files /
+  Leaderboard / Desk panels. The message box takes the width and Send is an
+  icon button. Short landscape windows use the same layout.
+- **List, then detail on phones** for Executions and the Inbox (reports and
+  email), with **← Back to the list**.
+- **Backlog cards on phones**: one card per item, title first, actions
+  underneath.
+
+### Changed
+
+- **Team page on laptops and tablets (768 to 1439 px):** an open panel sits
+  beside the thread and the channel list steps aside; from 1440 px channels,
+  thread and panel stay side by side. The filter bar wraps onto a second row
+  when the thread column is narrow.
+- **Dialogs are sheets on phones** and in short landscape windows (New task,
+  Execute, the file viewer): they open from the bottom of the screen with an
+  opaque surface, their buttons stay visible and they rise above the on-screen
+  keyboard. The work-item drawer is full width on phones.
+- **Escape** closes the top dialog or drawer only. In the work-item drawer it
+  does nothing while you are typing or editing the spec.
+- **Touch screens:** buttons, rows, tabs and checkboxes are at least 44 px,
+  form fields use 16 px text (no zoom on focus), and messages, reports, specs
+  and form labels use the 14 px reading size. Message actions sit under the
+  message.
+- **The header always fits:** the page title shortens with an ellipsis and on
+  phones **+ New task** shows as **+**.
+- **Wide windows:** board lanes use the full width from 1440 px; messages and
+  documents keep a readable line length. The backlog table's optional columns
+  (labels, package) follow the width of the table.
+- Uses `@abstractframework/ui-kit` 0.3.2 and `@abstractframework/panel-chat`
+  0.2.1.
+- A source checkout builds on its own: the UI kit comes from npm, no sibling
+  AbstractUIC checkout is needed.
 
 ## 0.4.0 — 2026-09-28
 

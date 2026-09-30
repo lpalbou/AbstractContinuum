@@ -11,10 +11,9 @@ npm install
 npm run dev      # dev server on :3002, /api proxied to the configured gateway
 ```
 
-The dev toolchain resolves `@abstractframework/ui-kit` and
-`@abstractframework/panel-chat` from a sibling `../abstractuic` checkout
-(see `vite.config.ts` aliases) and `@abstractframework/app-server` via a
-`file:` dependency. Clone `abstractuic` next to this repo.
+`@abstractframework/ui-kit`, `@abstractframework/panel-chat` and
+`@abstractframework/app-server` are npm dependencies (`npm install` fetches
+them); no other checkout is needed.
 
 ## Before you finish any change
 
@@ -52,7 +51,9 @@ npm run build      # production build must stay green
   and discussing the running system; this app develops and deploys it.
 - Work items live in `docs/backlog/` (see `docs/backlog/overview.md`).
 - Documentation changes regenerate `llms.txt` / `llms-full.txt` in the same
-  change (see [docs/conventions.md](docs/conventions.md#docs-freshness)).
+  change (see [docs/conventions.md](docs/conventions.md#docs-freshness)):
+  edit `llms.txt` by hand, then run `node scripts/gen_llms_full.mjs`
+  (`--check` reports a stale file).
 
 ## See also
 

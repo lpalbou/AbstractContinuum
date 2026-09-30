@@ -185,5 +185,4 @@ it reads the same settings file and mounts the same session, hub and
 settings routes as production. Vite takes no Continuum flags: use
 `abstractcontinuum config set` for dev settings, or `npm run dev -- --port
 <n>` for another port. Stop a running `npm start` first, or pick another
-port. The ui-kit and panel-chat packages resolve from a sibling
-`../abstractuic` checkout.
+port. The ui-kit and panel-chat packages resolve from `node_modules`.

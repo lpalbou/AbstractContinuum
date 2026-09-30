@@ -26,7 +26,9 @@ your task below.
 
 ## Root docs
 
-- [../README.md](../README.md) — overview and quick start
+- [../README.md](../README.md) — overview and quick start;
+  [Responsive layout](../README.md#responsive-layout) — how the pages adapt to
+  tablets, phones and window sizes
 - [../CHANGELOG.md](../CHANGELOG.md) — release history
 - [../SECURITY.md](../SECURITY.md) — the short-form trust statement
 - [../CONTRIBUTING.md](../CONTRIBUTING.md) — development workflow and conventions

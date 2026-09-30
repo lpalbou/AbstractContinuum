@@ -103,15 +103,43 @@ To point the Board at a project, or to enable executions, see
 Before exposing the console beyond localhost, read
 [docs/security.md](docs/security.md): a signed-in user can redeploy services.
 
+## Responsive layout
+
+Continuum works in a desktop window of any size, on a tablet and on a phone,
+in portrait and landscape. The layout follows the window as you resize it.
+
+| Window width | Layout |
+| --- | --- |
+| 1440 px and wider | Sidebar docked; the Team page shows channels, thread and an open panel side by side; board lanes use the full width |
+| 1024 to 1439 px | Sidebar docked; on the Team page an open panel (Members, Files, …) sits beside the thread and the channel list steps aside |
+| 768 to 1023 px (tablets, narrow windows) | The sidebar becomes a menu: open it with the button at the left of the header |
+| Below 768 px (phones) | One pane at a time: pick a channel, message or report to open it, and use **← Channels** or **← Back to the list** to return |
+
+On phones and in short landscape windows:
+
+- **Team**: the thread keeps the screen, with one bar holding **← Channels**,
+  the channel name and **More**. **More** shows the filters, search, sort,
+  channel actions and the Assistant / Members / Files / Leaderboard / Desk
+  panels. The message box takes the width and Send is an icon button.
+- **Backlog**: each item is a card (title first, actions underneath).
+- **Executions and Inbox**: the list, then the selected item.
+- **Dialogs** (New task, Execute, file viewer) open as sheets from the bottom
+  of the screen with their buttons always visible, above the on-screen
+  keyboard.
+
+On touch screens, buttons, rows and tabs are at least 44 px tall, form fields
+use 16 px text, and messages, reports and specs use the 14 px reading size.
+Escape closes the top dialog or drawer; it never closes the work-item drawer
+while you are typing or editing the spec.
+
 ## Develop from source
 
-The source build resolves the shared UI kit (`@abstractframework/ui-kit`,
+The shared UI kit (`@abstractframework/ui-kit`,
 `@abstractframework/panel-chat`) and the session proxy
-(`@abstractframework/app-server`) from a sibling
-[AbstractUIC](https://github.com/lpalbou/AbstractUIC) checkout:
+(`@abstractframework/app-server`) are regular npm dependencies, so a plain
+clone builds:
 
 ```bash
-git clone https://github.com/lpalbou/AbstractUIC.git abstractuic
 git clone https://github.com/lpalbou/AbstractContinuum.git abstractcontinuum
 cd abstractcontinuum
 npm install
@@ -133,6 +161,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
 - [docs/conventions.md](docs/conventions.md) — the work-item grammar the Board reads
 - [docs/security.md](docs/security.md) — trust model (read before deploying)
 - [docs/faq.md](docs/faq.md) / [docs/troubleshooting.md](docs/troubleshooting.md)
+- [Responsive layout](#responsive-layout) — tablets, phones and window sizes
 - [CHANGELOG.md](CHANGELOG.md) — release history
 - [CONTRIBUTING.md](CONTRIBUTING.md) — development workflow
 

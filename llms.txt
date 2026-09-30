@@ -2,13 +2,15 @@
 
 > Continuous iterative development and deployment console for
 > AbstractFramework (npm: `@abstractframework/continuum`, CLI:
-> `abstractcontinuum`, version 0.4.0): a thin React client over a Run
+> `abstractcontinuum`, version 0.5.0): a thin React client over a Run
 > Gateway's development-lane APIs — kanban board, live execution pipeline
 > (executor chosen by a gateway setting: codex, claude, cursor-agent,
 > abstractcode), backlog catalog, agora hub Team
 > page, report/email triage, and managed prod/UAT service control.
 > High-trust surface: a signed-in user can redeploy services (see
-> SECURITY.md).
+> SECURITY.md). The console adapts to desktop windows, tablets and phones
+> (menu drawer below 1024 px, one pane at a time below 768 px; see README
+> "Responsive layout").
 
 Run it with `npx @abstractframework/continuum` against AbstractGateway
 0.4.1 or newer (`--gateway-url`, default: the gateway installed on this
@@ -23,7 +25,7 @@ administration, or `abstractgateway config set`).
 
 ## Core Docs
 
-- [README.md](README.md): overview, pages, install and run, develop from source
+- [README.md](README.md): overview, pages, responsive layout (tablets, phones, window sizes), install and run, develop from source
 - [docs/getting-started.md](docs/getting-started.md): first run and first execution
 - [docs/README.md](docs/README.md): documentation index
 - [docs/architecture.md](docs/architecture.md): system shape diagram, serving under the gateway (`/apps/continuum/`), gateway settings and backlog folder flow, exec pipeline state machine, module layout, executor seam

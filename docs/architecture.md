@@ -9,7 +9,7 @@ processes; the app renders them and issues commands.
 
 ```mermaid
 flowchart LR
-    subgraph Browser["Browser (React SPA — sidebar shell)"]
+    subgraph Browser["Browser (React SPA — sidebar shell, menu drawer below 1024 px)"]
         BO[Board page<br/>kanban + drawer]
         EX[Executions page]
         BL[Backlog page]
@@ -184,7 +184,7 @@ new UI copy executor-neutral and read identity from the config.
 
 ```text
 src/
-  app.tsx                     shell: sidebar nav, uic connect modal, probe
+  app.tsx                     shell: sidebar nav (menu drawer < 1024 px), uic connect modal, probe
   lib/
     gateway_client.ts         typed gateway client (dev-lane families only)
     gateway_types.ts          request/response types

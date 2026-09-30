@@ -25,8 +25,9 @@ flag: `abstractcontinuum config set gateway_url http://my-gateway:8080`
 [configuration.md](configuration.md#server-abstractcontinuum--npm-start--binclijs)
 has the details).
 
-Open `http://localhost:3002`, click the connection badge (bottom of the
-sidebar), and enter the gateway URL, user, and token in the connect dialog.
+Open `http://localhost:3002`; the connect dialog opens when you are not
+signed in (or use the connection button at the top right). Enter the gateway
+URL, user, and token.
 The token is exchanged server-side for a cookie session — it never lives in
 the browser. The server binds loopback (`127.0.0.1`) by default; before
 exposing it beyond localhost, read [security.md](security.md): this console
@@ -34,9 +35,8 @@ can redeploy services.
 
 ## First run from source (development)
 
-Clone [AbstractUIC](https://github.com/lpalbou/AbstractUIC) next to this
-repository as `abstractuic` (the source build resolves the shared UI kit
-and the session proxy from `../abstractuic`), then:
+From a clone of this repository (the shared UI kit and the session proxy
+are npm dependencies):
 
 ```bash
 npm install

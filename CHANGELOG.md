@@ -2,49 +2,57 @@
 
 All notable, user-visible changes to AbstractContinuum.
 
-## 0.5.0 — unreleased (feat/responsive)
+## 0.5.0 — 2026-09-30
 
-Continuum adapts to the screen: a MacBook window, a resized browser window,
-an iPad and an iPhone (portrait and landscape). Desktop windows at 1440 px
-and wider keep their layout.
+Continuum adapts to the screen: desktop windows of any size, tablets and
+phones, in portrait and landscape. Everyone using the web console is
+affected; nothing changes in the server, its flags or the gateway it needs
+(AbstractGateway 0.4.1 or newer standalone, 0.7.0 or newer under
+`/apps/continuum/`). Desktop windows 1440 px and wider keep their layout.
+See [Responsive layout](README.md#responsive-layout).
+
+### Added
+
+- **Menu drawer below 1024 px.** On tablets and narrow windows the sidebar
+  becomes a menu opened from the header button; Escape, a tap outside or
+  **Close menu** closes it, and the page behind it is inactive while it is
+  open.
+- **Team page, one pane at a time on phones.** Pick a channel to open its
+  thread and use **← Channels** to return. The thread keeps the screen: one
+  bar holds **← Channels**, the channel name and **More**, which shows the
+  filters, search, sort, channel actions and the Assistant / Members / Files /
+  Leaderboard / Desk panels. The message box takes the width and Send is an
+  icon button. Short landscape windows use the same layout.
+- **List, then detail on phones** for Executions and the Inbox (reports and
+  email), with **← Back to the list**.
+- **Backlog cards on phones**: one card per item, title first, actions
+  underneath.
 
 ### Changed
 
-- **Navigation drawer below 1024 px.** The sidebar leaves the row on narrow
-  windows and tablets; the menu button in the header opens it from the left
-  (Escape, a tap outside, or Close menu closes it; focus moves in and back).
-- **The header always fits.** The page title shortens with an ellipsis and,
-  on phones, "+ New task" becomes "+"; the connection pill keeps its dot.
-- **Team: one pane at a time on phones.** Below 768 px the Team page shows the
-  channel list, then the thread with a "← Channels" button; the Assistant,
-  Members, Files, Leaderboard and Desk tabs become a strip above it, and an
-  open panel replaces the thread until closed. From 768 to 1439 px an open
-  panel sits beside the thread (the channel list yields); from 1440 px the
-  three panes stay side by side. The filter bar wraps instead of overlapping
-  the sort buttons, which also shows the filters that were hidden at 1512 px.
-- **Team thread on phones and short landscape windows**: the thread keeps
-  the screen — one bar with "← Channels", the channel name and **More**
-  (filters, search, sort, actions and the panel tabs live behind it); Send
-  is an icon button so the message box takes the width.
-- **Escape never discards work**: in the work-item drawer Escape does nothing
-  while you type or have the spec open for editing, and a dialog on top
-  takes the key without closing the drawer under it.
-- **Laptop windows keep the backlog labels column**: the table's optional
-  columns now follow the table's own width.
-- **Executions and Inbox: list, then detail on phones**, with "Back to the
-  list"; the backlog table becomes one card per item (title first, actions
-  underneath) instead of hiding the title column.
-- **Dialogs are bottom sheets on phones** and in short landscape windows, with
-  their buttons always visible; the work-item drawer is full width on phones
-  and closes with Escape.
-- **Touch screens** get 44 px buttons, rows and tabs, 16 px form fields (no
-  iOS zoom on focus) and one size larger small text; message actions sit under
-  the message instead of squeezing it.
-- **Wide windows**: board lanes use the width at 1440 px and wider; long
-  messages and documents keep a readable line length.
+- **Team page on laptops and tablets (768 to 1439 px):** an open panel sits
+  beside the thread and the channel list steps aside; from 1440 px channels,
+  thread and panel stay side by side. The filter bar wraps onto a second row
+  when the thread column is narrow.
+- **Dialogs are sheets on phones** and in short landscape windows (New task,
+  Execute, the file viewer): they open from the bottom of the screen with an
+  opaque surface, their buttons stay visible and they rise above the on-screen
+  keyboard. The work-item drawer is full width on phones.
+- **Escape** closes the top dialog or drawer only. In the work-item drawer it
+  does nothing while you are typing or editing the spec.
+- **Touch screens:** buttons, rows, tabs and checkboxes are at least 44 px,
+  form fields use 16 px text (no zoom on focus), and messages, reports, specs
+  and form labels use the 14 px reading size. Message actions sit under the
+  message.
+- **The header always fits:** the page title shortens with an ellipsis and on
+  phones **+ New task** shows as **+**.
+- **Wide windows:** board lanes use the full width from 1440 px; messages and
+  documents keep a readable line length. The backlog table's optional columns
+  (labels, package) follow the width of the table.
 - Uses `@abstractframework/ui-kit` 0.3.2 and `@abstractframework/panel-chat`
-  0.2.1 (responsive kit: breakpoints 480/768/1024/1440, safe areas, visible
-  viewport height, sheets).
+  0.2.1.
+- A source checkout builds on its own: the UI kit comes from npm, no sibling
+  AbstractUIC checkout is needed.
 
 ## 0.4.0 — 2026-09-28
 

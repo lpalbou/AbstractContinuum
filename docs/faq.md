@@ -6,6 +6,12 @@ system (runs, ledgers, artifacts, memory graphs, entities); continuum
 *develops and deploys* it (backlog, executions, triage, process control).
 They were one app until 2026-07-12 (`history.md` records the split).
 
+**Can I use Continuum on a phone or a tablet?**
+Yes. Below 1024 px the sidebar becomes a menu, and below 768 px each page
+shows one pane at a time (list, then the selected item). See
+[Responsive layout](../README.md#responsive-layout) for the details per
+width.
+
 **Is this tied to Codex?**
 No. The executor is a gateway setting: Codex CLI (`codex`, the default),
 Claude Code (`claude`), Cursor Agent (`cursor-agent`) or AbstractCode

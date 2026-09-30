@@ -18,20 +18,10 @@ jobs:
       run:
         working-directory: abstractcontinuum
     steps:
-      # The source build resolves @abstractframework/ui-kit and panel-chat
-      # (Vite/TS aliases) and, until it is on npm, @abstractframework/app-server
-      # (file: dependency) from ../abstractuic — so both repos are checked out
-      # side by side.
       - name: Check out AbstractContinuum
         uses: actions/checkout@v4
         with:
           path: abstractcontinuum
-
-      - name: Check out AbstractUIC
-        uses: actions/checkout@v4
-        with:
-          repository: lpalbou/AbstractUIC
-          path: abstractuic
 
       - name: Set up Node
         uses: actions/setup-node@v4

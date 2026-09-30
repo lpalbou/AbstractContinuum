@@ -116,10 +116,8 @@ everyone who reaches the page posts as the configured seat.
 ## Development
 
 **`npm run dev` fails resolving `@abstractframework/ui-kit`.**
-The source build expects a sibling `../abstractuic` checkout (Vite aliases
-+ `file:` dependency). Clone [AbstractUIC](https://github.com/lpalbou/AbstractUIC)
-next to this repo as `abstractuic` and run `npm install` again. The
-published npm package does not need it.
+The kit is an npm dependency: run `npm install` (or `npm ci`) in this
+repository and start the dev server again.
 
 **Tests fail with `scrollIntoView is not a function`.**
 jsdom lacks it; the suites stub `Element.prototype.scrollIntoView` in their
