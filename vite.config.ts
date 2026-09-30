@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
-import { existsSync, readFileSync } from "fs";
-import { dirname, resolve } from "path";
+import { readFileSync } from "fs";
+import { resolve } from "path";
 import { createGatewaySessionProxy } from "@abstractframework/app-server";
 // Team page hub proxy (operator-seat transport) — same module the prod
 // server mounts, so dev and prod serve identical /api/hub/* behavior.
@@ -101,48 +101,19 @@ function gatewaySessionDevProxy(): Plugin {
   };
 }
 
-// The kit trees are consumed FROM SOURCE via the aliases below, and their
-// tracked compiled twins (src/*.js beside src/*.tsx, NodeNext explicit-.js
-// imports) resolve FIRST — so a kit fix in .tsx never reaches this app
-// until the uic seat regenerates the twins (stale-twin incident
-// 2026-07-16: the shipped "/"-link + connect-modal fixes existed only in
-// .ts/.tsx). This plugin redirects any resolved kit src/*.js to its .ts/.tsx
-// sibling when one exists — source of truth wins, tracked artifacts don't.
-function preferKitTypescriptSources(): Plugin {
-  const kit_root = resolve(__dirname, "../abstractuic");
-  return {
-    name: "abstractcontinuum-prefer-kit-ts",
-    enforce: "pre",
-    async resolveId(source, importer, options) {
-      const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
-      const id = resolved?.id || "";
-      if (!id.startsWith(kit_root) || !id.endsWith(".js")) return resolved;
-      const base = id.slice(0, -3);
-      for (const ext of [".tsx", ".ts"]) {
-        const candidate = base + ext;
-        if (existsSync(candidate) && existsSync(dirname(candidate))) return { ...resolved, id: candidate };
-      }
-      return resolved;
-    },
-  };
-}
-
 export default defineConfig({
-  plugins: [preferKitTypescriptSources(), gatewaySessionDevProxy(), react()],
+  plugins: [gatewaySessionDevProxy(), react()],
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
   },
   resolve: {
-    alias: [
-      { find: "@abstractframework/panel-chat", replacement: resolve(__dirname, "../abstractuic/panel-chat/src") },
-      { find: "@abstractframework/ui-kit", replacement: resolve(__dirname, "../abstractuic/ui-kit/src") },
-    ],
+    // The kit (ui-kit, panel-chat) resolves from node_modules: the vendored
+    // packs (file:vendor/*.tgz) on feat/responsive, the registry versions
+    // after publish. No alias to a sibling checkout: the pack is the contract.
     // TS sources FIRST (stale-twin incident 2026-07-16): Vite's default
     // order tries .js before .tsx, so a stray compiled twin beside a .tsx
-    // source silently shadows every later edit — in OUR src and in the
-    // aliased ui-kit/panel-chat trees alike. scripts/clean_stale_js.mjs
-    // guards our tree; this ordering covers extensionless imports and the
-    // plugin above covers the kit's explicit-.js NodeNext imports.
+    // source silently shadows every later edit in OUR src. scripts/clean_stale_js.mjs
+    // guards our tree; this ordering covers extensionless imports.
     extensions: [".mts", ".ts", ".tsx", ".mjs", ".js", ".jsx", ".json"],
   },
   server: {
@@ -155,7 +126,7 @@ export default defineConfig({
     // CORS posture would let any origin drive a no-auth dev gateway
     // through the victim's browser (adversarial find, 2026-07-12).
     fs: {
-      allow: [resolve(__dirname), resolve(__dirname, "../abstractuic")],
+      allow: [resolve(__dirname)],
     },
     proxy: {
       "/api": {

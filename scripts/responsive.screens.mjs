@@ -126,6 +126,7 @@ async function signIn(page) {
   const dialog = connectDialog(page);
   if (!(await dialog.isVisible().catch(() => false))) {
     if (await signedIn(page)) return;
+    await page.locator(".shell_banner").getByRole("button", { name: "Connect" }).first().click({ timeout: 5000 }).catch(() => {});
     await dialog.waitFor({ state: "visible", timeout: 15000 });
   }
   await page.locator("#gateway-session-url").fill(GATEWAY);
@@ -138,6 +139,7 @@ async function signIn(page) {
 
 /** Navigate by the sidebar (or the drawer menu when the sidebar is a drawer). */
 async function go(page, label) {
+  await signIn(page);
   await closeOverlays(page);
   const item = page.locator(".shell_nav_item", { hasText: label }).first();
   if (!(await item.isVisible().catch(() => false))) {
