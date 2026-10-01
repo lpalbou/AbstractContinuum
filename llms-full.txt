@@ -1,7 +1,7 @@
 # AbstractContinuum — full documentation corpus
 
 > Aggregated from the core docs for LLM/tool consumption (package
-> `@abstractframework/continuum` 0.5.0). Canonical sources live in the
+> `@abstractframework/continuum` 0.6.0). Canonical sources live in the
 > repository; this file is regenerated whenever the docs change.
 
 ---
@@ -887,9 +887,9 @@ item template on first use.
 | Gateway setting | Enables | Change it |
 | --- | --- | --- |
 | `triage_repo_root` (Backlog folder) | Where the Board / Backlog / Executions read and write items: a folder containing `docs/backlog`. Default: the gateway's own folder | Settings → Gateway administration (*Change…*, *Use the gateway's own folder*); gateway console Apps → *Backlog settings*; `abstractgateway config set triage_repo_root PATH`; `abstractgateway serve --backlog-root PATH` for one run |
-| `backlog_exec_runner` | The exec worker (Executions + backlog Processing views) | Settings (*Enable*); `abstractgateway config set backlog_exec_runner on`; `serve --exec-runner on` |
+| `backlog_exec_runner` | The exec worker (Executions + backlog Processing views) | Settings (**Exec runner** switch); `abstractgateway config set backlog_exec_runner on`; `serve --exec-runner on` |
 | `executor` | The agent that runs queued items (`codex`, `claude`, `cursor-agent`, `abstractcode`) | Settings (Executor); `abstractgateway config set executor codex` |
-| `process_manager` | The Services page (high trust — see [security.md](security.md)); process control also needs the backlog folder set to the framework checkout it manages | Settings (*Enable*); `abstractgateway config set process_manager on` |
+| `process_manager` | The Services page (high trust — see [security.md](security.md)); process control also needs the backlog folder set to the framework checkout it manages | Settings (**Process manager** switch); `abstractgateway config set process_manager on` |
 
 All Settings entries above live under **Settings → Gateway administration**;
 `abstractgateway config get` prints the current values on the gateway's
@@ -1352,6 +1352,18 @@ folder, and the Board shows **Your backlog is empty**. The same panel
 appears when the gateway is older than 0.4.1: upgrade the gateway. See
 [getting-started.md](getting-started.md#your-backlog).
 
+**Voice is unavailable, or Copy says "Copy failed — select and copy".**
+Continuum is open over plain `http://` from another machine (a LAN or
+Tailscale address such as `http://100.x.y.z:8080/apps/continuum/`). Browsers
+offer the microphone, the camera and the clipboard only on https pages or on
+`localhost`: over plain http the backlog advisor's voice control is disabled
+and says why, and **Copy** falls back to a text-selection copy that the
+browser may refuse. Open Continuum over https or on the gateway's own
+computer. With Tailscale, run `tailscale serve --bg http://127.0.0.1:<port>`
+on the gateway machine and open `https://<host>.<tailnet>.ts.net/apps/continuum/`;
+the gateway console's Network page explains the steps. Everything else works
+over plain http.
+
 ## Team page
 
 **The Team page reports `hub_seat_unavailable`.**
@@ -1528,7 +1540,7 @@ npm run build      # production build must stay green
 
 All notable, user-visible changes to AbstractContinuum.
 
-## Unreleased
+## 0.6.0 — 2026-10-01
 
 Phones and tablets use the whole screen on the list and detail pages: the
 Board, Backlog, the work-item drawer, Executions, the Inbox and the Team page.
@@ -1580,7 +1592,17 @@ the list headers gain a chevron.
   stays the one action.
 
 ### Fixed
-
+- **Plain http from another machine** (LAN, Tailscale). Browsers withhold
+  `crypto.randomUUID`, `crypto.subtle`, the clipboard API and the microphone
+  outside https and localhost. Ids now come from the kit's `randomId()`, the
+  backlog and ledger hashes use a plain SHA-256 when `crypto.subtle` is
+  missing (same hashes), **Copy** on a process log falls back to a text
+  selection copy and says "Copied" or "Copy failed — select and copy", and
+  over plain http the advisor's voice control is disabled and says why: "This
+  page is loaded over http, so voice and camera is unavailable — open it over
+  https (for example through tailscale serve; the gateway console's Network
+  page explains how) or on the gateway's own computer." Needs
+  `@abstractframework/ui-kit` 0.4.0.
 - Long paths no longer run off the screen: the candidate line in the
   work-item drawer's Review tab, and long words or paths in a report or a spec.
 - On phones, the Board no longer scrolls behind an open work-item drawer.

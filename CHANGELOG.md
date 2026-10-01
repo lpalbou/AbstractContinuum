@@ -2,7 +2,7 @@
 
 All notable, user-visible changes to AbstractContinuum.
 
-## Unreleased
+## 0.6.0 — 2026-10-01
 
 Phones and tablets use the whole screen on the list and detail pages: the
 Board, Backlog, the work-item drawer, Executions, the Inbox and the Team page.
@@ -60,9 +60,11 @@ the list headers gain a chevron.
   backlog and ledger hashes use a plain SHA-256 when `crypto.subtle` is
   missing (same hashes), **Copy** on a process log falls back to a text
   selection copy and says "Copied" or "Copy failed — select and copy", and
-  the advisor's voice control says "Voice and camera need an https address
-  (Network → HTTPS in the gateway console)." Needs `@abstractframework/ui-kit`
-  0.3.3.
+  over plain http the advisor's voice control is disabled and says why: "This
+  page is loaded over http, so voice and camera is unavailable — open it over
+  https (for example through tailscale serve; the gateway console's Network
+  page explains how) or on the gateway's own computer." Needs
+  `@abstractframework/ui-kit` 0.4.0.
 - Long paths no longer run off the screen: the candidate line in the
   work-item drawer's Review tab, and long words or paths in a report or a spec.
 - On phones, the Board no longer scrolls behind an open work-item drawer.

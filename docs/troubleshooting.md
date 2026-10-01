@@ -96,6 +96,18 @@ folder, and the Board shows **Your backlog is empty**. The same panel
 appears when the gateway is older than 0.4.1: upgrade the gateway. See
 [getting-started.md](getting-started.md#your-backlog).
 
+**Voice is unavailable, or Copy says "Copy failed — select and copy".**
+Continuum is open over plain `http://` from another machine (a LAN or
+Tailscale address such as `http://100.x.y.z:8080/apps/continuum/`). Browsers
+offer the microphone, the camera and the clipboard only on https pages or on
+`localhost`: over plain http the backlog advisor's voice control is disabled
+and says why, and **Copy** falls back to a text-selection copy that the
+browser may refuse. Open Continuum over https or on the gateway's own
+computer. With Tailscale, run `tailscale serve --bg http://127.0.0.1:<port>`
+on the gateway machine and open `https://<host>.<tailnet>.ts.net/apps/continuum/`;
+the gateway console's Network page explains the steps. Everything else works
+over plain http.
+
 ## Team page
 
 **The Team page reports `hub_seat_unavailable`.**

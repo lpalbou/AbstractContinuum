@@ -140,9 +140,9 @@ item template on first use.
 | Gateway setting | Enables | Change it |
 | --- | --- | --- |
 | `triage_repo_root` (Backlog folder) | Where the Board / Backlog / Executions read and write items: a folder containing `docs/backlog`. Default: the gateway's own folder | Settings → Gateway administration (*Change…*, *Use the gateway's own folder*); gateway console Apps → *Backlog settings*; `abstractgateway config set triage_repo_root PATH`; `abstractgateway serve --backlog-root PATH` for one run |
-| `backlog_exec_runner` | The exec worker (Executions + backlog Processing views) | Settings (*Enable*); `abstractgateway config set backlog_exec_runner on`; `serve --exec-runner on` |
+| `backlog_exec_runner` | The exec worker (Executions + backlog Processing views) | Settings (**Exec runner** switch); `abstractgateway config set backlog_exec_runner on`; `serve --exec-runner on` |
 | `executor` | The agent that runs queued items (`codex`, `claude`, `cursor-agent`, `abstractcode`) | Settings (Executor); `abstractgateway config set executor codex` |
-| `process_manager` | The Services page (high trust — see [security.md](security.md)); process control also needs the backlog folder set to the framework checkout it manages | Settings (*Enable*); `abstractgateway config set process_manager on` |
+| `process_manager` | The Services page (high trust — see [security.md](security.md)); process control also needs the backlog folder set to the framework checkout it manages | Settings (**Process manager** switch); `abstractgateway config set process_manager on` |
 
 All Settings entries above live under **Settings → Gateway administration**;
 `abstractgateway config get` prints the current values on the gateway's
