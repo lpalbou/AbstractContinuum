@@ -81,9 +81,10 @@ describe("non-secure context (plain http)", () => {
     expect(document.querySelectorAll("textarea").length).toBe(0);
   });
 
-  it("mediaAvailable is false without getUserMedia and the sentence names the fix", () => {
+  it("mediaAvailable is false without getUserMedia and the sentence says why", () => {
     Object.defineProperty(navigator, "mediaDevices", { value: undefined, configurable: true });
     expect(mediaAvailable()).toBe(false);
-    expect(MEDIA_NEEDS_HTTPS).toBe("Voice and camera need an https address (Network → HTTPS in the gateway console).");
+    // The sentence itself (http: the kit's; secure context: browser lacks it): media_sentence.test.ts.
+    expect(MEDIA_NEEDS_HTTPS).toBe("Voice and camera are not supported in this browser (getUserMedia unavailable).");
   });
 });
