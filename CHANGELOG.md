@@ -64,7 +64,7 @@ the list headers gain a chevron.
   page is loaded over http, so voice and camera is unavailable — open it over
   https (for example through tailscale serve; the gateway console's Network
   page explains how) or on the gateway's own computer." Needs
-  `@abstractframework/ui-kit` 0.4.0.
+  `@abstractframework/ui-kit` 0.4.0 and `@abstractframework/panel-chat` 0.2.2.
 - Long paths no longer run off the screen: the candidate line in the
   work-item drawer's Review tab, and long words or paths in a report or a spec.
 - On phones, the Board no longer scrolls behind an open work-item drawer.
