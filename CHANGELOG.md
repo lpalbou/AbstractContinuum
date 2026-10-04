@@ -9,7 +9,7 @@ Nothing changes in the server, its flags or the gateway it needs.
 
 ### Added
 
-- **Docs assistant.** A book button in the top bar opens the chat shared by
+- **Docs assistant.** A book button in the top bar opens the chat shared by The app's CSP allows `blob:` images (the attached image's thumbnail is an in-page object URL, never a request).
   every AbstractFramework app: it answers from Continuum's own documentation
   (`llms.txt`, now shipped in the build and served at `/llms.txt`) through the
   gateway's docs-qa workflow, with streaming, copy, attachments and an icon to

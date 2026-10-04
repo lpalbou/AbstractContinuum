@@ -55,7 +55,9 @@ function getMimeType(filePath) {
 // renders in this app, and standard markdown allows remote images — a
 // crafted ![](https://attacker/beacon.png) would beacon the operator's IP
 // and read-timing to an external host the moment a preview opens. img-src
-// 'self' data: kills that class app-wide. script-src 'self' is a backstop
+// 'self' data: kills that class app-wide. blob: is the browser's own
+// in-page object URL (a file the user picked, e.g. the Docs assistant's
+// image thumbnail): never a network request. script-src 'self' is a backstop
 // belt (the renderer already cannot emit script). ws:/wss: are needed
 // because 'self' does not reliably cover scheme-different WebSocket dials;
 // only our own bundle can open sockets (script-src), so this stays tight.
@@ -63,7 +65,7 @@ const CSP = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline'", // React style={} attributes
-  "img-src 'self' data:",
+  "img-src 'self' data: blob:",
   "font-src 'self' data:",
   "connect-src 'self' ws: wss:",
   "object-src 'none'",

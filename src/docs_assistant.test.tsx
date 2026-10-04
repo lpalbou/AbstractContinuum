@@ -137,18 +137,20 @@ describe("the app serves its llms.txt (what the gateway reads)", () => {
     await new Promise<void>((ok) => server.listen(0, "127.0.0.1", () => ok()));
     try {
       const port = (server.address() as AddressInfo).port;
-      const res = await new Promise<{ status: number; type: string; body: string }>((resolve, reject) => {
+      const res = await new Promise<{ status: number; type: string; body: string; csp: string }>((resolve, reject) => {
         http
           .get(`http://127.0.0.1:${port}/llms.txt`, (r) => {
             let body = "";
             r.on("data", (c) => (body += c));
-            r.on("end", () => resolve({ status: r.statusCode || 0, type: String(r.headers["content-type"] || ""), body }));
+            r.on("end", () => resolve({ status: r.statusCode || 0, type: String(r.headers["content-type"] || ""), body, csp: String(r.headers["content-security-policy"] || "") }));
           })
           .on("error", reject);
       });
       expect(res.status).toBe(200);
       expect(res.type).toMatch(/^text\/plain/);
       expect(res.body).toBe("# AbstractContinuum\n");
+      // An attached image's thumbnail is a blob: URL the page made itself (Docs assistant, round 8).
+      expect(res.csp).toMatch(/img-src 'self' data: blob:/);
     } finally {
       await new Promise((ok) => server.close(ok));
       rmSync(scratch, { recursive: true, force: true });
