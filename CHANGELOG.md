@@ -2,7 +2,10 @@
 
 All notable, user-visible changes to AbstractContinuum.
 
-## [Unreleased]
+## 0.7.0 — 2026-10-04
+
+The About dialog is the compact card shared by every AbstractFramework app.
+Nothing changes in the server, its flags or the gateway it needs.
 
 ### Changed
 
@@ -12,8 +15,9 @@ All notable, user-visible changes to AbstractContinuum.
   Issues, Feedback, Contact) and the copyright and licence line. It no longer
   lists every package installed on the gateway. When the gateway cannot
   answer, the gateway version says why (for example
-  "unavailable (HTTP 404: Not Found)"). Shared with every AbstractFramework
-  app through ui-kit 0.7.0.
+  "unavailable (HTTP 404: Not Found)").
+- Dependencies: `@abstractframework/ui-kit` ^0.8.0 and
+  `@abstractframework/panel-chat` ^0.3.1.
 
 ## 0.6.0 — 2026-10-01
 

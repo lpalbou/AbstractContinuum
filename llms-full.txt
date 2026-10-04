@@ -1,7 +1,7 @@
 # AbstractContinuum — full documentation corpus
 
 > Aggregated from the core docs for LLM/tool consumption (package
-> `@abstractframework/continuum` 0.6.0). Canonical sources live in the
+> `@abstractframework/continuum` 0.7.0). Canonical sources live in the
 > repository; this file is regenerated whenever the docs change.
 
 ---
@@ -54,9 +54,10 @@ checklist (type, real summary, acceptance criteria, test commands — parsed
 from the spec, override always available and labeled); promoting from
 review shows the acceptance criteria as a **Definition of Done** checklist.
 
-The **(i) About** button in the top-right cluster shows the Continuum version,
-the AbstractFramework and AbstractGateway versions your gateway reports and
-the project links; see [docs/faq.md](docs/faq.md).
+The **(i) About** button in the top-right cluster opens the shared
+AbstractFramework About card: the Continuum version, the AbstractFramework and
+AbstractGateway versions your gateway reports, the project links and the
+licence line; see [docs/faq.md](docs/faq.md).
 
 The observer app ([AbstractObserver](https://github.com/lpalbou/AbstractObserver))
 watches and discusses the running system; this app develops and deploys it.
@@ -1542,7 +1543,10 @@ npm run build      # production build must stay green
 
 All notable, user-visible changes to AbstractContinuum.
 
-## [Unreleased]
+## 0.7.0 — 2026-10-04
+
+The About dialog is the compact card shared by every AbstractFramework app.
+Nothing changes in the server, its flags or the gateway it needs.
 
 ### Changed
 
@@ -1552,8 +1556,9 @@ All notable, user-visible changes to AbstractContinuum.
   Issues, Feedback, Contact) and the copyright and licence line. It no longer
   lists every package installed on the gateway. When the gateway cannot
   answer, the gateway version says why (for example
-  "unavailable (HTTP 404: Not Found)"). Shared with every AbstractFramework
-  app through ui-kit 0.7.0.
+  "unavailable (HTTP 404: Not Found)").
+- Dependencies: `@abstractframework/ui-kit` ^0.8.0 and
+  `@abstractframework/panel-chat` ^0.3.1.
 
 ## 0.6.0 — 2026-10-01
 
