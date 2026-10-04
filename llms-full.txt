@@ -1543,10 +1543,19 @@ npm run build      # production build must stay green
 
 All notable, user-visible changes to AbstractContinuum.
 
-## 0.7.0 — 2026-10-04
+## 0.7.0 — 2026-10-05
 
 The About dialog is the compact card shared by every AbstractFramework app.
 Nothing changes in the server, its flags or the gateway it needs.
+
+### Added
+
+- **Docs assistant.** A book button in the top bar opens the chat shared by The app's CSP allows `blob:` images (the attached image's thumbnail is an in-page object URL, never a request).
+  every AbstractFramework app: it answers from Continuum's own documentation
+  (`llms.txt`, now shipped in the build and served at `/llms.txt`) through the
+  gateway's docs-qa workflow, with streaming, copy, attachments and an icon to
+  start a new conversation. The advisor keeps its own button. Needs a gateway
+  that serves `GET /api/gateway/docs/corpus?app=continuum`.
 
 ### Changed
 
@@ -1558,7 +1567,7 @@ Nothing changes in the server, its flags or the gateway it needs.
   answer, the gateway version says why (for example
   "unavailable (HTTP 404: Not Found)").
 - Dependencies: `@abstractframework/ui-kit` ^0.8.0 and
-  `@abstractframework/panel-chat` ^0.3.1.
+  `@abstractframework/panel-chat` ^0.4.0.
 
 ## 0.6.0 — 2026-10-01
 

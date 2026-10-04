@@ -2,7 +2,7 @@
 
 All notable, user-visible changes to AbstractContinuum.
 
-## 0.7.0 — 2026-10-04
+## 0.7.0 — 2026-10-05
 
 The About dialog is the compact card shared by every AbstractFramework app.
 Nothing changes in the server, its flags or the gateway it needs.
