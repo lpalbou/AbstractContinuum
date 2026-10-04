@@ -75,12 +75,14 @@ describe("App shell connect modal auto-open", () => {
   });
 });
 
-// About (shared kit dialog): the top-bar About action opens the framework
-// About with this build's version, the framework/author facts, the five
-// links from the AbstractFramework descriptor, and the versions the gateway
-// reports — or one visible "unavailable" row when it cannot say.
+// About (shared kit dialog, ui-kit 0.7.0 compact card): the top-bar About
+// action opens the framework About with this build's name + version, the
+// framework and gateway versions the gateway reports (or why it cannot say),
+// the six links (website, source, docs, issues, feedback, contact), the
+// author/licence line — and NEVER a package list.
 describe("App shell About dialog", () => {
   const pkg_version = JSON.parse(readFileSync(resolve(__dirname, "../package.json"), "utf8")).version as string;
+  const dialog_name = new RegExp(`^AbstractContinuum ${pkg_version.replace(/\./g, "\\.")}$`);
 
   function stub_about_fetch(about: { status: number; body: any }): ReturnType<typeof vi.fn> {
     const fn = vi.fn(async (input: any) => {
@@ -100,8 +102,8 @@ describe("App shell About dialog", () => {
     return fn;
   }
 
-  function rows_of(dialog: HTMLElement): Array<[string, string]> {
-    return Array.from(dialog.querySelectorAll(".af-about__row")).map((row) => [
+  function facts_of(dialog: HTMLElement): Array<[string, string]> {
+    return Array.from(dialog.querySelectorAll(".af-about-card__fact")).map((row) => [
       row.querySelector("dt")?.textContent || "",
       row.querySelector("dd")?.textContent || "",
     ]);
@@ -110,10 +112,10 @@ describe("App shell About dialog", () => {
   async function open_about(): Promise<HTMLElement> {
     const button = await screen.findByRole("button", { name: "About AbstractContinuum" });
     fireEvent.click(button);
-    return await screen.findByRole("dialog", { name: "About AbstractContinuum" });
+    return await screen.findByRole("dialog", { name: dialog_name });
   }
 
-  it("shows the app version, framework facts, five links and the gateway versions fetched on open", async () => {
+  it("shows name + version, framework + gateway versions fetched on open, six links, the licence line, no package list", async () => {
     expect(pkg_version).toMatch(/^\d+\.\d+\.\d+/);
     const fetch_fn = stub_about_fetch({
       status: 200,
@@ -125,54 +127,53 @@ describe("App shell About dialog", () => {
     expect(fetch_fn.mock.calls.some((c: any[]) => String(c[0]).includes("api/gateway/about"))).toBe(false);
 
     const dialog = await open_about();
-    await waitFor(() => expect(rows_of(dialog).some(([l]) => l === "Gateway framework")).toBe(true));
-    const rows = rows_of(dialog);
-    const get = (label: string) => rows.find(([l]) => l === label)?.[1];
+    await waitFor(() => expect(facts_of(dialog)).toEqual([
+      ["AbstractFramework", "0.3.3"],
+      ["AbstractGateway", "0.4.3"],
+    ]));
+    expect(dialog.querySelector("h2")?.textContent).toBe(`AbstractContinuum ${pkg_version}`);
+    expect(dialog.querySelector(".af-about-card__legal")?.textContent).toBe("© 2023-2026 Laurent-Philippe Albou, PhD. Released under the MIT License.");
 
-    expect(get("Application")).toBe(`AbstractContinuum ${pkg_version}`);
-    expect(get("Part of")).toBe("AbstractFramework — https://abstractframework.ai");
-    expect(get("Author")).toBe("Laurent-Philippe Albou, PhD (2023-2026)");
-    expect(get("Copyright")).toBe("© 2023-2026 Laurent-Philippe Albou, PhD. Released under the MIT License.");
-
-    // The five links, from the descriptor's apps.abstractcontinuum entry.
+    // The six links, from the descriptor's apps.abstractcontinuum entry + the framework contact.
     const expected_links: Array<[string, string]> = [
       ["Website", "https://abstractframework.ai"],
       ["Source", "https://github.com/lpalbou/AbstractContinuum"],
-      ["Documentation", "https://github.com/lpalbou/AbstractContinuum/tree/main/docs"],
-      ["Report an issue", "https://github.com/lpalbou/AbstractContinuum/issues"],
-      ["Give feedback", "https://github.com/lpalbou/AbstractContinuum/issues/new?labels=feedback"],
+      ["Docs", "https://github.com/lpalbou/AbstractContinuum/tree/main/docs"],
+      ["Issues", "https://github.com/lpalbou/AbstractContinuum/issues"],
+      ["Feedback", "https://github.com/lpalbou/AbstractContinuum/issues/new?labels=feedback"],
     ];
+    const links = Array.from(dialog.querySelectorAll(".af-about-card__links a"));
+    expect(links.map((a) => a.textContent)).toEqual([...expected_links.map(([l]) => l), "Contact"]);
     for (const [label, href] of expected_links) {
-      expect(get(label)).toBe(href);
-      const row = Array.from(dialog.querySelectorAll(".af-about__row")).find((r) => r.querySelector("dt")?.textContent === label)!;
-      const a = row.querySelector("a")!;
+      const a = links.find((x) => x.textContent === label)!;
       expect(a.getAttribute("href")).toBe(href);
       expect(a.getAttribute("target")).toBe("_blank");
       expect(a.getAttribute("rel")).toBe("noopener noreferrer");
     }
+    expect(links.at(-1)!.getAttribute("href")).toBe("mailto:contact@abstractframework.ai");
 
-    // Gateway rows, after the standard ones.
-    expect(get("Gateway")).toBe("AbstractGateway 0.4.3");
-    expect(get("Gateway framework")).toBe("AbstractFramework 0.3.3");
-    expect(get("Gateway package abstractcore")).toBe("2.15.2");
-    expect(get("Gateway package abstractruntime")).toBe("0.4.33");
-    expect(rows.filter(([l]) => l === "Gateway package abstractgateway")).toHaveLength(0);
-    expect(rows.findIndex(([l]) => l === "Gateway")).toBeGreaterThan(rows.findIndex(([l]) => l === "Give feedback"));
+    // No package list: the payload's other packages never appear.
+    const text = dialog.textContent || "";
+    expect(text).not.toContain("abstractcore");
+    expect(text).not.toContain("2.15.2");
+    expect(text).not.toContain("0.4.33");
+    expect(text).not.toContain("Gateway package");
     expect(fetch_fn.mock.calls.some((c: any[]) => String(c[0]).includes("api/gateway/about"))).toBe(true);
 
     // Close dismisses.
     fireEvent.click(screen.getAllByRole("button", { name: "Close" }).find((b) => dialog.contains(b))!);
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "About AbstractContinuum" })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: dialog_name })).toBeNull());
   });
 
-  it("shows one visible 'Gateway: unavailable' row when the gateway cannot answer", async () => {
+  it("says why the gateway version is missing when the gateway cannot answer", async () => {
     stub_about_fetch({ status: 404, body: { detail: "Not Found" } });
     render(<App />);
     const dialog = await open_about();
-    await waitFor(() => expect(rows_of(dialog).find(([l]) => l === "Gateway")?.[1]).toMatch(/^unavailable/));
-    const gateway_rows = rows_of(dialog).filter(([l]) => l.startsWith("Gateway"));
-    expect(gateway_rows).toEqual([["Gateway", "unavailable (HTTP 404: Not Found)"]]);
+    await waitFor(() => expect(facts_of(dialog)).toEqual([
+      ["AbstractFramework", "not reported"],
+      ["AbstractGateway", "unavailable (HTTP 404: Not Found)"],
+    ]));
     // The app facts are still there.
-    expect(rows_of(dialog).find(([l]) => l === "Application")?.[1]).toBe(`AbstractContinuum ${pkg_version}`);
+    expect(dialog.querySelector("h2")?.textContent).toBe(`AbstractContinuum ${pkg_version}`);
   });
 });

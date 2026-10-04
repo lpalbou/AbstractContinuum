@@ -2,6 +2,19 @@
 
 All notable, user-visible changes to AbstractContinuum.
 
+## [Unreleased]
+
+### Changed
+
+- **About is a compact card.** The (i) About button opens a short card with
+  the Continuum name and version, the AbstractFramework and AbstractGateway
+  versions your gateway reports, one row of links (Website, Source, Docs,
+  Issues, Feedback, Contact) and the copyright and licence line. It no longer
+  lists every package installed on the gateway. When the gateway cannot
+  answer, the gateway version says why (for example
+  "unavailable (HTTP 404: Not Found)"). Shared with every AbstractFramework
+  app through ui-kit 0.7.0.
+
 ## 0.6.0 — 2026-10-01
 
 Phones and tablets use the whole screen on the list and detail pages: the

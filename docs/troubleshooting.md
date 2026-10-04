@@ -34,7 +34,7 @@ refuses it. Open the Team page from the gateway's own computer, or start
 Continuum with `--hub-allow-remote` when you trust everyone who can reach
 it. See [configuration.md](configuration.md#serving-through-the-gateway-appscontinuum).
 
-**About shows "Gateway: unavailable (…)".**
+**About shows the gateway as "unavailable (…)".**
 The dialog could not read `GET /api/gateway/about`; the reason in brackets
 says why. `HTTP 404` means the gateway does not serve the About route: upgrade
 it to a version with `GET /about`. `HTTP 401` or a network error means the

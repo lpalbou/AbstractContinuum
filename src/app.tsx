@@ -28,7 +28,7 @@ import {
 import { AssistantPanel } from "@abstractframework/panel-chat";
 
 import { APP_VERSION } from "./app_version";
-import { GATEWAY_ABOUT_LOADING, load_gateway_about_rows, type AboutRow } from "./lib/gateway_about";
+import { GATEWAY_ABOUT_LOADING, load_gateway_about_versions, type AfAboutVersions } from "./lib/gateway_about";
 import { GatewayClient } from "./lib/gateway_client";
 import { AgentsPage } from "./ui/agents_page";
 import { BacklogBrowserPage } from "./ui/backlog_browser";
@@ -267,15 +267,15 @@ export function App(): React.ReactElement {
 
   // About (shared kit dialog): app identity from the framework descriptor;
   // the gateway's versions are fetched each time the dialog opens, and a
-  // failure is shown as a row rather than hidden.
+  // failure is shown as the gateway note rather than hidden (no package list).
   const about_identity = useMemo(() => appIdentity("abstractcontinuum", APP_VERSION), []);
-  const [gateway_about_rows, set_gateway_about_rows] = useState<AboutRow[]>(GATEWAY_ABOUT_LOADING);
+  const [gateway_about_versions, set_gateway_about_versions] = useState<AfAboutVersions>(GATEWAY_ABOUT_LOADING);
   const about_seq = useRef(0);
   function refresh_gateway_about(): void {
     const seq = ++about_seq.current;
-    set_gateway_about_rows(GATEWAY_ABOUT_LOADING);
-    void load_gateway_about_rows(gateway).then((rows) => {
-      if (seq === about_seq.current) set_gateway_about_rows(rows);
+    set_gateway_about_versions(GATEWAY_ABOUT_LOADING);
+    void load_gateway_about_versions(gateway).then((versions) => {
+      if (seq === about_seq.current) set_gateway_about_versions(versions);
     });
   }
 
@@ -402,7 +402,7 @@ export function App(): React.ReactElement {
             <AfTopBarActions
               assistant={{ open: assistant_open, onToggle: () => set_assistant_open((v) => !v) }}
               appearance={{ onOpen: () => set_appearance_open(true) }}
-              about={{ identity: about_identity, extraRows: gateway_about_rows, onOpen: refresh_gateway_about }}
+              about={{ identity: about_identity, versions: gateway_about_versions, onOpen: refresh_gateway_about }}
               extraActions={
                 <button className="btn primary shell_newtask_btn" onClick={() => set_new_task_open(true)} disabled={!connected} aria-label="+ New task" title="New task">
                   +<span className="shell_newtask_label"> New task</span>

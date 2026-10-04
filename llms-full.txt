@@ -54,8 +54,9 @@ checklist (type, real summary, acceptance criteria, test commands — parsed
 from the spec, override always available and labeled); promoting from
 review shows the acceptance criteria as a **Definition of Done** checklist.
 
-The **(i) About** button in the top-right cluster shows the Continuum version
-and the versions your gateway reports; see [docs/faq.md](docs/faq.md).
+The **(i) About** button in the top-right cluster shows the Continuum version,
+the AbstractFramework and AbstractGateway versions your gateway reports and
+the project links; see [docs/faq.md](docs/faq.md).
 
 The observer app ([AbstractObserver](https://github.com/lpalbou/AbstractObserver))
 watches and discusses the running system; this app develops and deploys it.
@@ -654,7 +655,7 @@ gateway console's *Backlog settings*; see
 
 | Method | Endpoint |
 | --- | --- |
-| `gateway_about()` | `GET /about` — public; `{ abstractframework, abstractgateway, packages }`, read when the About dialog opens |
+| `gateway_about()` | `GET /about` — public; `{ abstractframework, abstractgateway, packages }`, read when the About dialog opens; About shows only the framework and gateway versions (kit `aboutVersionsFromGateway`), never the package list |
 
 ### Managed processes (high trust — see [security.md](security.md))
 
@@ -1214,13 +1215,14 @@ settings that Settings → Gateway administration edits; see
 
 **Which version am I running?**
 Click the (i) About button in the top-right cluster. It shows the Continuum
-version (fixed at build time from the package version), the author and
-licence, links to the website, source, documentation, issue tracker and
-feedback, and the versions your gateway reports, read from
-`GET /api/gateway/about` each time the dialog opens. While the answer is on
-its way the dialog shows "Gateway: checking…"; when the gateway cannot answer
-it shows "Gateway: unavailable (…)" with the reason, for example
-`HTTP 404`. See [troubleshooting.md](troubleshooting.md#sign-in--connectivity).
+version (fixed at build time from the package version), the AbstractFramework
+and AbstractGateway versions your gateway reports (read from
+`GET /api/gateway/about` each time the dialog opens), links to the website,
+source, documentation, issue tracker, feedback and the contact address, and
+the copyright and licence line. It does not list the gateway's packages.
+While the answer is on its way the gateway version reads "checking…"; when
+the gateway cannot answer it reads "unavailable (…)" with the reason, for
+example `HTTP 404`. See [troubleshooting.md](troubleshooting.md#sign-in--connectivity).
 
 **Why is the Services page empty / why is Execute disabled?**
 Those features exist only when a gateway admin turns them on: the process
@@ -1290,7 +1292,7 @@ refuses it. Open the Team page from the gateway's own computer, or start
 Continuum with `--hub-allow-remote` when you trust everyone who can reach
 it. See [configuration.md](configuration.md#serving-through-the-gateway-appscontinuum).
 
-**About shows "Gateway: unavailable (…)".**
+**About shows the gateway as "unavailable (…)".**
 The dialog could not read `GET /api/gateway/about`; the reason in brackets
 says why. `HTTP 404` means the gateway does not serve the About route: upgrade
 it to a version with `GET /about`. `HTTP 401` or a network error means the
@@ -1539,6 +1541,19 @@ npm run build      # production build must stay green
 # Changelog
 
 All notable, user-visible changes to AbstractContinuum.
+
+## [Unreleased]
+
+### Changed
+
+- **About is a compact card.** The (i) About button opens a short card with
+  the Continuum name and version, the AbstractFramework and AbstractGateway
+  versions your gateway reports, one row of links (Website, Source, Docs,
+  Issues, Feedback, Contact) and the copyright and licence line. It no longer
+  lists every package installed on the gateway. When the gateway cannot
+  answer, the gateway version says why (for example
+  "unavailable (HTTP 404: Not Found)"). Shared with every AbstractFramework
+  app through ui-kit 0.7.0.
 
 ## 0.6.0 — 2026-10-01
 

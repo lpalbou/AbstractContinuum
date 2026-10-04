@@ -81,7 +81,7 @@ gateway console's *Backlog settings*; see
 
 | Method | Endpoint |
 | --- | --- |
-| `gateway_about()` | `GET /about` — public; `{ abstractframework, abstractgateway, packages }`, read when the About dialog opens |
+| `gateway_about()` | `GET /about` — public; `{ abstractframework, abstractgateway, packages }`, read when the About dialog opens; About shows only the framework and gateway versions (kit `aboutVersionsFromGateway`), never the package list |
 
 ### Managed processes (high trust — see [security.md](security.md))
 
