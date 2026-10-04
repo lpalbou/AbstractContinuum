@@ -149,8 +149,12 @@ describe("the app serves its llms.txt (what the gateway reads)", () => {
       expect(res.status).toBe(200);
       expect(res.type).toMatch(/^text\/plain/);
       expect(res.body).toBe("# AbstractContinuum\n");
-      // An attached image's thumbnail is a blob: URL the page made itself (Docs assistant, round 8).
-      expect(res.csp).toMatch(/img-src 'self' data: blob:/);
+      // An attached image's thumbnail is a blob: URL the page made itself (Docs assistant, round 8):
+      // the page's CSP must allow it.
+      const page = await new Promise<string>((resolve, reject) => {
+        http.get(`http://127.0.0.1:${port}/`, (r) => { r.resume(); resolve(String(r.headers["content-security-policy"] || "")); }).on("error", reject);
+      });
+      expect(page).toMatch(/img-src 'self' data: blob:/);
     } finally {
       await new Promise((ok) => server.close(ok));
       rmSync(scratch, { recursive: true, force: true });
