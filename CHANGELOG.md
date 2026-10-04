@@ -7,6 +7,15 @@ All notable, user-visible changes to AbstractContinuum.
 The About dialog is the compact card shared by every AbstractFramework app.
 Nothing changes in the server, its flags or the gateway it needs.
 
+### Added
+
+- **Docs assistant.** A book button in the top bar opens the chat shared by
+  every AbstractFramework app: it answers from Continuum's own documentation
+  (`llms.txt`, now shipped in the build and served at `/llms.txt`) through the
+  gateway's docs-qa workflow, with streaming, copy, attachments and an icon to
+  start a new conversation. The advisor keeps its own button. Needs a gateway
+  that serves `GET /api/gateway/docs/corpus?app=continuum`.
+
 ### Changed
 
 - **About is a compact card.** The (i) About button opens a short card with
@@ -17,7 +26,7 @@ Nothing changes in the server, its flags or the gateway it needs.
   answer, the gateway version says why (for example
   "unavailable (HTTP 404: Not Found)").
 - Dependencies: `@abstractframework/ui-kit` ^0.8.0 and
-  `@abstractframework/panel-chat` ^0.3.1.
+  `@abstractframework/panel-chat` ^0.4.0.
 
 ## 0.6.0 — 2026-10-01
 

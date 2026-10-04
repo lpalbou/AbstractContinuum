@@ -179,6 +179,17 @@ export class GatewayClient {
 
   // ---------------------------------------------------------------- transport
 
+  /** A kit `GatewayFetch` (panel-chat DocsAssistantDrawer): a relative
+   *  `api/gateway/…` path on this client's base, with the same auth bearer +
+   *  CSRF headers as every other call (one place for the credential rule).
+   *  The raw Response is returned; the kit reads errors itself. */
+  fetch_gateway = (path: string, init?: RequestInit): Promise<Response> => {
+    const headers = new Headers(init?.headers || {});
+    for (const [name, value] of Object.entries(_auth_headers(this._cfg.auth_token))) headers.set(name, value);
+    return fetch(joinBaseUrl(this._cfg.base_url, path), { ...init, headers });
+  };
+
+
   private async _fetch(label: string, path: string, init?: RequestInit): Promise<Response> {
     const r = await fetch(joinBaseUrl(this._cfg.base_url, path), {
       ...init,

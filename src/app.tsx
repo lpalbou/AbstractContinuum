@@ -25,7 +25,7 @@ import {
   useAppearanceSettings,
   useGatewayConnection,
 } from "@abstractframework/ui-kit";
-import { AssistantPanel } from "@abstractframework/panel-chat";
+import { AssistantPanel, DocsAssistantDrawer, type DocsAssistantSource } from "@abstractframework/panel-chat";
 
 import { APP_VERSION } from "./app_version";
 import { GATEWAY_ABOUT_LOADING, load_gateway_about_versions, type AfAboutVersions } from "./lib/gateway_about";
@@ -86,6 +86,9 @@ function load_settings(): ContinuumSettings {
   }
 }
 
+export const CONTINUUM_DOCS_SOURCE: DocsAssistantSource = { app: "continuum", name: "AbstractContinuum" };
+const CONTINUUM_DOCS_SUGGESTIONS = ["How do I create a backlog task?", "What does the Team page show?", "How do managed processes work?"];
+
 export function App(): React.ReactElement {
   const [page, set_page] = useState<Page>("board");
   // Below the md breakpoint (1024 px, DESIGN §5.2) the sidebar leaves the
@@ -134,6 +137,11 @@ export function App(): React.ReactElement {
   const [probe_nonce, set_probe_nonce] = useState(0);
   // Unified top-bar state (uic c1648): assistant drawer + appearance dialog.
   const [assistant_open, set_assistant_open] = useState(false);
+  // The Docs assistant (round 8, R8.3): the kit's shared DocsAssistantDrawer,
+  // grounded on this app's llms.txt (the gateway reads it from this app's
+  // build: docs/corpus?app=continuum) through the docs-qa workflow. The
+  // advisor above stays the app's own agent; opening one closes the other.
+  const [docs_open, set_docs_open] = useState(false);
   const [appearance_open, set_appearance_open] = useState(false);
   const [appearance, set_appearance] = useAppearanceSettings("continuum");
   // Bumped by cross-page mutations (task created, item moved) so the board
@@ -400,7 +408,8 @@ export function App(): React.ReactElement {
                 uic c1648): assistant + appearance + about + app action + the
                 three-phase connection pill. */}
             <AfTopBarActions
-              assistant={{ open: assistant_open, onToggle: () => set_assistant_open((v) => !v) }}
+              docs={{ open: docs_open, onToggle: () => { set_docs_open((v) => !v); set_assistant_open(false); }, label: "Docs assistant" }}
+              assistant={{ open: assistant_open, onToggle: () => { set_assistant_open((v) => !v); set_docs_open(false); } }}
               appearance={{ onOpen: () => set_appearance_open(true) }}
               about={{ identity: about_identity, versions: gateway_about_versions, onOpen: refresh_gateway_about }}
               extraActions={
@@ -594,6 +603,17 @@ export function App(): React.ReactElement {
           blockedNotice={connected ? undefined : "Connect to the gateway to use the assistant."}
         />
       </AfDrawer>
+
+      <DocsAssistantDrawer
+        open={docs_open}
+        onClose={() => set_docs_open(false)}
+        source={CONTINUUM_DOCS_SOURCE}
+        fetchGateway={gateway.fetch_gateway}
+        connected={connected}
+        placeholder="Ask about AbstractContinuum…"
+        suggestions={CONTINUUM_DOCS_SUGGESTIONS}
+        className="continuum-docs-assistant"
+      />
 
       <AfAppearanceDialog open={appearance_open} onClose={() => set_appearance_open(false)} value={appearance} onChange={set_appearance} />
 
