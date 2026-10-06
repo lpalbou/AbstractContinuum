@@ -39,11 +39,12 @@
     "preview": "vite preview",
     "start": "node ./bin/cli.js",
     "test": "node scripts/clean_stale_js.mjs && vitest run",
+    "check:lock": "node scripts/check_lock.mjs",
     "prepublishOnly": "npm run build",
     "gen:hub-types": "openapi-typescript vendor/hub/openapi.json -o src/lib/hub_api_types.ts"
   },
   "dependencies": {
-    "@abstractframework/app-server": "^0.1.11",
+    "@abstractframework/app-server": "^0.1.12",
     "@abstractframework/panel-chat": "^0.4.0",
     "@abstractframework/ui-kit": "^0.8.0",
     "mermaid": "^11.16.0",
