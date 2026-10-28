@@ -4,6 +4,12 @@ All notable, user-visible changes to AbstractContinuum.
 
 ## Unreleased
 
+## 0.7.6 — 2026-10-28
+
+On AbstractUIC 0.8.4 (`@abstractframework/ui-kit` ^0.9.5, `@abstractframework/panel-chat` ^0.6.4, `@abstractframework/app-server` ^0.1.13).
+
+- Fixed (from the kit): in the backlog advisor (`advisor_drawer.tsx`, panel-chat's `ChatThread`), the new task's AI Assist (`new_task_modal.tsx`) and the app assistant (`AssistantPanel`), a message's stamp carries the date when it is not from today ("Yesterday · 10:52 PM", "Oct 21 · 10:52 PM"; the full date on hover); in the advisor a reply with no text keeps its speaker, disabled with the reason (AbstractUIC backlog 0064, the message footer spec). The Team page's hub message rows are a different surface (reactions, reply, retract) and keep their own actions; backlog 0021.
+
 ## 0.7.5 — 2026-10-28
 
 - Fixed (QA item (11)): a fresh install without a hub seat key showed raw 503s (`hub_seat_unavailable`) because the
