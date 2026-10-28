@@ -81,8 +81,8 @@ export function use_work_claims(enabled: boolean): WorkClaimsView {
         // hub route below would answer 503; say why instead and check again later.
         const why = hub_not_configured(await hub_ref.current.meta());
         if (why) {
+          // Re-checked at the next tick (meta is local): a key added later shows the claims.
           if (alive) set_view((cur) => (cur.not_configured === why ? cur : { ...EMPTY, not_configured: why }));
-          disabled_until.current = Date.now() + DISABLED_RETRY_MS;
           return;
         }
         const live = new Map<string, WorkClaim>();

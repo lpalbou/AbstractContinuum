@@ -272,6 +272,9 @@ export type TeamAiTurn = { role: "user" | "assistant"; content: string };
 /** Injected LLM lane — lets panel-hub shells call any backend without importing GatewayClient. */
 export type TeamAdvisorFn = (question: string, history: TeamAiTurn[]) => Promise<string>;
 
+/** How often a page whose hub is not configured re-reads `api/hub/meta` (local; no hub call). */
+export const HUB_SETUP_RECHECK_MS = 15_000;
+
 export function TeamPage(props: {
   /** Voice/TTS only — optional when the shell has no gateway (AI may still work via advisor). */
   gateway?: GatewayClient;
@@ -456,6 +459,12 @@ export function TeamPage(props: {
     }
   }
   async function load_desk(): Promise<void> {
+    if (hub_setup) {
+      // No seat key: the desk read would be a 503; say why and how to configure it (QA (11)).
+      set_desk_view(null);
+      set_desk_error(hub_setup);
+      return;
+    }
     set_desk_view("loading");
     set_desk_error("");
     try {
@@ -1036,6 +1045,22 @@ export function TeamPage(props: {
   // server-side). Envelope frames trigger an INSTANT refresh of the
   // affected channel + a debounced badge refresh; the 5s poll keeps
   // running as the fallback lane (socket loss degrades, never breaks).
+  // Not configured: re-read meta (Continuum's own proxy, no hub call) every 15 s and when the tab
+  // comes back, so a seat key added in Settings or the key store is picked up without a reload.
+  useEffect(() => {
+    if (hub_state !== "not_configured") return;
+    const again = () => {
+      if (document.visibilityState !== "hidden") void refresh_channels();
+    };
+    const t = setInterval(again, HUB_SETUP_RECHECK_MS);
+    document.addEventListener("visibilitychange", again);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", again);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hub_state]);
+
   useEffect(() => {
     if (hub_state !== "ready" && hub_state !== "unreachable") return;
     let ws: WebSocket | null = null;

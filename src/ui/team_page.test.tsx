@@ -1132,5 +1132,31 @@ describe("Team page with the hub not configured", () => {
     await new Promise((r) => setTimeout(r, 50));
     expect(urls.filter((u) => u.includes("api/hub/") && !u.includes("api/hub/meta"))).toEqual([]);
     expect(sockets).toEqual([]);
+    // The Desk tab says the same instead of a 503 "transient" read.
+    fireEvent.click(screen.getByRole("button", { name: "Open the operator desk" }));
+    await waitFor(() => expect(document.body.textContent || "").toContain("Provision the seat there"));
+    expect(urls.some((u) => u.includes("api/hub/desk"))).toBe(false);
+  });
+
+  it("picks up a key added later without a reload (meta re-read when the tab comes back)", async () => {
+    let present = false;
+    const urls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: any) => {
+        const url = String(typeof input === "string" ? input : input?.url || "");
+        urls.push(url);
+        if (url.includes("api/hub/meta")) return new Response(JSON.stringify({ ok: true, hub_url: "http://hub", seat: "laurent", seat_key_present: present, ...(present ? {} : { setup: "No hub key." }) }), { status: 200 });
+        if (url.includes("api/hub/channels") && !url.includes("/channels/")) return new Response(JSON.stringify([{ name: "commons", private: false, member: true, member_count: 2, last_seq: 0 }]), { status: 200 });
+        return new Response(JSON.stringify([]), { status: 200 });
+      }),
+    );
+    vi.stubGlobal("WebSocket", class { close() {} } as any);
+    render_page();
+    await waitFor(() => expect(document.querySelector('[data-hub-note="not-configured"]')).not.toBeNull());
+    present = true;
+    document.dispatchEvent(new Event("visibilitychange"));
+    await waitFor(() => expect(document.querySelector('[data-hub-note="not-configured"]')).toBeNull());
+    expect(urls.some((u) => /api\/hub\/channels$/.test(u))).toBe(true);
   });
 });

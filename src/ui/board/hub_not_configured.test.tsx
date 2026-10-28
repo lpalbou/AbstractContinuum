@@ -70,3 +70,16 @@ describe("the hub not configured (no seat key)", () => {
     expect(withKey.setup).toBeUndefined();
   });
 });
+
+describe("a card's hub activity with the hub not configured", () => {
+  it("reads meta only and shows the sentence", async () => {
+    const { render, waitFor: wait } = await import("@testing-library/react");
+    const React = await import("react");
+    const { WorkActivityPanel } = await import("./work_activity_panel");
+    const urls = stub_fetch({ ok: true, hub_url: "http://127.0.0.1:8787", seat: "operator", seat_key_present: false, setup: SETUP });
+    const card: any = { key: "file:x", work_id: "abstractcontinuum-0042", title: "x", column: "ready" };
+    render(React.createElement(WorkActivityPanel, { card, on_close: () => {} }));
+    await wait(() => expect(document.querySelector('[data-hub-note="not-configured"]')?.textContent || "").toContain("The team hub is not configured."));
+    expect(urls.filter((u) => !u.endsWith("api/hub/meta"))).toEqual([]);
+  });
+});

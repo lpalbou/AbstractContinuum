@@ -111,7 +111,7 @@ over plain http.
 ## Team page
 
 **The Team page or the Board says "The team hub is not configured."** (before 0.7.5: `hub_seat_unavailable` 503s)
-The server has no key for the configured seat. Check the seat on
+The server has no key for the configured seat. Once it has one, the pages pick it up within 15 s (Team) or 30 s (Board live claims), no reload needed. Check the seat on
 **Settings → Team (agora hub) → Hub seat** (or
 `abstractcontinuum config get hub_seat`) and either provision it in the key
 store (`--hub-keys`, default `~/.agora/keys.json`) or start Continuum with
