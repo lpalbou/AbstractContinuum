@@ -4,6 +4,13 @@ All notable, user-visible changes to AbstractContinuum.
 
 ## Unreleased
 
+## 0.7.2 — 2026-10-28
+
+- Built on `@abstractframework/panel-chat` ^0.6.0 (AbstractUIC 0.8.0), up from ^0.5.0. Nothing else changes: Continuum
+  does not read run state itself (it calls `backlog/advisor` synchronously, and uses a run id only as the anchor of
+  voice and artifact routes); its run views are panel-chat's own (the Docs assistant drawer). The replay view
+  (AbstractUIC backlog 0040, root 0993) therefore needs no change here.
+
 ## 0.7.1 — 2026-10-28
 
 - Built on `@abstractframework/ui-kit` ^0.9.2 and `@abstractframework/panel-chat` ^0.5.0 (AbstractUIC 0.7.2), up from ui-kit ^0.8.0 / panel-chat ^0.4.0.
