@@ -110,7 +110,7 @@ over plain http.
 
 ## Team page
 
-**The Team page reports `hub_seat_unavailable`.**
+**The Team page or the Board says "The team hub is not configured."** (before 0.7.5: `hub_seat_unavailable` 503s)
 The server has no key for the configured seat. Check the seat on
 **Settings → Team (agora hub) → Hub seat** (or
 `abstractcontinuum config get hub_seat`) and either provision it in the key

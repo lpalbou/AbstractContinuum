@@ -9,7 +9,7 @@
 // floor.
 import React, { useEffect, useState } from "react";
 
-import { HubClient } from "../../lib/hub_client";
+import { HubClient, hub_not_configured } from "../../lib/hub_client";
 import { claim_age_label, parse_work_id } from "../../lib/work_id";
 import type { BoardCard } from "./board_model";
 
@@ -25,6 +25,8 @@ function clip(text: string, max: number): string {
 type Activity = {
   loading: boolean;
   error: string;
+  /** The hub is not configured (no seat key): `error` is the sentence that says how to configure it. */
+  not_configured?: boolean;
   claims: any[];
   decisions: any[];
   messages: any[];
@@ -50,8 +52,14 @@ export function WorkActivityPanel(props: { card: BoardCard; on_close: () => void
     let alive = true;
     if (!parseable) return;
     set_act((a) => ({ ...a, loading: true, error: "" }));
+    // Meta first: without a seat key the hub call would be a 503 (QA (11)); say why instead.
     hub
-      .work(id)
+      .meta()
+      .then((m) => {
+        const why = hub_not_configured(m);
+        if (why) throw Object.assign(new Error(why), { not_configured: true });
+        return hub.work(id);
+      })
       .then((res) => {
         if (!alive) return;
         set_act({
@@ -66,7 +74,7 @@ export function WorkActivityPanel(props: { card: BoardCard; on_close: () => void
         if (!alive) return;
         // Feature-absent hub or transient failure: the row facts below
         // still render; the note names the gap honestly.
-        set_act({ loading: false, error: String(e?.message || e || "activity unavailable"), claims: [], decisions: [], messages: [] });
+        set_act({ loading: false, error: String(e?.message || e || "activity unavailable"), not_configured: Boolean(e?.not_configured), claims: [], decisions: [], messages: [] });
       });
     return () => {
       alive = false;
@@ -116,7 +124,8 @@ export function WorkActivityPanel(props: { card: BoardCard; on_close: () => void
           <div className="muted team_note" style={{ marginBottom: 4 }}>
             Discussion & receipts {act.loading ? "· loading…" : act.messages.length ? `· ${act.messages.length} citing message(s)` : ""}
           </div>
-          {act.error ? <div className="muted team_note">#FALLBACK hub activity unavailable ({act.error.slice(0, 80)}) — the Team thread button below still works.</div> : null}
+          {act.error && act.not_configured ? <div className="muted team_note" data-hub-note="not-configured">{act.error}</div> : null}
+          {act.error && !act.not_configured ? <div className="muted team_note">#FALLBACK hub activity unavailable ({act.error.slice(0, 80)}) — the Team thread button below still works.</div> : null}
           {!act.loading && !act.error && parseable && !act.messages.length ? <div className="muted team_note">No citing messages on the hub yet.</div> : null}
           {!parseable ? <div className="muted team_note">This claim has no ruled work id — discussion lives in the coordination channel.</div> : null}
           {act.messages.slice(0, 8).map((m: any) => (

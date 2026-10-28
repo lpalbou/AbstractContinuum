@@ -1108,3 +1108,29 @@ describe("TeamPage AI lanes (read-only contract)", () => {
     expect(advisor).toHaveBeenCalledTimes(1);
   });
 });
+
+// QA (11) 2026-10-28: without a hub seat key the page read meta AND fired the hub routes, which
+// Continuum's proxy refuses with 503 hub_seat_unavailable. Meta first; unconfigured = the sentence.
+describe("Team page with the hub not configured", () => {
+  it("reads api/hub/meta first, fires no hub route, opens no socket and says how to configure it", async () => {
+    const urls: string[] = [];
+    const setup = 'No hub key for seat "laurent" in /home/x/keys.json. Provision the seat there, or start Continuum with --hub-token-file <path>.';
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: any) => {
+        const url = String(typeof input === "string" ? input : input?.url || "");
+        urls.push(url);
+        if (url.includes("api/hub/meta")) return new Response(JSON.stringify({ ok: true, hub_url: "http://hub", seat: "laurent", seat_key_present: false, setup }), { status: 200 });
+        return new Response(JSON.stringify({ error: "hub_seat_unavailable" }), { status: 503 });
+      }),
+    );
+    const sockets: string[] = [];
+    vi.stubGlobal("WebSocket", class { constructor(url: string) { sockets.push(url); } close() {} } as any);
+    render_page();
+    await waitFor(() => expect(document.querySelector('[data-hub-note="not-configured"]')?.textContent || "").toContain("The team hub is not configured."));
+    expect(document.querySelector('[data-hub-note="not-configured"]')?.textContent).toContain("--hub-token-file");
+    await new Promise((r) => setTimeout(r, 50));
+    expect(urls.filter((u) => u.includes("api/hub/") && !u.includes("api/hub/meta"))).toEqual([]);
+    expect(sockets).toEqual([]);
+  });
+});
