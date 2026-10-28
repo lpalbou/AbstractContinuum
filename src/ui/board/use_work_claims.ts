@@ -16,7 +16,7 @@
 // never an error wall.
 import { useEffect, useRef, useState } from "react";
 
-import { HubClient } from "../../lib/hub_client";
+import { HubClient, hub_not_configured } from "../../lib/hub_client";
 import { type WorkClaim, parse_work_id } from "../../lib/work_id";
 
 /** Claims live in the coordination room. One room today; widen to a list
@@ -41,7 +41,13 @@ export type HubWorkRow = {
   updated_at?: number;
 };
 
-export type WorkClaimsView = { live: Map<string, WorkClaim>; done: DoneClaim[]; work: Map<string, HubWorkRow> };
+export type WorkClaimsView = {
+  live: Map<string, WorkClaim>;
+  done: DoneClaim[];
+  work: Map<string, HubWorkRow>;
+  /** Set when the team hub is not configured (no seat key): why, and how to configure it. */
+  not_configured?: string;
+};
 
 const EMPTY: WorkClaimsView = { live: new Map(), done: [], work: new Map() };
 
@@ -71,6 +77,14 @@ export function use_work_claims(enabled: boolean): WorkClaimsView {
       if (inflight.current || Date.now() < disabled_until.current) return;
       inflight.current = true;
       try {
+        // Meta first (served by Continuum's own proxy, never forwarded): without a seat key every
+        // hub route below would answer 503; say why instead and check again later.
+        const why = hub_not_configured(await hub_ref.current.meta());
+        if (why) {
+          // Re-checked at the next tick (meta is local): a key added later shows the claims.
+          if (alive) set_view((cur) => (cur.not_configured === why ? cur : { ...EMPTY, not_configured: why }));
+          return;
+        }
         const live = new Map<string, WorkClaim>();
         const done: DoneClaim[] = [];
         const work = new Map<string, HubWorkRow>();
@@ -167,7 +181,7 @@ export function use_work_claims(enabled: boolean): WorkClaimsView {
               JSON.stringify(cur.done) === JSON.stringify(done) &&
               cur.work.size === work.size &&
               [...work.keys()].every((k) => JSON.stringify(cur.work.get(k)) === JSON.stringify(work.get(k)));
-            return same ? cur : { live, done, work };
+            return same && !cur.not_configured ? cur : { live, done, work };
           });
         }
       } catch {

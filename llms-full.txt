@@ -1,7 +1,7 @@
 # AbstractContinuum — full documentation corpus
 
 > Aggregated from the core docs for LLM/tool consumption (package
-> `@abstractframework/continuum` 0.7.4). Canonical sources live in the
+> `@abstractframework/continuum` 0.7.5). Canonical sources live in the
 > repository; this file is regenerated whenever the docs change.
 
 ---
@@ -698,7 +698,7 @@ path below is under `/apps/continuum/`):
 
 `bin/hub_proxy.js` serves the Team page's agora hub transport:
 
-- `GET /api/hub/meta` — `{ok, hub_url, seat, seat_key_present}`
+- `GET /api/hub/meta` — `{ok, hub_url, seat, seat_key_present, setup?}`; `setup` (0.7.5) is the sentence naming the missing key and how to provide it, present only when no key was found. The Team page, the Board's live claims and a card's hub activity read it first and fire no hub route while the hub is not configured.
 - `/api/hub/<hub path>` — forwarded to the hub with the seat key attached
   server-side, for an allowlisted set of routes only (channels, messages,
   DMs, channel info/members/files/ledger/digest/store, search, work,
@@ -1369,8 +1369,8 @@ over plain http.
 
 ## Team page
 
-**The Team page reports `hub_seat_unavailable`.**
-The server has no key for the configured seat. Check the seat on
+**The Team page or the Board says "The team hub is not configured."** (before 0.7.5: `hub_seat_unavailable` 503s)
+The server has no key for the configured seat. Once it has one, the pages pick it up within 15 s (Team) or 30 s (Board live claims), no reload needed. Check the seat on
 **Settings → Team (agora hub) → Hub seat** (or
 `abstractcontinuum config get hub_seat`) and either provision it in the key
 store (`--hub-keys`, default `~/.agora/keys.json`) or start Continuum with
@@ -1563,6 +1563,17 @@ npm run check:lock
 All notable, user-visible changes to AbstractContinuum.
 
 ## Unreleased
+
+## 0.7.5 — 2026-10-28
+
+- Fixed (QA item (11)): a fresh install without a hub seat key showed raw 503s (`hub_seat_unavailable`) because the
+  Board's live claims, a card's hub activity and the Team page fired hub calls before reading `api/hub/meta`. They read
+  it first; unconfigured, they fire no hub route (and the Team page opens no socket) and say "The team hub is not
+  configured." with the proxy's sentence on how to configure it (`api/hub/meta` now carries `setup`); the Desk tab says
+  the same. A key added later is picked up without a reload (Team re-reads meta every 15 s and when the tab comes back;
+  the Board at its 30 s tick). Tests: `src/ui/board/hub_not_configured.test.tsx` (5) and two Team page pins; each red
+  without its check. Adversarial review (Opus): the not-configured state never re-checked, the Desk tab still fired,
+  the card-activity gate was untested: fixed.
 
 ## 0.7.4 — 2026-10-28
 

@@ -4,6 +4,17 @@ All notable, user-visible changes to AbstractContinuum.
 
 ## Unreleased
 
+## 0.7.5 — 2026-10-28
+
+- Fixed (QA item (11)): a fresh install without a hub seat key showed raw 503s (`hub_seat_unavailable`) because the
+  Board's live claims, a card's hub activity and the Team page fired hub calls before reading `api/hub/meta`. They read
+  it first; unconfigured, they fire no hub route (and the Team page opens no socket) and say "The team hub is not
+  configured." with the proxy's sentence on how to configure it (`api/hub/meta` now carries `setup`); the Desk tab says
+  the same. A key added later is picked up without a reload (Team re-reads meta every 15 s and when the tab comes back;
+  the Board at its 30 s tick). Tests: `src/ui/board/hub_not_configured.test.tsx` (5) and two Team page pins; each red
+  without its check. Adversarial review (Opus): the not-configured state never re-checked, the Desk tab still fired,
+  the card-activity gate was untested: fixed.
+
 ## 0.7.4 — 2026-10-28
 
 On AbstractUIC 0.8.3 (`@abstractframework/ui-kit` ^0.9.5, `@abstractframework/panel-chat` ^0.6.3, `@abstractframework/app-server` ^0.1.13).

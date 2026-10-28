@@ -30,7 +30,7 @@ import { ChatComposer, Markdown } from "@abstractframework/panel-chat";
 import type { GatewayClient } from "../lib/gateway_client";
 import { session_memory_run_id } from "../lib/session_run_id";
 import { load_voice_override, voice_request_fields, resolve_default_voice_fields, speakable_text, VOICE_OVERRIDE_EVENT, type VoiceOverride } from "../lib/voice_settings";
-import { HubClient, type HubAttachment, type HubChannel, type HubChannelInfo, type HubFsEntry, type HubHealth, type HubMessage, type HubReputationBoard, type HubReputationVote, type HubSearchHit, type HubSearchReport } from "../lib/hub_client";
+import { HubClient, hub_not_configured, type HubAttachment, type HubChannel, type HubChannelInfo, type HubFsEntry, type HubHealth, type HubMessage, type HubReputationBoard, type HubReputationVote, type HubSearchHit, type HubSearchReport } from "../lib/hub_client";
 import { FileViewer, resolve_file_mode, type FileView } from "./team_file_viewer";
 import { MemoMarkdown } from "./memo_markdown";
 import { ErrorBoundary } from "./error_boundary";
@@ -272,6 +272,9 @@ export type TeamAiTurn = { role: "user" | "assistant"; content: string };
 /** Injected LLM lane — lets panel-hub shells call any backend without importing GatewayClient. */
 export type TeamAdvisorFn = (question: string, history: TeamAiTurn[]) => Promise<string>;
 
+/** How often a page whose hub is not configured re-reads `api/hub/meta` (local; no hub call). */
+export const HUB_SETUP_RECHECK_MS = 15_000;
+
 export function TeamPage(props: {
   /** Voice/TTS only — optional when the shell has no gateway (AI may still work via advisor). */
   gateway?: GatewayClient;
@@ -456,6 +459,12 @@ export function TeamPage(props: {
     }
   }
   async function load_desk(): Promise<void> {
+    if (hub_setup) {
+      // No seat key: the desk read would be a 503; say why and how to configure it (QA (11)).
+      set_desk_view(null);
+      set_desk_error(hub_setup);
+      return;
+    }
     set_desk_view("loading");
     set_desk_error("");
     try {
@@ -734,6 +743,10 @@ export function TeamPage(props: {
    *  poll stays as the guaranteed lane; the socket makes updates instant
    *  and the dot tells the operator which lane is live. */
   const [live, set_live] = useState(false);
+  /** The hub as `api/hub/meta` answered: "not_configured" (no seat key) fires no hub call and no
+   *  socket; "unreachable" (the meta read failed) keeps the socket's reconnect-and-heal lane. */
+  const [hub_state, set_hub_state] = useState<"unknown" | "ready" | "not_configured" | "unreachable">("unknown");
+  const [hub_setup, set_hub_setup] = useState("");
   const selected_ref = useRef("");
   const channels_ref = useRef<HubChannel[]>([]);
   const messages_ref = useRef<HubMessage[]>([]);
@@ -830,8 +843,25 @@ export function TeamPage(props: {
 
   async function refresh_channels(): Promise<void> {
     try {
-      const [m, chans] = await Promise.all([hub.meta(), hub.channels()]);
+      // Meta first (Continuum's own proxy answers it): without a seat key every hub route is a
+      // 503 hub_seat_unavailable, so the page says why and how to configure it instead (QA (11)).
+      let m;
+      try {
+        m = await hub.meta();
+      } catch (e) {
+        set_hub_state("unreachable");
+        throw e;
+      }
       set_meta({ seat: m.seat, seat_key_present: m.seat_key_present });
+      const why = hub_not_configured(m);
+      set_hub_setup(why);
+      if (why) {
+        set_hub_state("not_configured");
+        set_error("");
+        return;
+      }
+      set_hub_state("ready");
+      const chans = await hub.channels();
       set_hub_url(String(m.hub_url || ""));
       void hub
         .healthz()
@@ -1015,7 +1045,24 @@ export function TeamPage(props: {
   // server-side). Envelope frames trigger an INSTANT refresh of the
   // affected channel + a debounced badge refresh; the 5s poll keeps
   // running as the fallback lane (socket loss degrades, never breaks).
+  // Not configured: re-read meta (Continuum's own proxy, no hub call) every 15 s and when the tab
+  // comes back, so a seat key added in Settings or the key store is picked up without a reload.
   useEffect(() => {
+    if (hub_state !== "not_configured") return;
+    const again = () => {
+      if (document.visibilityState !== "hidden") void refresh_channels();
+    };
+    const t = setInterval(again, HUB_SETUP_RECHECK_MS);
+    document.addEventListener("visibilitychange", again);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", again);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hub_state]);
+
+  useEffect(() => {
+    if (hub_state !== "ready" && hub_state !== "unreachable") return;
     let ws: WebSocket | null = null;
     let closed = false;
     let retry = 0;
@@ -1093,7 +1140,7 @@ export function TeamPage(props: {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hub_state === "ready" || hub_state === "unreachable"]);
 
   useEffect(() => {
     chan_gen.current += 1;
@@ -4286,7 +4333,7 @@ export function TeamPage(props: {
                 mount-heal retry recovery automatically. */}
             {!channels.length ? (
               <div className="muted team_note team_rail_degraded">
-                {error ? "Channels unavailable — the hub is unreachable. Retrying automatically; check that the hub is running if this persists." : "Loading channels…"}
+                {hub_setup ? <span data-hub-note="not-configured">{hub_setup}</span> : error ? "Channels unavailable — the hub is unreachable. Retrying automatically; check that the hub is running if this persists." : "Loading channels…"}
               </div>
             ) : null}
             {channels.filter((c) => !c.name.startsWith("dm:")).map((c) => {

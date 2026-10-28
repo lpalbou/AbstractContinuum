@@ -5,7 +5,18 @@
 // mirror the hub API verbatim — the hub is the truth, this file only
 // names what the Team page reads.
 
-export type HubMeta = { ok: boolean; hub_url: string; seat: string; seat_key_present: boolean };
+export type HubMeta = { ok: boolean; hub_url: string; seat: string; seat_key_present: boolean; setup?: string };
+
+/**
+ * "" when the hub can be asked; otherwise the sentence to show INSTEAD of firing hub calls: without
+ * a seat key Continuum's proxy refuses every authenticated hub route with 503 hub_seat_unavailable
+ * (bin/hub_proxy.js), so a page reads `api/hub/meta` first (QA (11) 2026-10-28).
+ */
+export function hub_not_configured(m: Pick<HubMeta, "seat_key_present" | "setup" | "seat"> | null | undefined): string {
+  if (!m || m.seat_key_present) return "";
+  const how = String(m.setup || "").trim() || `No hub key for seat "${m.seat || "operator"}". Provision the seat, or start Continuum with --hub-token-file <path>.`;
+  return `The team hub is not configured. ${how}`;
+}
 
 /** Hub /healthz — the protocol pin source (protocol.md: clients compare
  *  the advertised `protocol` against their own and WARN on mismatch,

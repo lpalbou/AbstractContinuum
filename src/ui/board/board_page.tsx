@@ -323,6 +323,12 @@ export function BoardPage(props: {
 
   return (
     <div className="page board_page_root">
+      {work_claims.not_configured ? (
+        // No seat key: the hub's live claims are off, said in words (never raw 503s; QA (11)).
+        <div className="muted team_note board_hub_note" role="status" data-hub-note="not-configured">
+          {work_claims.not_configured} The board works without it; live claims appear once it is.
+        </div>
+      ) : null}
       <div className="board_toolbar">
         <input className="board_search" value={query} onChange={(e) => set_query(e.target.value)} placeholder="Search the board…" />
         <select value={package_filter} onChange={(e) => set_package_filter(e.target.value)} title="Package">

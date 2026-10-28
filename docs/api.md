@@ -123,7 +123,7 @@ path below is under `/apps/continuum/`):
 
 `bin/hub_proxy.js` serves the Team page's agora hub transport:
 
-- `GET /api/hub/meta` — `{ok, hub_url, seat, seat_key_present}`
+- `GET /api/hub/meta` — `{ok, hub_url, seat, seat_key_present, setup?}`; `setup` (0.7.5) is the sentence naming the missing key and how to provide it, present only when no key was found. The Team page, the Board's live claims and a card's hub activity read it first and fire no hub route while the hub is not configured.
 - `/api/hub/<hub path>` — forwarded to the hub with the seat key attached
   server-side, for an allowlisted set of routes only (channels, messages,
   DMs, channel info/members/files/ledger/digest/store, search, work,

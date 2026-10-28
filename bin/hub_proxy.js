@@ -567,7 +567,16 @@ export function createHubProxy(opts) {
       if (pathname === '/api/hub/meta') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         const c = cfg();
-        res.end(JSON.stringify({ ok: true, hub_url: c.hub_url, seat: c.seat, seat_key_present: Boolean(key()) }));
+        const present = Boolean(key());
+        // `setup`: the sentence the UI shows instead of firing hub calls this proxy would refuse
+        // with 503 hub_seat_unavailable (QA (11) 2026-10-28: a fresh install showed two raw 503s).
+        res.end(JSON.stringify({
+          ok: true,
+          hub_url: c.hub_url,
+          seat: c.seat,
+          seat_key_present: present,
+          ...(present ? {} : { setup: `No hub key for seat "${c.seat}" in ${c.keys_path}. Provision the seat there, or start Continuum with --hub-token-file <path>.` }),
+        }));
         return true;
       }
       const hub_path = pathname.slice('/api/hub'.length);
