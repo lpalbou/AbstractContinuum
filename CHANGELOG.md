@@ -4,6 +4,12 @@ All notable, user-visible changes to AbstractContinuum.
 
 ## Unreleased
 
+## 0.7.4 — 2026-10-28
+
+On AbstractUIC 0.8.3 (`@abstractframework/ui-kit` ^0.9.5, `@abstractframework/panel-chat` ^0.6.3, `@abstractframework/app-server` ^0.1.13).
+
+- Fixed (from the kit): in the backlog advisor (`advisor_drawer.tsx`, panel-chat's `ChatThread`), a reply's speaker and copy buttons are always visible (they appeared only on hover); the speaker shows a spinner only while the first audio is generated, then Pause, and Play when paused.
+
 ## 0.7.3 — 2026-10-28
 
 On AbstractUIC 0.8.2 (`@abstractframework/ui-kit` ^0.9.4, `@abstractframework/panel-chat` ^0.6.2, `@abstractframework/app-server` ^0.1.13).
