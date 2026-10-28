@@ -4,6 +4,13 @@ All notable, user-visible changes to AbstractContinuum.
 
 ## Unreleased
 
+## 0.7.3 — 2026-10-28
+
+On AbstractUIC 0.8.2 (`@abstractframework/ui-kit` ^0.9.4, `@abstractframework/panel-chat` ^0.6.2, `@abstractframework/app-server` ^0.1.13).
+
+- Fixed: the connection dialog says "Gateway … did not answer" when the gateway is down (it said "Session rejected — sign in again").
+- Also from the kit: the model picker's "Custom" is no longer cut.
+
 ## 0.7.2 — 2026-10-28
 
 - Built on `@abstractframework/panel-chat` ^0.6.0 (AbstractUIC 0.8.0), up from ^0.5.0. Nothing else changes: Continuum
