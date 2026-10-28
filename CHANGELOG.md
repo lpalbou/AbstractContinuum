@@ -9,7 +9,7 @@ All notable, user-visible changes to AbstractContinuum.
 On AbstractUIC 0.8.2 (`@abstractframework/ui-kit` ^0.9.4, `@abstractframework/panel-chat` ^0.6.2, `@abstractframework/app-server` ^0.1.13).
 
 - Fixed: the connection dialog says "Gateway … did not answer" when the gateway is down (it said "Session rejected — sign in again").
-- Also in the kit (where this app shows them): the tool approval card makes "Allow once" its primary and keeps one visible scope line (the full sentences behind "What the broader choices allow"); a gateway that does not answer reads "Gateway … did not answer" instead of "Session rejected — sign in again"; "Create a voice" and "Manage voices" are styled; the voice picker lists each Qwen3-TTS voice once; one duration format in the chat, and a tool time that includes an approval wait says so; tool-row badges and the model picker's "Custom" are no longer cut.
+- Also from the kit: the model picker's "Custom" is no longer cut.
 
 ## 0.7.2 — 2026-10-28
 
