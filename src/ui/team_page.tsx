@@ -386,7 +386,13 @@ export function TeamPage(props: {
     // voice_override read through the ref so a preference change never
     // re-mints the closure mid-playback (the hook keys stability on it).
   }, [gateway, gateway_connected, voice_run_id]);
-  const message_voice = useGatewayVoice({ tts_stream: voice_stream_fn, on_error: set_voice_error });
+  // `tts_voice` (ui-kit 0.9.6): the voice those requests speak with, the same fields the stream
+  // sends; a paused message is spoken again after a voice change, never resumed in the old voice.
+  const message_voice = useGatewayVoice({
+    tts_stream: voice_stream_fn,
+    tts_voice: { ...voice_default_ref.current, ...voice_request_fields(voice_override) },
+    on_error: set_voice_error,
+  });
   useEffect(() => {
     if (!voice_error) return;
     set_error(voice_error);
