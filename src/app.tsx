@@ -417,12 +417,12 @@ export function App(): React.ReactElement {
                   +<span className="shell_newtask_label"> New task</span>
                 </button>
               }
-              connection={{
-                phase: conn.phase,
-                signingOut: conn.signingOut,
-                onConnect: conn.openModal,
-                onDisconnect: () => void conn.signOut(),
-              }}
+              // The kit's ONE account widget (top-bar set, operator 2026-10-29): signed in, the
+              // person, the name and the connection light in one button whose menu holds Signed in
+              // as / Gateway / Copy user id / Disconnect. The hook's value is the connection: the
+              // menu's Disconnect calls conn.signOut() and the identity reads conn.status.
+              identity="menu"
+              connection={conn}
             />
           </div>
         </header>
