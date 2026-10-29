@@ -69,8 +69,8 @@ describe("App shell connect modal auto-open", () => {
     });
     render(<App />);
 
-    // The pill reflects the connected phase once the boot probe lands.
-    await screen.findByText(/admin|Disconnect|Connected/i, undefined, { timeout: 3000 });
+    // The account widget (person, name, light) shows the connected session once the boot probe lands.
+    await screen.findByRole("button", { name: /^Account: Signed in as admin/ }, { timeout: 3000 });
     expect(screen.queryByRole("dialog", { name: "Gateway connection" })).toBeNull();
   });
 });

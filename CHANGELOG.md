@@ -4,6 +4,12 @@ All notable, user-visible changes to AbstractContinuum.
 
 ## Unreleased
 
+- Changed: the top bar's account is the kit's ONE account widget (operator ruling 2026-10-29: the docs button,
+  Appearance, About and the account are the same kit components in every app). Signed in, one button shows the
+  person icon, your name and the connection light; its menu holds Signed in as, Gateway, Copy user id and Disconnect.
+  It replaces the Disconnect pill. `AfTopBarActions` now gets `identity="menu"` and the `useGatewayConnection()` value
+  itself. Test: `src/top_bar_set.test.tsx`.
+
 ## 0.7.6 — 2026-10-28
 
 On AbstractUIC 0.8.4 (`@abstractframework/ui-kit` ^0.9.5, `@abstractframework/panel-chat` ^0.6.4, `@abstractframework/app-server` ^0.1.13).
