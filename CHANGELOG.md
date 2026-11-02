@@ -4,6 +4,12 @@ All notable, user-visible changes to AbstractContinuum.
 
 ## Unreleased
 
+_Nothing yet._
+
+## 0.8.0 — 2026-11-02
+
+On AbstractUIC 0.9.0 (`@abstractframework/ui-kit` ^0.9.12, `@abstractframework/panel-chat` ^0.7.0, `@abstractframework/app-server` ^0.1.13).
+
 - Changed: the top bar's account is the kit's ONE account widget (operator ruling 2026-10-29: the docs button,
   Appearance, About and the account are the same kit components in every app). Signed in, one button shows the
   person icon, your name and the connection light; its menu holds Signed in as, Gateway, Copy user id and Disconnect.
@@ -15,10 +21,13 @@ All notable, user-visible changes to AbstractContinuum.
   is dropped; its name stays "Voice input"). Team keeps its message type, member and room controls on the composer's
   left, Send is the composer's round icon button whose name still says Send, Ask, Reply, Send DM or Create room, and
   Enter / Shift+Enter behave as before; Enter now also creates a room from a member list alone, as the
-  button already did. The Team box's own row, textarea, send-icon and attach-button CSS is removed. The Docs
-  assistant test follows panel-chat 0.7.0's footer ("Based on AbstractContinuum documentation."). Needs
-  `@abstractframework/panel-chat` ^0.7.0 (was ^0.6.5) and `@abstractframework/ui-kit` ^0.9.8 (was ^0.9.6),
-  panel-chat's peer floor.
+  button already did. The Team box's own row, textarea, send-icon and attach-button CSS is removed.
+- Changed (from the kit): the Docs assistant's footer reads "Powered by AbstractContinuum’s documentation.".
+- Changed (from the kit): a chat approval card lists the tool calls it asks about in words (panel-chat 0.6.5).
+- Fixed: on the Team page, reading a message aloud after you change the voice speaks it again in the new voice
+  instead of resuming the old one (ui-kit 0.9.6 `tts_voice`).
+- Dependencies: `@abstractframework/panel-chat` ^0.7.0 (was ^0.6.4) and `@abstractframework/ui-kit` ^0.9.12
+  (was ^0.9.5).
 
 ## 0.7.6 — 2026-10-28
 
