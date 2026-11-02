@@ -310,10 +310,13 @@ export function AdvisorDrawer(props: {
                   rows={3}
                   sendButtonClassName="btn primary"
                   busyLabel={advisor_voice.voice_ptt_busy ? "Transcribing…" : "Thinking…"}
-                  actions={
+                  onAttach={() => advisor_attach_input_ref.current?.click()}
+                  attachDisabled={advisor_loading}
+                  attachLabel="Attach file"
+                  trailingActions={
                     <>
                       <button
-                        className={`btn btn_icon voice_btn${advisor_voice.voice_ptt_recording ? " danger" : ""}`}
+                        className={`btn btn_icon voice_btn pc-workflow-chat__icon-button${advisor_voice.voice_ptt_recording ? " danger" : ""}`}
                         type="button"
                         disabled={
                           !can_use_gateway ||
@@ -361,18 +364,6 @@ export function AdvisorDrawer(props: {
                         }}
                       >
                         <UiIcon name={advisor_voice.voice_ptt_recording ? "x" : "mic"} size={16} />
-                        {is_compact_layout ? null : advisor_voice.voice_ptt_busy ? "Transcribing…" : advisor_voice.voice_ptt_recording ? "Recording…" : "Voice"}
-                      </button>
-                      <button
-                        className="btn btn_icon"
-                        type="button"
-                        onClick={() => advisor_attach_input_ref.current?.click()}
-                        disabled={advisor_loading}
-                        title="Attach a local file to your message"
-                        aria-label="Attach file"
-                      >
-                        <UiIcon name="paperclip" size={16} />
-                        {is_compact_layout ? null : "Attach"}
                       </button>
                     </>
                   }

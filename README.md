@@ -56,6 +56,13 @@ the agent that runs items (`codex` by default; also `claude`,
 `cursor-agent`, `abstractcode`), and the UI reads the executor identity from
 the gateway's exec config (see [docs/architecture.md](docs/architecture.md)).
 
+## What's new in 0.8.0
+
+The top bar's account is the shared AbstractFramework account widget (your
+name, the connection light, and a menu with the gateway and Disconnect), and
+the Team page and the backlog advisor write with the shared rounded composer
+used across the framework's apps. See [CHANGELOG.md](CHANGELOG.md#080--2026-11-02).
+
 ## Install and run
 
 Requirements:

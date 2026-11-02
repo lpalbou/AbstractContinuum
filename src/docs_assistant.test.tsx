@@ -94,7 +94,7 @@ describe("Continuum Docs assistant (kit DocsAssistantDrawer)", () => {
     expect(newBtn.textContent).toBe("");
     expect(newBtn.querySelector("svg")).toBeTruthy();
     expect(d.getByRole("button", { name: "Close panel" })).toBeTruthy();
-    expect(drawer.querySelector(".pc-docs-assistant__footer")?.textContent).toBe("Grounded on AbstractContinuum’s documentation (llms.txt) · docs-qa");
+    expect(drawer.querySelector(".pc-docs-assistant__footer")?.textContent).toBe("Powered by AbstractContinuum’s documentation.");
 
     const box = d.getByRole("textbox", { name: "Question about AbstractContinuum" });
     await waitFor(() => expect((box as HTMLTextAreaElement).disabled).toBe(false), { timeout: 3000 });

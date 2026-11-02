@@ -30,7 +30,7 @@ const fail = (msg) => {
 };
 
 // ---- 1. /group preview (type, never send)
-const ta = page.locator(".team_compose_text");
+const ta = page.locator(".team_composer .pc-composer__textarea");
 await ta.fill("/group fix the voice outage @gateway @core");
 await page.waitForTimeout(250);
 const preview = page.locator(".team_group_preview");
@@ -40,7 +40,7 @@ else {
   if (!text.includes("fix-the-voice-outage")) fail(`preview slug wrong: ${text}`);
   if (!text.includes("@gateway") || !text.includes("@core")) fail(`preview roster wrong: ${text}`);
 }
-const send_label = (await page.locator(".team_send").innerText()).trim();
+const send_label = ((await page.locator(".team_composer .pc-composer__send--compact").getAttribute("aria-label")) || "").trim();
 if (send_label !== "Create room") fail(`send label = "${send_label}" (wanted "Create room")`);
 await page.screenshot({ path: `${out}_group_preview.png` });
 // Mentionless usage hint:

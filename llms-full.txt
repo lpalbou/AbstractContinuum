@@ -1,7 +1,7 @@
 # AbstractContinuum — full documentation corpus
 
 > Aggregated from the core docs for LLM/tool consumption (package
-> `@abstractframework/continuum` 0.7.6). Canonical sources live in the
+> `@abstractframework/continuum` 0.8.0). Canonical sources live in the
 > repository; this file is regenerated whenever the docs change.
 
 ---
@@ -65,6 +65,13 @@ The pipeline is executor-agnostic: the gateway's `executor` setting picks
 the agent that runs items (`codex` by default; also `claude`,
 `cursor-agent`, `abstractcode`), and the UI reads the executor identity from
 the gateway's exec config (see [docs/architecture.md](docs/architecture.md)).
+
+## What's new in 0.8.0
+
+The top bar's account is the shared AbstractFramework account widget (your
+name, the connection light, and a menu with the gateway and Disconnect), and
+the Team page and the backlog advisor write with the shared rounded composer
+used across the framework's apps. See [CHANGELOG.md](CHANGELOG.md#080--2026-11-02).
 
 ## Install and run
 
@@ -1563,6 +1570,32 @@ npm run check:lock
 All notable, user-visible changes to AbstractContinuum.
 
 ## Unreleased
+
+_Nothing yet._
+
+## 0.8.0 — 2026-11-02
+
+On AbstractUIC 0.9.0 (`@abstractframework/ui-kit` ^0.9.12, `@abstractframework/panel-chat` ^0.7.0, `@abstractframework/app-server` ^0.1.13).
+
+- Changed: the top bar's account is the kit's ONE account widget (operator ruling 2026-10-29: the docs button,
+  Appearance, About and the account are the same kit components in every app). Signed in, one button shows the
+  person icon, your name and the connection light; its menu holds Signed in as, Gateway, Copy user id and Disconnect.
+  It replaces the Disconnect pill. `AfTopBarActions` now gets `identity="menu"` and the `useGatewayConnection()` value
+  itself. Test: `src/top_bar_set.test.tsx`.
+- Changed: the Team page's message box and the backlog advisor's box are the shared rounded multiline composer from
+  `@abstractframework/panel-chat` 0.7.0. The composer renders the Attach button itself, so each box's own attach
+  button is gone; the advisor's hold-to-talk microphone sits beside Send as an icon-only button (its "Voice" text label
+  is dropped; its name stays "Voice input"). Team keeps its message type, member and room controls on the composer's
+  left, Send is the composer's round icon button whose name still says Send, Ask, Reply, Send DM or Create room, and
+  Enter / Shift+Enter behave as before; Enter now also creates a room from a member list alone, as the
+  button already did. Its Attach button is a plus icon named "Attach a file". Like every shared composer, the box
+  turns off the browser's spell-check, autocorrect and auto-capitalisation.
+- Changed (from the kit): the Docs assistant's footer reads "Powered by AbstractContinuum’s documentation.".
+- Changed (from the kit): a chat approval card lists the tool calls it asks about in words (panel-chat 0.6.5).
+- Fixed: on the Team page, reading a message aloud after you change the voice speaks it again in the new voice
+  instead of resuming the old one (ui-kit 0.9.6 `tts_voice`).
+- Dependencies: `@abstractframework/panel-chat` ^0.7.0 (was ^0.6.4) and `@abstractframework/ui-kit` ^0.9.12
+  (was ^0.9.5).
 
 ## 0.7.6 — 2026-10-28
 
