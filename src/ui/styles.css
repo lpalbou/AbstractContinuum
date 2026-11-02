@@ -5438,8 +5438,7 @@ body {
 /* Round 4 — Team thread on phones and short landscape windows (review B
    blocker 3). The thread chrome collapses to ONE 44 px bar (← Channels,
    #channel, More); "More" reveals the header actions, the filter bar and the
-   panel tabs. Send becomes a 44x44 icon button so the textarea takes the
-   width; the composer is capped. Same query as the single-pane stack. */
+   panel tabs. The shared composer's textarea is capped. Same query as the single-pane stack. */
 @media (max-width: 1023.98px) {
   .team_tools_btn {
     display: inline-flex;

@@ -1588,7 +1588,8 @@ On AbstractUIC 0.9.0 (`@abstractframework/ui-kit` ^0.9.12, `@abstractframework/p
   is dropped; its name stays "Voice input"). Team keeps its message type, member and room controls on the composer's
   left, Send is the composer's round icon button whose name still says Send, Ask, Reply, Send DM or Create room, and
   Enter / Shift+Enter behave as before; Enter now also creates a room from a member list alone, as the
-  button already did. The Team box's own row, textarea, send-icon and attach-button CSS is removed.
+  button already did. Its Attach button is a plus icon named "Attach a file". Like every shared composer, the box
+  turns off the browser's spell-check, autocorrect and auto-capitalisation.
 - Changed (from the kit): the Docs assistant's footer reads "Powered by AbstractContinuum’s documentation.".
 - Changed (from the kit): a chat approval card lists the tool calls it asks about in words (panel-chat 0.6.5).
 - Fixed: on the Team page, reading a message aloud after you change the voice speaks it again in the new voice
