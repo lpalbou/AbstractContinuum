@@ -9,6 +9,16 @@ All notable, user-visible changes to AbstractContinuum.
   person icon, your name and the connection light; its menu holds Signed in as, Gateway, Copy user id and Disconnect.
   It replaces the Disconnect pill. `AfTopBarActions` now gets `identity="menu"` and the `useGatewayConnection()` value
   itself. Test: `src/top_bar_set.test.tsx`.
+- Changed: the Team page's message box and the backlog advisor's box are the shared rounded multiline composer from
+  `@abstractframework/panel-chat` 0.7.0. The composer renders the Attach button itself, so each box's own attach
+  button is gone; the advisor's hold-to-talk microphone sits beside Send as an icon-only button (its "Voice" text label
+  is dropped; its name stays "Voice input"). Team keeps its message type, member and room controls on the composer's
+  left, Send is the composer's round icon button whose name still says Send, Ask, Reply, Send DM or Create room, and
+  Enter / Shift+Enter behave as before; Enter now also creates a room from a member list alone, as the
+  button already did. The Team box's own row, textarea, send-icon and attach-button CSS is removed. The Docs
+  assistant test follows panel-chat 0.7.0's footer ("Based on AbstractContinuum documentation."). Needs
+  `@abstractframework/panel-chat` ^0.7.0 (was ^0.6.5) and `@abstractframework/ui-kit` ^0.9.8 (was ^0.9.6),
+  panel-chat's peer floor.
 
 ## 0.7.6 — 2026-10-28
 

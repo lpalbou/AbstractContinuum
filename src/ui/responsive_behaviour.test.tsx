@@ -218,7 +218,8 @@ describe("Team single pane (phones)", () => {
     render(<TeamPage gateway={{ backlog_advisor: vi.fn() } as any} gateway_connected={true} />);
     await screen.findByText("hello thread");
     const send = screen.getByRole("button", { name: "Send" });
-    expect(send.querySelector(".team_send_icon svg")).not.toBeNull();
+    expect(send.querySelector("svg")).not.toBeNull();
+    expect(send.closest(".pc-composer--compact")).not.toBeNull();
   });
 });
 
@@ -339,7 +340,6 @@ describe("responsive stylesheet rules the states depend on", () => {
   it("the collapsed thread chrome hides the filter bar and panel tabs until More is open", () => {
     const stack = blocks(STACK).join("\n");
     expect(stack).toMatch(/\.team_layout\.team_mobile_thread:not\(\.team_tools_open\) \.team_filterbar,[\s\S]*?\{\s*display: none;/);
-    expect(stack).toMatch(/\.team_send_label \{[^}]*clip-path: inset\(50%\)/);
   });
 
   it("the docked sidebar is hidden below 1024 px", () => {

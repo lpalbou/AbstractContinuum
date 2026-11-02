@@ -541,16 +541,6 @@ export function TeamPage(props: {
   const [drag_over, set_drag_over] = useState(false);
   const compose_ta_ref = useRef<HTMLTextAreaElement | null>(null);
 
-  // Composer auto-grow as an EFFECT on the value, not an onChange side
-  // effect (operator dm 50): sending a long message cleared the text but
-  // the explicit height stuck, leaving a tall empty box. Any programmatic
-  // change (send-reset, draft restore on channel switch) now resizes too.
-  useEffect(() => {
-    const el = compose_ta_ref.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight + 2, 160)}px`;
-  }, [compose_text, selected]);
   /** Composer kind (operator c2240: one dropdown — fyi / ask / dm; +
    *  "group" per operator dm 71). "ask" posts status=open (expects
    *  reply); "dm" sends a direct message; "group" creates a focused
@@ -5046,12 +5036,32 @@ export function TeamPage(props: {
                 ))}
               </div>
             ) : null}
-            {/* THE ROW (operator spec, dm 9 + 17:14): (message type) ×
-                (member dropdown when dm) × (multi-line input) × (Send) —
-                one line, aligned. Inside a dm channel the type selector
-                is pointless (it IS a dm) and the composer posts straight
-                to the conversation. */}
-            <div className="team_compose_row">
+            {/* The shared composer owns multiline sizing, keyboard gates and
+                the send affordance; Team retains its audience/room controls. */}
+            <ChatComposer
+              ref={compose_ta_ref}
+              value={compose_text}
+              onChange={set_compose_text}
+              onSubmit={() => void post()}
+              disabled={!can_post}
+              busy={posting}
+              busyLabel="Sending…"
+              canSubmit={Boolean(compose_text.trim() || pending_attachments.length ||
+                (compose_kind === "group" && !reply_to && !is_dm_channel && parse_member_list(group_members_text).length > 0))}
+              placeholder={can_post
+                ? reply_to ? `Reply to #${reply_to.seq} in #${selected}…`
+                  : is_dm_channel ? `Message ${dm_display_peer}…`
+                    : compose_kind === "dm" ? `Direct message${dm_peer.trim() ? ` to ${dm_peer.trim()}` : ""}…`
+                      : ai_available ? `Message #${selected || "…"} as ${meta?.seat || "operator"} — or /assistant <question>`
+                        : `Message #${selected || "…"} as ${meta?.seat || "operator"}`
+                : health?.paused ? "The hub is paused by the operator — posting resumes when it does."
+                  : "Read-only: the proxy has no operator seat key."}
+              sendLabel={group_preview?.members.length || (!reply_to && !is_dm_channel && compose_kind === "group")
+                ? "Create room" : reply_to ? "Reply" : is_dm_channel || compose_kind === "dm" ? "Send DM" : compose_kind === "ask" ? "Ask" : "Send"}
+              onAttach={() => attach_input_ref.current?.click()}
+              attachDisabled={!can_post || attach_busy || pending_attachments.length >= MAX_ATTACH_PER_MSG}
+              attachLabel={pending_attachments.length >= MAX_ATTACH_PER_MSG ? `Attachment limit (${MAX_ATTACH_PER_MSG}) reached` : "Attach a file"}
+              actions={<>
               {!reply_to && !is_dm_channel ? (
                 <select
                   className="team_compose_control team_kind_select"
@@ -5105,37 +5115,6 @@ export function TeamPage(props: {
                   />
                 )
               ) : null}
-              <textarea
-                ref={compose_ta_ref}
-                className="team_compose_text"
-                rows={2}
-                value={compose_text}
-                onChange={(e) => set_compose_text(e.target.value)}
-                placeholder={
-                  can_post
-                    ? reply_to
-                      ? `Reply to #${reply_to.seq} in #${selected}…`
-                      : is_dm_channel
-                        ? `Message ${dm_display_peer}…`
-                        : compose_kind === "dm"
-                          ? `Direct message${dm_peer.trim() ? ` to ${dm_peer.trim()}` : ""}…`
-                          : ai_available
-                            ? `Message #${selected || "…"} as ${meta?.seat || "operator"} — or /assistant <question>`
-                            : `Message #${selected || "…"} as ${meta?.seat || "operator"}`
-                    : health?.paused
-                      ? "The hub is paused by the operator — posting resumes when it does."
-                      : "Read-only: the proxy has no operator seat key."
-                }
-                disabled={!can_post}
-                onKeyDown={(e) => {
-                  if (e.key !== "Enter" || e.shiftKey) return;
-                  // IME commit must never send (kit ChatComposer contract,
-                  // carried over to the native row).
-                  if (e.nativeEvent.isComposing || (e as any).keyCode === 229) return;
-                  e.preventDefault();
-                  if (!posting && (compose_text.trim() || pending_attachments.length)) void post();
-                }}
-              />
               {/* Attach (agora 0091): offered in EVERY mode — posts that
                   land elsewhere (dm initiation, group creation) MIGRATE
                   the uploads into their destination channel (operator
@@ -5147,47 +5126,8 @@ export function TeamPage(props: {
                 style={{ display: "none" }}
                 onChange={(e) => void on_attach_files(e.target.files)}
               />
-              <button
-                className="btn team_attach_btn"
-                disabled={!can_post || attach_busy || pending_attachments.length >= MAX_ATTACH_PER_MSG}
-                title={pending_attachments.length >= MAX_ATTACH_PER_MSG ? `Attachment limit (${MAX_ATTACH_PER_MSG}) reached` : "Attach a file or image (delivered to every recipient)"}
-                aria-label="Attach a file"
-                onClick={() => attach_input_ref.current?.click()}
-              >
-                <Icon name="paperclip" size={14} />
-              </button>
-              <button
-                className="btn primary team_send"
-                disabled={
-                  !can_post ||
-                  posting ||
-                  (!compose_text.trim() &&
-                    !pending_attachments.length &&
-                    // Group creation enables on a parsed roster — the body
-                    // is legitimately optional (opening post = title).
-                    !(compose_kind === "group" && !reply_to && !is_dm_channel && parse_member_list(group_members_text).length > 0))
-                }
-                onClick={() => void post()}
-                aria-label={posting ? "Sending" : undefined}
-              >
-                <span className="team_send_icon" aria-hidden="true">
-                  <Icon name="send" size={16} />
-                </span>
-                <span className="team_send_label">
-                {posting
-                  ? "Sending…"
-                  : group_preview?.members.length || (!reply_to && !is_dm_channel && compose_kind === "group")
-                    ? "Create room"
-                    : reply_to
-                      ? "Reply"
-                      : is_dm_channel || compose_kind === "dm"
-                        ? "Send DM"
-                        : compose_kind === "ask"
-                          ? "Ask"
-                          : "Send"}
-                </span>
-              </button>
-            </div>
+              </>}
+            />
           </div>
         </div>
 
