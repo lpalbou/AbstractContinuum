@@ -22,6 +22,7 @@ import {
   render_backlog_template_draft,
   sha256_hex,
 } from "./model";
+import { sendable_reasoning } from "../../lib/model_options";
 
 export function NewTaskModal(props: {
   open: boolean;
@@ -302,7 +303,7 @@ export function NewTaskModal(props: {
         messages: next_msgs.map((m) => ({ role: m.role, content: m.content })),
         provider: maint_provider || null,
         model: maint_model || null,
-        thinking: maint_reasoning || null,
+        thinking: await sendable_reasoning(gateway, maint_provider, maint_model, maint_reasoning),
       });
       const reply = String(out?.reply || "").trim();
       const draft = String(out?.draft_markdown || "").trim();

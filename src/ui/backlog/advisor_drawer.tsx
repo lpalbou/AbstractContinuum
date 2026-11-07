@@ -12,6 +12,7 @@ import { random_id } from "../../lib/ids";
 import { MEDIA_NEEDS_HTTPS, mediaAvailable } from "../../lib/secure-context";
 import { inline_attachments } from "./advisor_attachments";
 import { type BacklogTab, type BacklogTaskTypeFilter, session_memory_run_id } from "./model";
+import { sendable_reasoning } from "../../lib/model_options";
 
 export function AdvisorDrawer(props: {
   gateway: GatewayClient;
@@ -136,7 +137,7 @@ export function AdvisorDrawer(props: {
         messages: next_msgs.map((m) => ({ role: m.role, content: m.content })),
         provider: maint_provider || null,
         model: maint_model || null,
-        thinking: maint_reasoning || null,
+        thinking: await sendable_reasoning(gateway, maint_provider, maint_model, maint_reasoning),
         agent: advisor_agent || null,
         include_trace: advisor_show_tools,
         focus_kind,

@@ -11,7 +11,7 @@
 // variables).
 import React, { useEffect, useState } from "react";
 
-import { AfSwitch, ProviderModelPicker, type GatewayConnectionState, type ProviderOption } from "@abstractframework/ui-kit";
+import { AfSwitch, ProviderModelPicker, reasoningLadderFrom, type GatewayConnectionState, type ProviderOption } from "@abstractframework/ui-kit";
 
 import { get_server_settings, save_server_setting, type ServerSettingsView } from "../lib/continuum_settings";
 import { knob_bool, knob_string, type AdminRuntimeConfigResponse, type DataHomeRow, type GatewayClient } from "../lib/gateway_client";
@@ -30,108 +30,6 @@ export type ContinuumSettings = {
   default_execution_mode: "uat" | "inplace";
 };
 
-/** Contract-v1 effort ladder (reasoning-1st-citizen, c5769) — used ONLY
- *  as the set-anyway override list when the gateway serves no facts for a
- *  model (ABSENT = UNKNOWN). When facts exist, the model's own served
- *  `reasoning_levels` are the options — never this list. */
-const REASONING_LADDER = ["minimal", "low", "medium", "high", "xhigh"] as const;
-
-/** Interim reasoning selector (delegate call c5869; swaps to @uic's shared
- *  coupled component when it ships). Three states from the served facts:
- *  - thinking_support=true  -> the model's served reasoning_levels
- *  - thinking_support=false -> locked "none — this model doesn't reason"
- *  - facts absent/unreachable -> LOCKED "unknown" + a set-anyway override
- *    (three-state coupling: unknown fails safe WITHOUT killing local/
- *    endpoint models that simply lack registry rows).
- *  The value forwards on the `thinking` wire key; "Reasoning" is only the
- *  label. Zero client-owned capability tables — facts are fetched per
- *  model from the gateway, rendered verbatim. */
-function ReasoningSelect(props: {
-  gateway: GatewayClient;
-  connected: boolean;
-  model: string;
-  value: string;
-  onChange: (v: string) => void;
-}): React.ReactElement | null {
-  const { gateway, connected, model, value, onChange } = props;
-  const [facts, set_facts] = useState<{ state: "loading" | "supported" | "unsupported" | "unknown"; levels: string[] }>({ state: "unknown", levels: [] });
-  const [override_unknown, set_override_unknown] = useState(false);
-  useEffect(() => {
-    set_override_unknown(false);
-    const m = String(model || "").trim();
-    if (!m || !connected) {
-      set_facts({ state: "unknown", levels: [] });
-      return;
-    }
-    let stale = false;
-    set_facts({ state: "loading", levels: [] });
-    gateway
-      .discovery_model_capabilities(m)
-      .then((res) => {
-        if (stale) return;
-        const caps = res?.capabilities && typeof res.capabilities === "object" ? res.capabilities : {};
-        const support = (caps as any).thinking_support;
-        const levels = Array.isArray((caps as any).reasoning_levels) ? ((caps as any).reasoning_levels as any[]).map((x) => String(x)) : [];
-        if (support === true) set_facts({ state: "supported", levels });
-        else if (support === false) set_facts({ state: "unsupported", levels: [] });
-        else set_facts({ state: "unknown", levels: [] });
-      })
-      .catch(() => {
-        if (!stale) set_facts({ state: "unknown", levels: [] });
-      });
-    return () => {
-      stale = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [model, connected]);
-  // No model picked: the axis has no subject — render nothing (the picker's
-  // defaultHint already explains gateway defaults).
-  if (!String(model || "").trim()) return null;
-  const locked = facts.state === "unsupported" || (facts.state === "unknown" && !override_unknown) || facts.state === "loading";
-  const options = facts.state === "supported" && facts.levels.length ? facts.levels : facts.state === "unknown" && override_unknown ? [...REASONING_LADDER] : [];
-  return (
-    <div className="field" data-testid="reasoning_select">
-      <label>Reasoning (effort for {model})</label>
-      <select
-        value={locked ? "" : value}
-        onChange={(e) => onChange(String(e.target.value || ""))}
-        disabled={locked}
-        title={
-          facts.state === "supported"
-            ? "Efforts this model declares (gateway-served). Sent on the `thinking` wire key; blank = gateway default."
-            : facts.state === "unsupported"
-              ? "This model declares no reasoning support — effort is locked to none (contract v1: non-reasoning models naturally get none)."
-              : facts.state === "loading"
-                ? "Checking the model's served capabilities…"
-                : "The gateway serves no reasoning facts for this model (unknown ≠ unsupported). Locked fail-safe; tick “set anyway” if you know the model reasons."
-        }
-      >
-        <option value="">{facts.state === "unsupported" ? "none — this model doesn't reason" : facts.state === "loading" ? "checking…" : facts.state === "unknown" && !override_unknown ? "unknown — no served facts" : "gateway default"}</option>
-        {options.map((v) => (
-          <option key={v} value={v}>
-            {v}
-          </option>
-        ))}
-      </select>
-      {facts.state === "unknown" && !locked ? (
-        <div className="muted" style={{ fontSize: "var(--font-size-sm)" }}>Override active: efforts unverified for this model — the provider may reject or ignore them.</div>
-      ) : null}
-      {facts.state === "unknown" ? (
-        <label className="muted" style={{ fontSize: "var(--font-size-sm)", display: "inline-flex", gap: "6px", alignItems: "center" }}>
-          <input
-            type="checkbox"
-            checked={override_unknown}
-            onChange={(e) => {
-              set_override_unknown(e.target.checked);
-              if (!e.target.checked) onChange("");
-            }}
-          />
-          set anyway (I know this model reasons)
-        </label>
-      ) : null}
-    </div>
-  );
-}
 
 /** Inline editor for the triage repo root — the knob most likely to be
  *  wrong on first run had state but no control while every other knob
@@ -327,6 +225,23 @@ export function SettingsPage(props: {
 }): React.ReactElement {
   const { gateway, gateway_connected, settings, set_settings } = props;
   const principal = props.connection?.gateway?.principal;
+  // The gateway's served reasoning ladder (for "Set anyway" on a model without served facts).
+  const [reasoning_ladder, set_reasoning_ladder] = useState<string[] | undefined>(undefined);
+  useEffect(() => {
+    if (!gateway_connected) return;
+    let alive = true;
+    gateway
+      .discovery_capabilities()
+      .then((payload) => {
+        if (alive) set_reasoning_ladder(reasoningLadderFrom(payload));
+      })
+      .catch(() => {
+        if (alive) set_reasoning_ladder(undefined);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [gateway, gateway_connected]);
 
   const [posture, set_posture] = useState<GatewayPosture>({
     loaded: false,
@@ -563,16 +478,15 @@ export function SettingsPage(props: {
                   the app's gateway client. */}
               <ProviderModelPicker
                 disabled={!gateway_connected}
-                value={{ provider: settings.maintenance_ai_provider, model: settings.maintenance_ai_model }}
+                value={{ provider: settings.maintenance_ai_provider, model: settings.maintenance_ai_model, reasoning: settings.maintenance_ai_reasoning }}
                 onChange={(v) =>
                   set_settings((s) => ({
                     ...s,
                     maintenance_ai_provider: v.provider,
                     maintenance_ai_model: v.model,
-                    // A stored effort must never silently carry onto a
-                    // different model (contract v1: no silent escalation) —
-                    // model change resets reasoning to gateway-default.
-                    maintenance_ai_reasoning: v.model === s.maintenance_ai_model ? s.maintenance_ai_reasoning : "",
+                    // The kit resets reasoning to the gateway default on every
+                    // provider/model change (operator rule 2026-11-07).
+                    maintenance_ai_reasoning: String(v.reasoning || ""),
                   }))
                 }
                 fetchProviders={async (): Promise<ProviderOption[]> => {
@@ -583,22 +497,15 @@ export function SettingsPage(props: {
                   const res = await gateway.discovery_provider_models(provider);
                   return Array.isArray(res?.models) ? res.models : [];
                 }}
+                fetchModelCapabilities={(model: string, provider: string) => gateway.discovery_model_capabilities(model, provider)}
+                // Reasoning is chosen together with a pinned model only (the gateway default keeps its own).
+                optionsInDefaultMode={false}
+                inheritLabel="Gateway default"
+                reasoningLadder={reasoning_ladder}
+                unknownReasoning="allow-override"
                 defaultHint="Uses the gateway's configured default provider and model for maintenance calls."
               />
             </div>
-            {/* INTERIM reasoning selector (reasoning-1st-citizen, delegate
-                call c5869): capability-gated against gateway-served facts —
-                three states per contract v1 (supported = the model's own
-                levels; unsupported = locked none; UNKNOWN = locked with a
-                set-anyway override so endpoint/local models aren't dead).
-                Swaps to @uic's shared coupled selector the day it ships. */}
-            <ReasoningSelect
-              gateway={gateway}
-              connected={gateway_connected}
-              model={settings.maintenance_ai_model}
-              value={settings.maintenance_ai_reasoning}
-              onChange={(v) => set_settings((s) => ({ ...s, maintenance_ai_reasoning: v }))}
-            />
             <div className="field">
               <label>Advisor workflow (executable workflows served by this gateway)</label>
               {workflows === null ? (
