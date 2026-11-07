@@ -56,6 +56,13 @@ the agent that runs items (`codex` by default; also `claude`,
 `cursor-agent`, `abstractcode`), and the UI reads the executor identity from
 the gateway's exec config (see [docs/architecture.md](docs/architecture.md)).
 
+## What's new in 0.8.1
+
+Settings → Maintenance AI uses the framework's shared model picker: changing the
+model puts reasoning back on the gateway default, and backlog AI assist and the
+advisor never send a reasoning level the chosen model cannot use. See
+[CHANGELOG.md](CHANGELOG.md#081--2026-11-07).
+
 ## What's new in 0.8.0
 
 The top bar's account is the shared AbstractFramework account widget (your

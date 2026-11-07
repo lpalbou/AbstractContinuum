@@ -6,6 +6,18 @@ All notable, user-visible changes to AbstractContinuum.
 
 _Nothing yet._
 
+## 0.8.1 — 2026-11-07
+
+On AbstractUIC 0.10.5 (`@abstractframework/ui-kit` ^0.9.18, floor raised from ^0.9.12).
+
+- Changed: Settings → Maintenance AI chooses the provider, model and reasoning effort with the framework's shared
+  model picker, the same one the other apps use. Reasoning is offered once a model is chosen, with the levels the
+  gateway reports for that model; changing the provider or model puts reasoning back on the gateway default.
+  Continuum's own reasoning list is gone.
+- Fixed: backlog AI assist and the backlog advisor never send a reasoning level the chosen model cannot use (a
+  saved level is checked against what the gateway reports for that model before each request). On the gateway
+  default no reasoning level is sent.
+
 ## 0.8.0 — 2026-11-02
 
 On AbstractUIC 0.9.0 (`@abstractframework/ui-kit` ^0.9.12, `@abstractframework/panel-chat` ^0.7.0, `@abstractframework/app-server` ^0.1.13).

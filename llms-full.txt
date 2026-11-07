@@ -1,7 +1,7 @@
 # AbstractContinuum — full documentation corpus
 
 > Aggregated from the core docs for LLM/tool consumption (package
-> `@abstractframework/continuum` 0.8.0). Canonical sources live in the
+> `@abstractframework/continuum` 0.8.1). Canonical sources live in the
 > repository; this file is regenerated whenever the docs change.
 
 ---
@@ -65,6 +65,13 @@ The pipeline is executor-agnostic: the gateway's `executor` setting picks
 the agent that runs items (`codex` by default; also `claude`,
 `cursor-agent`, `abstractcode`), and the UI reads the executor identity from
 the gateway's exec config (see [docs/architecture.md](docs/architecture.md)).
+
+## What's new in 0.8.1
+
+Settings → Maintenance AI uses the framework's shared model picker: changing the
+model puts reasoning back on the gateway default, and backlog AI assist and the
+advisor never send a reasoning level the chosen model cannot use. See
+[CHANGELOG.md](CHANGELOG.md#081--2026-11-07).
 
 ## What's new in 0.8.0
 
@@ -922,7 +929,7 @@ Persisted in `localStorage` under `abstractcontinuum_settings_v1`:
 | Setting | Purpose |
 | --- | --- |
 | Default execution mode | `UAT` (default, staged) or `Inplace` (edits prod) for the Execute dialog. |
-| Maintenance AI provider / model / reasoning effort | Provider, model and reasoning effort for backlog AI assist + maintenance chat (blank = gateway default). |
+| Maintenance AI provider / model / reasoning effort | Provider, model and reasoning effort for backlog AI assist + maintenance chat (blank = gateway default). Reasoning is offered once a model is chosen, with the levels the gateway serves for that model; changing the provider or model puts it back on the gateway default, and a saved level the model cannot use is not sent. |
 | Backlog advisor agent | Gateway bundle id for the advisor (blank = `basic-agent`). |
 
 The voice override (Settings → Voice: the **Custom voice** switch and its
@@ -1572,6 +1579,18 @@ All notable, user-visible changes to AbstractContinuum.
 ## Unreleased
 
 _Nothing yet._
+
+## 0.8.1 — 2026-11-07
+
+On AbstractUIC 0.10.5 (`@abstractframework/ui-kit` ^0.9.18, floor raised from ^0.9.12).
+
+- Changed: Settings → Maintenance AI chooses the provider, model and reasoning effort with the framework's shared
+  model picker, the same one the other apps use. Reasoning is offered once a model is chosen, with the levels the
+  gateway reports for that model; changing the provider or model puts reasoning back on the gateway default.
+  Continuum's own reasoning list is gone.
+- Fixed: backlog AI assist and the backlog advisor never send a reasoning level the chosen model cannot use (a
+  saved level is checked against what the gateway reports for that model before each request). On the gateway
+  default no reasoning level is sent.
 
 ## 0.8.0 — 2026-11-02
 
