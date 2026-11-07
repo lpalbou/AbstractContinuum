@@ -909,11 +909,19 @@ export class GatewayClient {
    *  `capabilities.reasoning_levels` drive the three-state reasoning
    *  selector — present-supported / present-unsupported / ABSENT=UNKNOWN
    *  (locked with a set-anyway override; never a client-side table). */
-  async discovery_model_capabilities(model_name: string): Promise<{ model?: string; capabilities?: Record<string, any>; error?: string }> {
+  async discovery_model_capabilities(model_name: string, provider?: string): Promise<{ model?: string; capabilities?: Record<string, any>; error?: string }> {
     const name = String(model_name || "").trim();
     if (!name) throw new Error("discovery_model_capabilities: model_name is required");
-    const r = await this._fetch("discovery_model_capabilities", `api/gateway/discovery/models/capabilities?model_name=${encodeURIComponent(name)}`);
+    const qs = new URLSearchParams({ model_name: name });
+    if (String(provider || "").trim()) qs.set("provider", String(provider).trim());
+    const r = await this._fetch("discovery_model_capabilities", `api/gateway/discovery/models/capabilities?${qs.toString()}`);
     return await r.json();
+  }
+
+  /** The gateway's discovery contract (GET /discovery/capabilities): the run-start reasoning
+   *  ladder the kit's "Set anyway" offers (`reasoningLadderFrom`), never a client list. */
+  async discovery_capabilities(): Promise<Record<string, unknown>> {
+    return await this._get_json("discovery_capabilities", "api/gateway/discovery/capabilities");
   }
 
   /** Model names served by one provider (cascades from the provider pick). */

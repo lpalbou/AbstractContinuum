@@ -67,6 +67,7 @@ function stub_gateway(config: Record<string, unknown> | null, update?: (patch: a
     discovery_providers: vi.fn(async () => ({ items: [] })),
     discovery_provider_models: vi.fn(async () => ({ models: [] })),
     discovery_model_capabilities: vi.fn(async () => ({ model: "m", capabilities: {} })),
+    discovery_capabilities: vi.fn(async () => ({ capabilities: {} })),
     list_bundles: vi.fn(async () => ({ items: [] })),
   };
 }

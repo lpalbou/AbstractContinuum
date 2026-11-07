@@ -34,6 +34,7 @@ type GatewayStub = {
   discovery_providers: ReturnType<typeof vi.fn>;
   discovery_provider_models: ReturnType<typeof vi.fn>;
   discovery_model_capabilities: ReturnType<typeof vi.fn>;
+  discovery_capabilities: ReturnType<typeof vi.fn>;
   list_bundles: ReturnType<typeof vi.fn>;
 };
 
@@ -48,6 +49,7 @@ function stub_gateway(overrides: Partial<Record<keyof GatewayStub, any>> = {}): 
     discovery_providers: vi.fn(async () => ({ items: [] })),
     discovery_provider_models: vi.fn(async () => ({ models: [] })),
     discovery_model_capabilities: vi.fn(async () => ({ model: "m", capabilities: {} })),
+    discovery_capabilities: vi.fn(async () => ({ capabilities: {} })),
     list_bundles: vi.fn(async () => ({ items: [] })),
     ...overrides,
   };
@@ -115,53 +117,80 @@ describe("Settings — Data & Caches telemetry card", () => {
   });
 });
 
-describe("Settings — interim reasoning selector (reasoning-1st-citizen, delegate c5869)", () => {
-  function render_with_model(gw: GatewayStub): void {
+describe("Settings — maintenance model reasoning (the kit ProviderModelPicker, operator rule 2026-11-07)", () => {
+  function render_with_model(gw: GatewayStub, reasoning = "", set_settings: any = () => {}): void {
     render(
       <SettingsPage
         gateway={gw as any}
         gateway_connected={true}
-        settings={{ ...SETTINGS, maintenance_ai_provider: "lmstudio", maintenance_ai_model: "qwen3-0.6b" }}
-        set_settings={() => {}}
+        settings={{ ...SETTINGS, maintenance_ai_provider: "lmstudio", maintenance_ai_model: "qwen3-0.6b", maintenance_ai_reasoning: reasoning }}
+        set_settings={set_settings}
       />
     );
   }
+  const options_of = async (label: string) => {
+    fireEvent.click(await screen.findByRole("button", { name: label }));
+    const list = await screen.findByRole("listbox", { name: label });
+    return within(list).getAllByRole("option");
+  };
 
-  it("SUPPORTED: renders the model's own served levels, enabled", async () => {
+  it("SUPPORTED: the kit's reasoning select lists the model's own served levels (no own copy)", async () => {
     const gw = stub_gateway({
       discovery_model_capabilities: vi.fn(async () => ({ model: "qwen3-0.6b", capabilities: { thinking_support: true, reasoning_levels: ["low", "high"] } })),
     });
     render_with_model(gw);
-    const select = (await screen.findByTestId("reasoning_select")).querySelector("select") as HTMLSelectElement;
-    await waitFor(() => expect(select.disabled).toBe(false));
-    const opts = Array.from(select.options).map((o) => o.value);
-    expect(opts).toEqual(["", "low", "high"]); // served levels, never a client table
-    expect(gw.discovery_model_capabilities).toHaveBeenCalledWith("qwen3-0.6b");
+    expect(screen.queryByTestId("reasoning_select")).toBeNull();
+    await waitFor(() => expect(gw.discovery_model_capabilities).toHaveBeenCalledWith("qwen3-0.6b", "lmstudio"));
+    await waitFor(async () => expect((await screen.findByRole("button", { name: "Reasoning effort" })).hasAttribute("disabled")).toBe(false));
+    const opts = (await options_of("Reasoning effort")).map((o) => o.textContent);
+    expect(opts).toEqual(["Gateway default✓", "low", "high"]); // ✓ = the chosen option
   });
 
-  it("UNSUPPORTED: locked to none — a non-reasoning model naturally gets none", async () => {
+  it("UNSUPPORTED: a model that does not reason shows no reasoning choice", async () => {
     const gw = stub_gateway({
       discovery_model_capabilities: vi.fn(async () => ({ model: "qwen3-0.6b", capabilities: { thinking_support: false } })),
     });
     render_with_model(gw);
-    const select = (await screen.findByTestId("reasoning_select")).querySelector("select") as HTMLSelectElement;
-    await screen.findByText("none — this model doesn't reason");
-    expect(select.disabled).toBe(true);
+    await waitFor(() => expect(gw.discovery_model_capabilities).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Reasoning effort" })).toBeNull());
   });
 
-  it("UNKNOWN (absent facts): locked fail-safe, and 'set anyway' unlocks the contract ladder", async () => {
+  it("UNKNOWN (absent facts): locked, and Set anyway unlocks the gateway's served ladder", async () => {
     const gw = stub_gateway({
       discovery_model_capabilities: vi.fn(async () => ({ model: "qwen3-0.6b", capabilities: {} })),
+      discovery_capabilities: vi.fn(async () => ({ capabilities: { contracts: { common: { runs: { start: { thinking_control: { values: ["minimal", "low", "high"] } } } } } } })),
     });
     render_with_model(gw);
-    const box = await screen.findByTestId("reasoning_select");
-    await screen.findByText("unknown — no served facts");
-    const select = box.querySelector("select") as HTMLSelectElement;
-    expect(select.disabled).toBe(true);
-    fireEvent.click(screen.getByLabelText(/set anyway/));
-    await waitFor(() => expect((box.querySelector("select") as HTMLSelectElement).disabled).toBe(false));
-    const opts = Array.from((box.querySelector("select") as HTMLSelectElement).options).map((o) => o.value);
-    expect(opts).toEqual(["", "minimal", "low", "medium", "high", "xhigh"]);
+    const trigger = await screen.findByRole("button", { name: "Reasoning effort" });
+    await waitFor(() => expect(trigger.hasAttribute("disabled")).toBe(true));
+    fireEvent.click(screen.getByLabelText(/Set anyway/));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Reasoning effort" }).hasAttribute("disabled")).toBe(false));
+    expect((await options_of("Reasoning effort")).map((o) => o.textContent)).toEqual(["Gateway default✓", "minimal", "low", "high"]);
+  });
+
+  it("a saved level the model does not advertise is not shown as chosen", async () => {
+    const gw = stub_gateway({
+      discovery_model_capabilities: vi.fn(async () => ({ model: "qwen3-0.6b", capabilities: { thinking_support: true, reasoning_levels: ["low"] } })),
+    });
+    render_with_model(gw, "xhigh");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Reasoning effort" }).textContent).toContain("Gateway default"));
+    expect((await options_of("Reasoning effort")).map((o) => o.textContent)).toEqual(["Gateway default✓", "low"]); // the default is the chosen one; xhigh is not offered
+  });
+
+  it("changing the model puts reasoning back on the gateway default", async () => {
+    let state: ContinuumSettings = { ...SETTINGS, maintenance_ai_provider: "lmstudio", maintenance_ai_model: "qwen3-0.6b", maintenance_ai_reasoning: "high" };
+    const set_settings = vi.fn((fn: any) => { state = typeof fn === "function" ? fn(state) : fn; });
+    const gw = stub_gateway({
+      discovery_providers: vi.fn(async () => ({ items: [{ name: "lmstudio" }] })),
+      discovery_provider_models: vi.fn(async () => ({ models: ["qwen3-0.6b", "other-model"] })),
+      discovery_model_capabilities: vi.fn(async () => ({ model: "x", capabilities: { thinking_support: true, reasoning_levels: ["low", "high"] } })),
+    });
+    render_with_model(gw, "high", set_settings);
+    const model = (await options_of("Model")).find((o) => o.textContent === "other-model");
+    expect(model).toBeTruthy();
+    fireEvent.click(model!);
+    expect(state.maintenance_ai_model).toBe("other-model");
+    expect(state.maintenance_ai_reasoning).toBe("");
   });
 });
 

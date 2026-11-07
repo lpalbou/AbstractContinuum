@@ -166,7 +166,7 @@ Persisted in `localStorage` under `abstractcontinuum_settings_v1`:
 | Setting | Purpose |
 | --- | --- |
 | Default execution mode | `UAT` (default, staged) or `Inplace` (edits prod) for the Execute dialog. |
-| Maintenance AI provider / model / reasoning effort | Provider, model and reasoning effort for backlog AI assist + maintenance chat (blank = gateway default). |
+| Maintenance AI provider / model / reasoning effort | Provider, model and reasoning effort for backlog AI assist + maintenance chat (blank = gateway default). Reasoning is offered once a model is chosen, with the levels the gateway serves for that model; changing the provider or model puts it back on the gateway default, and a saved level the model cannot use is not sent. |
 | Backlog advisor agent | Gateway bundle id for the advisor (blank = `basic-agent`). |
 
 The voice override (Settings → Voice: the **Custom voice** switch and its
